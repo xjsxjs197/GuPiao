@@ -1,5 +1,8 @@
 ﻿#编号     名称    简写
 sh000001 上证指数 szzs
+sh601069 西部黄金 xbhj
+sh600879 航天电子 htdz
 sz002460 赣锋锂业 gfly
-sh600028 中国石化 zgsh
+sh600477 杭萧钢构 hxgg
+sz002310 东方园林 dfyl
 sh600029 南方航空 nfhk

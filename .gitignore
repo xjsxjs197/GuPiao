@@ -1,0 +1,9 @@
+GuPiao/obj
+
+GuPiao/bin/*.dll
+
+GuPiao/bin/*.exe
+GuPiao/bin/*.pdb
+GuPiao/bin/*.rar
+GuPiao/bin/GuPiao.vshost
+GuPiao/bin/GuPiao.vshost.exe.manifest
