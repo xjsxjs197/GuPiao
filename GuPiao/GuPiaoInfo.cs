@@ -167,5 +167,15 @@ namespace GuPiaoTool
         /// 时间
         /// </summary>
         public string time { get; set; }
+
+        /// <summary>
+        /// 可用股数
+        /// </summary>
+        public uint CanUseCount { get; set; }
+
+        /// <summary>
+        /// 总股数
+        /// </summary>
+        public uint TotalCount { get; set; }
     }
 }
