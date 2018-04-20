@@ -670,7 +670,7 @@ namespace GuPiao
             /// 初始化界面参数，模拟账号
             serverAddr = "mock.tdx.com.cn";/// 券商的交易服务器IP，这儿默认模拟服务器
             serverPost = "7708";
-            tradeAccount = "";    ///你的交易账号
+            tradeAccount = "xjsxjs197";    ///你的交易账号
             loginId = "xjsxjs197";         ///你的登录账号
             loginPw = "xjsxjs197";
             deptId = "9000";
