@@ -25,6 +25,7 @@ namespace GuPiao
         OrderErrEvent = 12,
         StockQuoteEvent = 13,
         ServerErrEvent = 14,
-        CancelOrder = 15
+        CancelOrder = 15,
+        GetTodayPiaoInfo = 16
     }
 }

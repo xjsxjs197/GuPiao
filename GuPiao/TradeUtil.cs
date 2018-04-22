@@ -69,6 +69,11 @@ namespace GuPiao
         /// </summary>
         public CurOpt CurOpt { get; set; }
 
+        /// <summary>
+        /// 是否登录成功
+        /// </summary>
+        public bool isLoginOk { get; set; }
+
         List<string> tradeData = new List<string>();
         List<string> hisData = new List<string>();
 
@@ -148,6 +153,7 @@ namespace GuPiao
         {
             this.CurOpt = CurOpt.Init;
 
+            this.isLoginOk = false;
             this.orderInfo.Clear();
 
             // 初始化基础数据
@@ -206,6 +212,7 @@ namespace GuPiao
             {
                 this.RetMsg = "请先输入登录密码！";
                 this.IsSuccess = false;
+                this.DoCallBack(null);
                 return;
             }
 
@@ -220,7 +227,9 @@ namespace GuPiao
                 bRet = m_StockTrade.LogIn(false);
                 if (bRet)
                 {
-                    this.RetMsg = "登录成功！";
+                    this.isLoginOk = true;
+
+                    this.RetMsg = "同步：连接成功！";
                     this.IsSuccess = true;
 
                     /*
@@ -264,12 +273,11 @@ namespace GuPiao
             if (!bRet)
             {
                 /// 连接失败时获取错误描述和类型
-                string strErrDesc = m_StockTrade.LastErrDesc;
-                //EZMTradeErrType ErrType = m_StockTrade.LastErrType;
-                //MessageBox.Show(strErrDesc);
-                this.RetMsg = strErrDesc;
+                this.RetMsg = m_StockTrade.LastErrDesc;
                 this.IsSuccess = false;
             }
+
+            this.DoCallBack(null);
         }
 
         /// <summary>
@@ -351,7 +359,7 @@ namespace GuPiao
                 if (isQuick)
                 {
                     //var vBuy4 = StockRecord.GetValueFloat(0, 5);
-                    var vBuy5 = StockRecord.GetValueByName(0, "买五价");
+                    var vBuy5 = StockRecord.GetValueByName(0, "卖一价");
                     buyPrice = (float)vBuy5;
                 }
 
@@ -368,7 +376,7 @@ namespace GuPiao
                     order.ReqId = Guid.NewGuid().ToString();
                     orderInfo.Add(order.ReqId, order);
 
-                    this.AfterBuyStock(OrderRecord, order.ReqId);
+                    this.AfterBuySellStock(OrderRecord, order.ReqId);
                 }
                 else
                 {
@@ -428,7 +436,7 @@ namespace GuPiao
                         float sellPrice = price;
                         if (isQuick)
                         {
-                            var varVal = StockRecord.GetValueByName(0, "卖一价");
+                            var varVal = StockRecord.GetValueByName(0, "买一价");
                             sellPrice = (float)varVal;
                         }
 
@@ -444,7 +452,7 @@ namespace GuPiao
                             order.ReqId = Guid.NewGuid().ToString();
                             orderInfo.Add(order.ReqId, order);
 
-                            this.AfterSellStock(SellRecord, order.ReqId);
+                            this.AfterBuySellStock(SellRecord, order.ReqId);
                         }
                         else
                         {
@@ -492,6 +500,17 @@ namespace GuPiao
             {
                 if (0 == m_StockTrade.CurTradeID)
                 {
+                    this.IsSuccess = false;
+                    this.RetMsg = "没有登录";
+                    this.callBackF();
+                    return;/// 没有登录
+                }
+
+                if (!this.isLoginOk)
+                {
+                    this.IsSuccess = false;
+                    this.RetMsg = "没有正常登录";
+                    this.callBackF();
                     return;/// 没有登录
                 }
 
@@ -499,26 +518,34 @@ namespace GuPiao
                     EZMStockQueryType.STOCKQUERYTYPE_STOCK);
                 if (null == StockRecord)
                 {
+                    this.IsSuccess = false;
+                    this.RetMsg = m_StockTrade.LastErrDesc;
+                    this.callBackF();
                     return;
                 }
 
                 uint nRecordCount = StockRecord.RecordCount;
                 if (0 == nRecordCount)
                 {
+                    this.IsSuccess = true;
+                    this.RetMsg = "没有持股";
+                    this.callBackF();
                     return;/// 没有持股
                 }
 
                 for (uint nIndex = 0; nIndex < nRecordCount; nIndex++)
                 {
-                    var varVal = StockRecord.GetValueByName(nIndex, "可用股份");
+                    //MessageBox.Show(StockRecord.GetJsonString());
+                    var canUseVal = StockRecord.GetValueByName(nIndex, "可用股份");
+                    var totalVal = StockRecord.GetValueByName(nIndex, "股份余额");
                     //string strStockName = StockRecord.GetValueByName(nIndex, "证券名称").ToString();
                     //string strHolderCode = StockRecord.GetValueByName(nIndex, "股东代码").ToString();
                     string strStockCode = StockRecord.GetValueByName(nIndex, "证券代码").ToString();
 
                     GuPiaoInfo item = new GuPiaoInfo();
                     item.fundcode = strStockCode;
-                    item.CanUseCount = (uint)varVal;
-                    item.TotalCount = 0; // TODO
+                    item.CanUseCount = Convert.ToUInt32(canUseVal);
+                    item.TotalCount = Convert.ToUInt32(totalVal);
 
                     if (guPiaoInfo.ContainsKey(strStockCode))
                     {
@@ -529,6 +556,119 @@ namespace GuPiao
                         guPiaoInfo.Add(strStockCode, item);
                     }
                 }
+
+                this.IsSuccess = true;
+                this.RetMsg = "取得信息成功";
+                this.callBackF();
+            }
+            finally
+            {
+                if (StockRecord != null)
+                {
+                    StockRecord.Clear();
+                    StockRecord = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 取得当天委托信息
+        /// </summary>
+        /// <returns></returns>
+        public void GetTodayPiaoInfo(List<OrderInfo> guPiaoInfo)
+        {
+            this.CurOpt = CurOpt.GetTodayPiaoInfo;
+            ITradeRecord StockRecord = null;
+
+            try
+            {
+                if (0 == m_StockTrade.CurTradeID)
+                {
+                    this.IsSuccess = false;
+                    this.RetMsg = "没有登录";
+                    this.callBackF();
+                    return;/// 没有登录
+                }
+
+                if (!this.isLoginOk)
+                {
+                    this.IsSuccess = false;
+                    this.RetMsg = "没有正常登录";
+                    this.callBackF();
+                    return;/// 没有登录
+                }
+
+                StockRecord = m_StockTrade.QueryTradeData(m_StockTrade.CurTradeID,
+                    EZMStockQueryType.STOCKQUERYTYPE_TODAYORDER);
+                if (null == StockRecord)
+                {
+                    this.IsSuccess = false;
+                    this.RetMsg = m_StockTrade.LastErrDesc;
+                    this.callBackF();
+                    return;
+                }
+
+                uint nRecordCount = StockRecord.RecordCount;
+                if (0 == nRecordCount)
+                {
+                    this.IsSuccess = true;
+                    this.RetMsg = "当天没有委托";
+                    this.callBackF();
+                    return;/// 没有持股
+                }
+
+                //MessageBox.Show(StockRecord.GetTitleJson() + "\n" + StockRecord.GetJsonString());
+                //MessageBox.Show(nRecordCount + " ");
+                for (uint nIndex = 0; nIndex < nRecordCount; nIndex++)
+                {
+                    OrderInfo item;
+                    string orderId = Convert.ToString(StockRecord.GetValueByName(nIndex, "委托编号"));
+                    OrderInfo oldItem = guPiaoInfo.FirstOrDefault(p => orderId.Equals(p.OrderId));
+                    if (oldItem != null && !string.IsNullOrEmpty(orderId) && orderId.Equals(oldItem.OrderId))
+                    {
+                        // 更新旧的信息
+                        item = oldItem;
+                    }
+                    else
+                    {
+                        // 追加新的信息
+                        item = new OrderInfo();
+                        guPiaoInfo.Insert(0, item);
+                    }
+
+                    item.OrderDate = Convert.ToString(StockRecord.GetValueByName(nIndex, "委托时间"));
+                    item.OrderId = Convert.ToString(StockRecord.GetValueByName(nIndex, "委托编号"));
+                    item.StockCd = Convert.ToString(StockRecord.GetValueByName(nIndex, "证券代码"));
+                    if ("卖出".Equals(Convert.ToString(StockRecord.GetValueByName(nIndex, "买卖标志1"))))
+                    {
+                        item.OrderType = OrderType.Sell;
+                    }
+                    else
+                    {
+                        item.OrderType = OrderType.Buy;
+                    }
+                    item.Price = Convert.ToString(StockRecord.GetValueByName(nIndex, "委托价格"));
+                    item.Count = Convert.ToUInt32(StockRecord.GetValueByName(nIndex, "委托数量"));
+                    item.OrderStatus = OrderStatus.Waiting;
+                    if (Convert.ToUInt32(StockRecord.GetValueByName(nIndex, "成交数量")) > 0)
+                    {
+                        item.OrderStatus = OrderStatus.OrderOk;
+                    }
+                    else if (Convert.ToUInt32(StockRecord.GetValueByName(nIndex, "已撤数量")) > 0)
+                    {
+                        item.OrderStatus = OrderStatus.OrderCancel;
+                    }
+                }
+
+                //MessageBox.Show(guPiaoInfo.Count + " ");
+
+                this.IsSuccess = true;
+                this.RetMsg = "取得当天委托信息成功";
+                this.callBackF();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
             }
             finally
             {
@@ -590,15 +730,35 @@ namespace GuPiao
         public void DoCallBack(params object[] param)
         {
             uint nReqID;
+            object[] newParam = param;
 
             // 处理各种事件
             switch (this.CurOpt)
             {
+                // 初始化完成
+                case CurOpt.InitEvent:
+                    this.callBackF();
+                    break;
+
+                case CurOpt.ConnServer:
+                case CurOpt.LoginEvent:
+                    if (this.isLoginOk)
+                    {
+                        ITradeRecord stockRecord = m_StockTrade.CapitalInfo;
+                        //MessageBox.Show(stockRecord.GetJsonString());
+                        newParam = new object[] { stockRecord.GetValueByName(0, "资金余额")
+                            , stockRecord.GetValueByName(0, "最新市值")
+                            , stockRecord.GetValueByName(0, "可用资金")
+                            , stockRecord.GetValueByName(0, "可取资金")
+                        };
+                    }
+                    break;
+
                 // 委托交易成功
                 case CurOpt.OrderOKEvent:
                     nReqID = (uint) param[0];
                     ITradeRecord OrderRecord = (ITradeRecord)param[1];
-                    this.AfterBuyStock(OrderRecord, nReqID.ToString());
+                    this.AfterBuySellStock(OrderRecord, nReqID.ToString());
                     break;
 
                 // 订单成功
@@ -616,10 +776,10 @@ namespace GuPiao
                     break;
             }
 
-            // 前天页面处理相关
+            // 前台页面处理相关
             if (this.callBackF != null)
             {
-                this.callBackF(param);
+                this.callBackF(newParam);
             }
         }
 
@@ -668,24 +828,24 @@ namespace GuPiao
         private void InitBaseData(ComboBox cmbAccountType, ComboBox cmbBrokerType)
         {
             /// 初始化界面参数，模拟账号
-            serverAddr = "mock.tdx.com.cn";/// 券商的交易服务器IP，这儿默认模拟服务器
-            serverPost = "7708";
-            tradeAccount = "xjsxjs197";    ///你的交易账号
-            loginId = "xjsxjs197";         ///你的登录账号
-            loginPw = "xjsxjs197";
-            deptId = "9000";
+            serverAddr = "202.69.19.56";///"mock.tdx.com.cn"; //  券商的交易服务器IP，这儿默认模拟服务器
+            serverPost = "7738"; //"7708"; // ;
+            tradeAccount = "ccc"; ///你的交易账号
+            loginId = "bbbb"; // ///你的登录账号
+            loginPw = "aaaa";
+            deptId = "54"; //"54";
 
             cmbAccountType.Items.Clear();
             cmbAccountType.Items.Add("模拟");
             cmbAccountType.Items.Add("资金账号");
             cmbAccountType.Items.Add("客户号");
-            cmbAccountType.SelectedIndex = 0;
+            cmbAccountType.SelectedIndex = 1;
 
             cmbBrokerType.Items.Clear();
             cmbBrokerType.Items.Add("模拟测试");
             cmbBrokerType.Items.Add("平安证券");
             cmbBrokerType.Items.Add("招商证券");
-            cmbBrokerType.SelectedIndex = 0;
+            cmbBrokerType.SelectedIndex = 1;
 
             BrokerMap.Add(0, EZMBrokerType.BROKERTYPE_MNCS);
             BrokerMap.Add(1, EZMBrokerType.BROKERTYPE_PAZQ);
@@ -738,7 +898,7 @@ namespace GuPiao
                 m_StockTrade.EnableLog = true;
 
                 /// 测试指定授权文件路径，否则使用默认和COM组件同目录的TradeAuth.zmd
-                //m_StockTrade.AuthFile = "D:\\TradeAuth.zmd";
+                m_StockTrade.AuthFile = @"G:\GitHub\GuPiao\GuPiao\bin\TradeAuth.zmd";
 
                 /// 设置通讯版本(请查看自己券商的TDX版本)，初始化结果异步通过事件通知
                 /// 设置最大连接数，默认传1(最好跟调用登录前设置的服务器主机数量一致)
@@ -790,22 +950,10 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 买后的操作
+        /// 买卖后的操作
         /// </summary>
         /// <param name="OrderRecord"></param>
-        private void AfterBuyStock(ITradeRecord OrderRecord, string reqId)
-        {
-            if (this.CommonCheckOrder(OrderRecord, reqId, OrderStatus.Waiting))
-            {
-                
-            }
-        }
-
-        /// <summary>
-        /// 卖后的操作
-        /// </summary>
-        /// <param name="OrderRecord"></param>
-        private void AfterSellStock(ITradeRecord OrderRecord, string reqId)
+        private void AfterBuySellStock(ITradeRecord OrderRecord, string reqId)
         {
             if (this.CommonCheckOrder(OrderRecord, reqId, OrderStatus.Waiting))
             {

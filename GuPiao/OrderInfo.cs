@@ -11,6 +11,11 @@ namespace GuPiao
     public class OrderInfo
     {
         /// <summary>
+        /// 时间
+        /// </summary>
+        public string time { get; set; }
+
+        /// <summary>
         /// 交易请求序列号
         /// </summary>
         public string ReqId { get; set; }
@@ -34,6 +39,11 @@ namespace GuPiao
         /// 成交价格
         /// </summary>
         public string Price { get; set; }
+
+        /// <summary>
+        /// 委托数量
+        /// </summary>
+        public uint Count { get; set; }
 
         /// <summary>
         /// 订单类型

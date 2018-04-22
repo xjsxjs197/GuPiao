@@ -55,6 +55,8 @@ namespace GuPiao
                 m_spiTrade = (IStockTrade)vTrade;
             }
 
+            this.tradeUtil.IsSuccess = bLoginOK;
+            this.tradeUtil.RetMsg = m_spiTrade.LastErrDesc;
             this.tradeUtil.DoCallBack(null);
         }
 
@@ -80,6 +82,8 @@ namespace GuPiao
                 /// 异步事件处理中，请尽量不要有阻塞操作，避免影响底层流程正常处理。弹出消息框仅限于调试程序
                 if (1 == m_nTradeIndex)
                 {
+                    this.tradeUtil.isLoginOk = true;
+
                     this.tradeUtil.IsSuccess = true;
                     this.tradeUtil.RetMsg = "异步：连接成功！";
                 }
