@@ -34,10 +34,10 @@ namespace GuPiaoTool
         {
             InitializeComponent();
 
-            //this.rdoSync.CheckedChanged += new EventHandler(this.rdoSync_CheckedChanged);
-            //this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
-            //this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
-            //this.grdHis.CellContentClick += new DataGridViewCellEventHandler(this.grdHis_CellContentClick);
+            this.rdoSync.CheckedChanged += new EventHandler(this.rdoSync_CheckedChanged);
+            this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
+            this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
+            this.grdHis.CellContentClick += new DataGridViewCellEventHandler(this.grdHis_CellContentClick);
 
             // 设置信息
             this.tradeUtil.SetCallBack(this.AsyncCallBack);
@@ -46,6 +46,9 @@ namespace GuPiaoTool
 
             // 初始化基本信息
             this.InitBaseInfo();
+
+            this.cmbCountBuy.SelectedIndex = 2;
+            this.cmbCountSell.SelectedIndex = 3;
         }
 
         #endregion
@@ -109,12 +112,12 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnBuy_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountBuy.SelectedItem, this.txtPriceBuy.Text))
+            if (!this.CheckInput(this.cmbCountBuy.Text, this.txtPriceBuy.Text))
             {
                 return;
             }
 
-            this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.SelectedItem), this.GetPrice(this.txtPriceBuy.Text), false);
+            this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), false);
         }
 
         /// <summary>
@@ -124,12 +127,12 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnQuictBuy_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountBuy.SelectedItem, this.txtPriceBuy.Text))
+            if (!this.CheckInput(this.cmbCountBuy.Text, this.txtPriceBuy.Text))
             {
                 return;
             }
 
-            this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.SelectedItem), this.GetPrice(this.txtPriceBuy.Text), true);
+            this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), true);
         }
 
         /// <summary>
@@ -139,12 +142,13 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnSell_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountSell.SelectedItem, this.txtPriceSell.Text))
+            if (!this.CheckInput(this.cmbCountSell.Text, this.txtPriceSell.Text))
             {
                 return;
             }
 
-            this.tradeUtil.SellStock(this.selStockCd, this.GetCount(this.cmbCountSell.SelectedItem), this.GetPrice(this.txtPriceSell.Text), false);
+            string retMsg = this.tradeUtil.SellStock(this.selStockCd, this.GetCount(this.cmbCountSell.Text), this.GetPrice(this.txtPriceSell.Text), false);
+            this.DispMsg(retMsg);
         }
 
         /// <summary>
@@ -154,12 +158,13 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnQuickSell_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountSell.SelectedItem, this.txtPriceSell.Text))
+            if (!this.CheckInput(this.cmbCountSell.Text, this.txtPriceSell.Text))
             {
                 return;
             }
 
-            this.tradeUtil.SellStock(this.selStockCd, this.GetCount(this.cmbCountSell.SelectedItem), this.GetPrice(this.txtPriceSell.Text), true);
+            string retMsg = this.tradeUtil.SellStock(this.selStockCd, this.GetCount(this.cmbCountSell.Text), this.GetPrice(this.txtPriceSell.Text), true);
+            this.DispMsg(retMsg);
         }
 
         /// <summary>
@@ -251,7 +256,10 @@ namespace GuPiaoTool
                 if (lastCount == canUserCount)
                 {
                     // 如果设置过了，不用每次设置
-                    this.cmbCountSell.SelectedIndex = 0;
+                    if (this.cmbCountSell.SelectedIndex == -1)
+                    {
+                        this.cmbCountSell.SelectedIndex = 0;
+                    }
                     return;
                 }
                 int maxNum = (int)(maxCount / 100);
@@ -292,7 +300,10 @@ namespace GuPiaoTool
                 if (maxNum == this.cmbCountBuy.Items.Count)
                 {
                     // 如果设置过了，不用每次设置
-                    this.cmbCountSell.SelectedIndex = 0;
+                    if (this.cmbCountSell.SelectedIndex == -1)
+                    {
+                        this.cmbCountSell.SelectedIndex = 0;
+                    }
                     return;
                 }
 
@@ -785,6 +796,10 @@ namespace GuPiaoTool
                     this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
                     // 重新显示当前委托信息
                     this.DispTodayInfo();
+                    break;
+
+                case CurOpt.OrderErrEvent:
+                    this.DispMsg(this.tradeUtil.RetMsg);
                     break;
             }
         }

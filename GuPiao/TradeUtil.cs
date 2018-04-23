@@ -393,6 +393,10 @@ namespace GuPiao
                     m_StockTrade.CommitOrder(m_StockTrade.CurTradeID, true, EZMRunPriType.RUNPRITYPE_NORMAL);
                 }
             }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+            }
             finally
             {
                 if (StockRecord != null)
@@ -402,7 +406,7 @@ namespace GuPiao
                 }
             }
 
-            return string.Empty;
+            return "交易成功";
         }
 
         /// <summary>
@@ -449,7 +453,7 @@ namespace GuPiao
                             /// 同步操作，直到提交委托服务器返回结果
                             ITradeRecord SellRecord = m_StockTrade.SyncCommitOrder(true, EZMStockOrderType.STOCKORDERTYPE_SALE,
                                 EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, sellPrice, count, eExchangeType);
-                            
+
                             order.ReqId = Guid.NewGuid().ToString();
                             orderInfo.Add(order.ReqId, order);
 
@@ -476,6 +480,10 @@ namespace GuPiao
                     return this.RetMsg;
                 }
             }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+            }
             finally
             {
                 if (StockRecord != null)
@@ -485,7 +493,7 @@ namespace GuPiao
                 }
             }
 
-            return string.Empty;
+            return "交易成功";
         }
 
         /// <summary>
