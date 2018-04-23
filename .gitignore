@@ -9,3 +9,6 @@ GuPiao/bin/GuPiao.vshost
 GuPiao/bin/GuPiao.vshost.exe.manifest
 GuPiao/bin/ZMTradeCore.bin
 GuPiao/bin/system.uid
+GuPiao/bin/ConnectInfo.txt
+GuPiao/bin/TradeConfig.zmd
+GuPiao/bin/ZMTradeCoreM.bin

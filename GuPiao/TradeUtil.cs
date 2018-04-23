@@ -9,6 +9,7 @@ using System.Windows.Forms;
 
 using ZMTradeCom;
 using GuPiaoTool;
+using System.IO;
 
 namespace GuPiao
 {
@@ -691,6 +692,7 @@ namespace GuPiao
             {
                 this.RetMsg = "取消订单：交易代码不对 " + stockCd;
                 this.IsSuccess = false;
+                this.callBackF(null);
                 return;
             }
 
@@ -698,6 +700,7 @@ namespace GuPiao
             {
                 this.RetMsg = "取消订单：订单ID为空";
                 this.IsSuccess = false;
+                this.callBackF(null);
                 return;
             }
 
@@ -712,15 +715,19 @@ namespace GuPiao
                 {
                     // 修改订单状态
                     order.OrderStatus = OrderStatus.OrderCancel;
+
+                    // 刷新履历信息
+                    this.IsSuccess = true;
+                    this.RetMsg = "取消订单：成功";
+                    this.callBackF(null);
                 }
                 else
                 {
                     this.RetMsg = "取消订单：取消失败（没有找到订单信息）";
                     this.IsSuccess = false;
+                    this.callBackF(null);
                 }
             }
-
-            this.IsSuccess = true;
         }
 
         /// <summary>
@@ -827,13 +834,15 @@ namespace GuPiao
         /// </summary>
         private void InitBaseData(ComboBox cmbAccountType, ComboBox cmbBrokerType)
         {
+            string[] baseInfos = File.ReadAllLines(@".\ConnectInfo.txt");
+
             /// 初始化界面参数，模拟账号
-            serverAddr = "202.69.19.56";///"mock.tdx.com.cn"; //  券商的交易服务器IP，这儿默认模拟服务器
-            serverPost = "7738"; //"7708"; // ;
-            tradeAccount = "ccc"; ///你的交易账号
-            loginId = "bbbb"; // ///你的登录账号
-            loginPw = "aaaa";
-            deptId = "54"; //"54";
+            serverAddr = baseInfos[0];///"mock.tdx.com.cn"; //  券商的交易服务器IP，这儿默认模拟服务器
+            serverPost = baseInfos[1]; //"7708"; // ;
+            tradeAccount = baseInfos[2]; ///你的交易账号
+            loginId = baseInfos[2]; // ///你的登录账号
+            loginPw = baseInfos[3];
+            deptId = baseInfos[4];
 
             cmbAccountType.Items.Clear();
             cmbAccountType.Items.Add("模拟");
@@ -895,14 +904,14 @@ namespace GuPiao
                 m_StockTrade.ServerChangedEvent += m_TradeEvent.ServerChangedEvent;
 
                 /// 启用日志输出，便于调试程序
-                m_StockTrade.EnableLog = true;
+                m_StockTrade.EnableLog = false;
 
                 /// 测试指定授权文件路径，否则使用默认和COM组件同目录的TradeAuth.zmd
-                m_StockTrade.AuthFile = @"G:\GitHub\GuPiao\GuPiao\bin\TradeAuth.zmd";
+                m_StockTrade.AuthFile = @".\TradeAuth.zmd";
 
                 /// 设置通讯版本(请查看自己券商的TDX版本)，初始化结果异步通过事件通知
                 /// 设置最大连接数，默认传1(最好跟调用登录前设置的服务器主机数量一致)
-                m_StockTrade.Init("8.05", 1);
+                m_StockTrade.Init("2.08", 1);
             }
             else
             {

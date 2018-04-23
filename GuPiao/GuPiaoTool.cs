@@ -34,9 +34,10 @@ namespace GuPiaoTool
         {
             InitializeComponent();
 
-            this.rdoSync.CheckedChanged += new EventHandler(this.rdoSync_CheckedChanged);
-            this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
-            this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
+            //this.rdoSync.CheckedChanged += new EventHandler(this.rdoSync_CheckedChanged);
+            //this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
+            //this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
+            //this.grdHis.CellContentClick += new DataGridViewCellEventHandler(this.grdHis_CellContentClick);
 
             // 设置信息
             this.tradeUtil.SetCallBack(this.AsyncCallBack);
@@ -199,6 +200,22 @@ namespace GuPiaoTool
                 // 根据可用股数，设置卖的按钮的状态
                 this.SetSellInfo(Convert.ToInt32(selectedRow.Cells[5].Value));
             }
+        }
+
+        /// <summary>
+        /// 取消操作
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void grdHis_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.ColumnIndex != 5 || string.IsNullOrEmpty(this.grdHis[e.ColumnIndex, e.RowIndex].Value as string))
+            {
+                return;
+            }
+
+            DataGridViewCellCollection lineCollection = this.grdHis.Rows[e.RowIndex].Cells;
+            this.tradeUtil.CancelOrder(lineCollection[0].Value as string, lineCollection[6].Value as string);
         }
 
         #endregion
@@ -680,6 +697,19 @@ namespace GuPiaoTool
                 lineCollection[3].Value = this.todayGuPiao[i].Price;
                 lineCollection[4].Value = this.todayGuPiao[i].OrderStatus == OrderStatus.Waiting ? "Waiting" :
                     (this.todayGuPiao[i].OrderStatus == OrderStatus.OrderOk ? "Ok" : "Cancel");
+
+                if (this.todayGuPiao[i].OrderStatus == OrderStatus.Waiting)
+                {
+                    //lineCollection[5].Visible = true;
+                    lineCollection[5].Value = "Cancel";
+                }
+                else
+                {
+                    //lineCollection[5].Visible = false;
+                    lineCollection[5].Value = "";
+                }
+
+                lineCollection[6].Value = this.todayGuPiao[i].OrderId;
             }
         }
 
@@ -745,6 +775,16 @@ namespace GuPiaoTool
                 case CurOpt.OrderSuccessEvent:
                     // 订单成功，需要刷新页面数据
                     this.DispMsg(this.tradeUtil.RetMsg);
+                    break;
+
+                case CurOpt.CancelOrder:
+                    // 订单成功，需要刷新页面数据
+                    this.DispMsg(this.tradeUtil.RetMsg);
+
+                    // 重新取得当天委托信息
+                    this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
+                    // 重新显示当前委托信息
+                    this.DispTodayInfo();
                     break;
             }
         }
