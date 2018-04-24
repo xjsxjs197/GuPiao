@@ -669,6 +669,8 @@ namespace GuPiao
                     }
                 }
 
+                guPiaoInfo.Sort(this.OrderInfoCompare);
+
                 //MessageBox.Show(guPiaoInfo.Count + " ");
 
                 this.IsSuccess = true;
@@ -727,13 +729,13 @@ namespace GuPiao
                     // 刷新履历信息
                     this.IsSuccess = true;
                     this.RetMsg = "取消订单：成功";
-                    this.callBackF(null);
+                    this.callBackF(this.GetMoneyParam());
                 }
                 else
                 {
                     this.RetMsg = "取消订单：取消失败（没有找到订单信息）";
                     this.IsSuccess = false;
-                    this.callBackF(null);
+                    this.callBackF(this.GetMoneyParam());
                 }
             }
         }
@@ -759,13 +761,7 @@ namespace GuPiao
                 case CurOpt.LoginEvent:
                     if (this.isLoginOk)
                     {
-                        ITradeRecord stockRecord = m_StockTrade.CapitalInfo;
-                        //MessageBox.Show(stockRecord.GetJsonString());
-                        newParam = new object[] { stockRecord.GetValueByName(0, "资金余额")
-                            , stockRecord.GetValueByName(0, "最新市值")
-                            , stockRecord.GetValueByName(0, "可用资金")
-                            , stockRecord.GetValueByName(0, "可取资金")
-                        };
+                        newParam = this.GetMoneyParam();
                     }
                     break;
 
@@ -774,6 +770,8 @@ namespace GuPiao
                     nReqID = (uint) param[0];
                     ITradeRecord OrderRecord = (ITradeRecord)param[1];
                     this.AfterBuySellStock(OrderRecord, nReqID.ToString());
+
+                    newParam = this.GetMoneyParam();
                     break;
 
                 // 订单成功
@@ -781,6 +779,8 @@ namespace GuPiao
                     string orderId = (string)param[0];
                     string successJson = (string)param[1];
                     this.OrderSuccess(orderId, successJson);
+
+                    newParam = this.GetMoneyParam();
                     break;
 
                 // 订单错误
@@ -801,6 +801,32 @@ namespace GuPiao
         #endregion
 
         #region 私有方法
+
+        /// <summary>
+        /// 取得金额信息的参数
+        /// </summary>
+        /// <returns></returns>
+        private object[] GetMoneyParam()
+        { 
+            ITradeRecord stockRecord = m_StockTrade.CapitalInfo;
+            //MessageBox.Show(stockRecord.GetJsonString());
+            return new object[] { stockRecord.GetValueByName(0, "资金余额")
+                            , stockRecord.GetValueByName(0, "最新市值")
+                            , stockRecord.GetValueByName(0, "可用资金")
+                            , stockRecord.GetValueByName(0, "可取资金")
+                        };
+        }
+
+        /// <summary>
+        /// 对象比较
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        private int OrderInfoCompare(OrderInfo a, OrderInfo b)
+        {
+            return b.OrderDate.CompareTo(a.OrderDate);
+        }
 
         /// <summary>
         /// 生成一个订单
@@ -912,14 +938,14 @@ namespace GuPiao
                 m_StockTrade.ServerChangedEvent += m_TradeEvent.ServerChangedEvent;
 
                 /// 启用日志输出，便于调试程序
-                m_StockTrade.EnableLog = false;
+                m_StockTrade.EnableLog = true;
 
                 /// 测试指定授权文件路径，否则使用默认和COM组件同目录的TradeAuth.zmd
                 m_StockTrade.AuthFile = @".\TradeAuth.zmd";
 
                 /// 设置通讯版本(请查看自己券商的TDX版本)，初始化结果异步通过事件通知
                 /// 设置最大连接数，默认传1(最好跟调用登录前设置的服务器主机数量一致)
-                m_StockTrade.Init("2.08", 1);
+                m_StockTrade.Init("8.04", 1);
             }
             else
             {
@@ -990,11 +1016,11 @@ namespace GuPiao
             {
                 // 修改订单状态
                 order.OrderStatus = OrderStatus.OrderOk;
-                this.RetMsg = "取消订单：取消失败（没有找到订单信息）";
+                this.RetMsg = "订单成功";
             }
             else
             {
-                this.RetMsg = "订单成功：但是没有更新状态";
+                this.RetMsg = "订单成功：但是没有找到订单信息";
             }
 
             this.IsSuccess = true;

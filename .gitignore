@@ -12,3 +12,9 @@ GuPiao/bin/system.uid
 GuPiao/bin/ConnectInfo.txt
 GuPiao/bin/TradeConfig.zmd
 GuPiao/bin/ZMTradeCoreM.bin
+GuPiao.suo
+GuPiao/bin/Interop.MSScriptControl.dll
+GuPiao/bin/TradeX-M.ini
+GuPiao/bin/TradeX-M.lic
+GuPiao/bin/TradeX.xml
+GuPiao/GuPiao.csproj

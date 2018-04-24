@@ -149,7 +149,7 @@
             this.grdGuPiao.RowHeadersVisible = false;
             this.grdGuPiao.RowTemplate.Height = 21;
             this.grdGuPiao.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.grdGuPiao.Size = new System.Drawing.Size(572, 106);
+            this.grdGuPiao.Size = new System.Drawing.Size(582, 173);
             this.grdGuPiao.TabIndex = 1;
             // 
             // bianHao
@@ -222,9 +222,9 @@
             this.pnlBtn.Controls.Add(this.label5);
             this.pnlBtn.Controls.Add(this.btnRun);
             this.pnlBtn.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlBtn.Location = new System.Drawing.Point(0, 248);
+            this.pnlBtn.Location = new System.Drawing.Point(0, 345);
             this.pnlBtn.Name = "pnlBtn";
-            this.pnlBtn.Size = new System.Drawing.Size(572, 59);
+            this.pnlBtn.Size = new System.Drawing.Size(582, 59);
             this.pnlBtn.TabIndex = 3;
             // 
             // txtPriceSell
@@ -384,9 +384,9 @@
             this.pnlBaseInfo.Controls.Add(this.label3);
             this.pnlBaseInfo.Controls.Add(this.label1);
             this.pnlBaseInfo.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlBaseInfo.Location = new System.Drawing.Point(0, 189);
+            this.pnlBaseInfo.Location = new System.Drawing.Point(0, 286);
             this.pnlBaseInfo.Name = "pnlBaseInfo";
-            this.pnlBaseInfo.Size = new System.Drawing.Size(572, 59);
+            this.pnlBaseInfo.Size = new System.Drawing.Size(582, 59);
             this.pnlBaseInfo.TabIndex = 4;
             // 
             // lblCanGetMoney
@@ -552,7 +552,7 @@
             dataGridViewCellStyle16.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
             this.grdHis.DefaultCellStyle = dataGridViewCellStyle16;
             this.grdHis.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.grdHis.Location = new System.Drawing.Point(0, 106);
+            this.grdHis.Location = new System.Drawing.Point(0, 173);
             this.grdHis.Name = "grdHis";
             this.grdHis.ReadOnly = true;
             dataGridViewCellStyle17.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
@@ -566,7 +566,7 @@
             this.grdHis.RowHeadersVisible = false;
             this.grdHis.RowTemplate.Height = 21;
             this.grdHis.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.grdHis.Size = new System.Drawing.Size(572, 83);
+            this.grdHis.Size = new System.Drawing.Size(582, 113);
             this.grdHis.TabIndex = 5;
             // 
             // dataGridViewTextBoxColumn1
@@ -633,7 +633,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(572, 307);
+            this.ClientSize = new System.Drawing.Size(582, 404);
             this.Controls.Add(this.grdGuPiao);
             this.Controls.Add(this.grdHis);
             this.Controls.Add(this.pnlBaseInfo);

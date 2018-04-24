@@ -725,6 +725,22 @@ namespace GuPiaoTool
         }
 
         /// <summary>
+        /// 设置剩余金额信息
+        /// </summary>
+        /// <param name="param"></param>
+        private void SetMoneyInfo(params object[] param)
+        {
+            //MessageBox.Show(param[0] + " : " + param[1] + " : " + param[2] + " : " + param[3]);
+            if (param != null && param.Length >= 4)
+            {
+                this.lblTotal.Text = Convert.ToString(param[0]);
+                this.lblGuPiaoMoney.Text = Convert.ToString(param[1]);
+                this.lblCanUseMoney.Text = Convert.ToString(param[2]);
+                this.lblCanGetMoney.Text = Convert.ToString(param[3]);
+            }
+        }
+
+        /// <summary>
         /// 异步的回调方法
         /// </summary>
         /// <param name="param"></param>
@@ -761,20 +777,13 @@ namespace GuPiaoTool
                         // 从付费接口取得可用股数
                         this.tradeUtil.GetGuPiaoInfo(this.guPiaoBaseInfo);
 
+                        // 设置金额基本信息
+                        this.SetMoneyInfo(param);
+
                         // 取得当天委托信息
                         this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
                         // 显示当前委托信息
                         this.DispTodayInfo();
-
-                        // 设置金额基本信息
-                        //MessageBox.Show(param[0] + " : " + param[1] + " : " + param[2] + " : " + param[3]);
-                        if (param != null && param.Length >= 4)
-                        {
-                            this.lblTotal.Text = Convert.ToString(param[0]);
-                            this.lblGuPiaoMoney.Text = Convert.ToString(param[1]);
-                            this.lblCanUseMoney.Text = Convert.ToString(param[2]);
-                            this.lblCanGetMoney.Text = Convert.ToString(param[3]);
-                        }
                     }
                     break;
 
@@ -784,18 +793,20 @@ namespace GuPiaoTool
 
                 case CurOpt.OrderOKEvent:
                 case CurOpt.OrderSuccessEvent:
-                    // 订单成功，需要刷新页面数据
-                    this.DispMsg(this.tradeUtil.RetMsg);
-                    break;
-
                 case CurOpt.CancelOrder:
                     // 订单成功，需要刷新页面数据
                     this.DispMsg(this.tradeUtil.RetMsg);
-
-                    // 重新取得当天委托信息
+                    
+                    // 从付费接口取得可用股数
+                    this.tradeUtil.GetGuPiaoInfo(this.guPiaoBaseInfo);
+                    
+                    // 取得当天委托信息
                     this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
-                    // 重新显示当前委托信息
+                    // 显示当前委托信息
                     this.DispTodayInfo();
+
+                    // 设置金额基本信息
+                    this.SetMoneyInfo(param);
                     break;
 
                 case CurOpt.OrderErrEvent:
