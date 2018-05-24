@@ -38,6 +38,7 @@ namespace GuPiaoTool
             this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
             this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
             this.grdHis.CellContentClick += new DataGridViewCellEventHandler(this.grdHis_CellContentClick);
+            this.grdGuPiao.CellContentClick += new DataGridViewCellEventHandler(this.grdGuPiao_CellContentClick);
 
             // 设置信息
             this.tradeUtil.SetCallBack(this.AsyncCallBack);
@@ -223,6 +224,31 @@ namespace GuPiaoTool
             this.tradeUtil.CancelOrder(lineCollection[0].Value as string, lineCollection[6].Value as string);
         }
 
+        /// <summary>
+        /// 特殊功能
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void grdGuPiao_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 1 || e.ColumnIndex != 6)
+            {
+                return;
+            }
+
+            object oldVal = this.grdGuPiao.Rows[e.RowIndex].Cells[e.ColumnIndex].Value;
+            if (oldVal == null || (bool)oldVal == false)
+            {
+                oldVal = true;
+            }
+            else
+            {
+                oldVal = false;
+            }
+
+            this.grdGuPiao.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = oldVal;
+        }
+
         #endregion
 
         #region 私有方法
@@ -296,7 +322,12 @@ namespace GuPiaoTool
                 this.btnQuictBuy.Enabled = true;
 
                 // 设置最大可以买多少
-                int maxNum = (int)((nowMoney - 5) / nowPrice);
+                int maxNum = 0;
+                if (nowPrice > 0)
+                {
+                    maxNum = (int)((nowMoney - 5) / nowPrice);
+                }
+                
                 if (maxNum == this.cmbCountBuy.Items.Count)
                 {
                     // 如果设置过了，不用每次设置
@@ -313,7 +344,10 @@ namespace GuPiaoTool
                     this.cmbCountBuy.Items.Add(i * 100);
                 }
 
-                this.cmbCountBuy.SelectedIndex = 0;
+                if (maxNum > 0)
+                {
+                    this.cmbCountBuy.SelectedIndex = 0;
+                }
             }
         }
 
@@ -340,7 +374,7 @@ namespace GuPiaoTool
                 // 启动定时器
                 timersTimer = new System.Timers.Timer();
                 timersTimer.Enabled = true;
-                timersTimer.Interval = 1500;
+                timersTimer.Interval = 1000; // 每1秒更新数据
                 timersTimer.AutoReset = true;
                 timersTimer.Elapsed += new System.Timers.ElapsedEventHandler(timersTimer_Elapsed);
                 timersTimer.SynchronizingObject = this;
@@ -421,6 +455,7 @@ namespace GuPiaoTool
         private void DisplayData(List<GuPiaoInfo> guPiaoInfo)
         {
             int newRow;
+            double yingkuiPer;
             for (int i = 0; i < guPiaoInfo.Count; i++)
             {
                 newRow = i;
@@ -434,7 +469,7 @@ namespace GuPiaoTool
                 lineCollection[1].Value = guPiaoInfo[i].zuoriShoupanVal;
                 lineCollection[2].Value = guPiaoInfo[i].currentVal;
                 
-                this.SetYinkuiPer(guPiaoInfo[i], lineCollection[3]);
+                yingkuiPer = this.SetYinkuiPer(guPiaoInfo[i], lineCollection[3]);
 
                 // 设置股数信息
                 string stockCd = guPiaoInfo[i].fundcode.Substring(2, 6);
@@ -449,6 +484,13 @@ namespace GuPiaoTool
                     lineCollection[4].Value = 0;
                     lineCollection[5].Value = 0;
                 }
+
+                // 判断开板买入
+                if (lineCollection[6].Value != null && (bool)(lineCollection[6].Value))
+                {
+                    this.KaibanMairu(stockCd, guPiaoInfo[i].currentVal, yingkuiPer);
+                    //lineCollection[6].Value = false; // 测试
+                }
             }
 
             // 更新当前选中信息
@@ -456,15 +498,49 @@ namespace GuPiaoTool
         }
 
         /// <summary>
+        /// 开板买入
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <param name="curPrice"></param>
+        private void KaibanMairu(string stockCd, string curPrice, double yingkuiPer)
+        {
+            double nowMoney = Convert.ToDouble(this.lblCanUseMoney.Text);
+            double nowPrice = Convert.ToDouble(curPrice) * 100;
+            if (yingkuiPer < 9.5 && nowMoney > (nowPrice + 5))
+            {
+                // 未涨停，并且有钱
+                // 设置最大可以买多少
+                int maxNum = 0;
+                if (nowPrice > 0)
+                {
+                    maxNum = (int)((nowMoney - 5) / nowPrice);
+                }
+
+                if (maxNum > 0)
+                {
+                    // 买一半
+                    int buyCount = maxNum / 2;
+                    if (buyCount * 2 < maxNum)
+                    {
+                        buyCount++;
+                    }
+
+                    //MessageBox.Show(stockCd + " " + this.GetCount(buyCount * 100) + " " + (float)nowPrice);
+                    this.tradeUtil.BuyStock(stockCd, this.GetCount(buyCount * 100), (float)nowPrice, true);
+                }
+            }
+        }
+
+        /// <summary>
         /// 取得盈亏比
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private string SetYinkuiPer(GuPiaoInfo item, DataGridViewCell cellItem)
+        private double SetYinkuiPer(GuPiaoInfo item, DataGridViewCell cellItem)
         {
             decimal currentVal = decimal.Parse(item.currentVal);
             decimal zuoriShoupanVal = decimal.Parse(item.zuoriShoupanVal);
-            decimal yingkuiPer = (currentVal - zuoriShoupanVal) / zuoriShoupanVal * 100;
+            double yingkuiPer = (double)((currentVal - zuoriShoupanVal) / zuoriShoupanVal * 100);
 
             cellItem.Value = yingkuiPer.ToString("00.00");
 
@@ -481,7 +557,7 @@ namespace GuPiaoTool
                 cellItem.Style.ForeColor = Color.Black;
             }
 
-            return yingkuiPer.ToString("00.00");
+            return yingkuiPer;
         }
 
         /// <summary>
