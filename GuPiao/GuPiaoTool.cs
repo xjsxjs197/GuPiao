@@ -15,12 +15,24 @@ namespace GuPiaoTool
 
         List<string> noList = new List<string>();
         List<string> nameList = new List<string>();
-        List<GuPiaoInfo> guPiaoInfo = null;
         System.Timers.Timer timersTimer = null;
         bool isRuning = false;
         TradeUtil tradeUtil = new TradeUtil();
         string selStockCd = string.Empty;
+
+        /// <summary>
+        /// 从Sina取得的数据
+        /// </summary>
+        List<GuPiaoInfo> guPiaoInfo = null;
+        
+        /// <summary>
+        /// 股票的基本信息
+        /// </summary>
         Dictionary<string, GuPiaoInfo> guPiaoBaseInfo = new Dictionary<string,GuPiaoInfo>();
+
+        /// <summary>
+        /// 当天的交易信息
+        /// </summary>
         List<OrderInfo> todayGuPiao = new List<OrderInfo>();
 
         #endregion
@@ -42,7 +54,6 @@ namespace GuPiaoTool
 
             // 设置信息
             this.tradeUtil.SetCallBack(this.AsyncCallBack);
-            this.tradeUtil.SetSync(this.rdoSync.Checked);
             this.tradeUtil.SetGuPiaoInfo(this.guPiaoBaseInfo);
 
             // 初始化基本信息
@@ -103,7 +114,6 @@ namespace GuPiaoTool
         private void rdoSync_CheckedChanged(object sender, EventArgs e)
         {
             // 设置同步、异步
-            this.tradeUtil.SetSync(this.rdoSync.Checked);
         }
 
         /// <summary>
@@ -118,7 +128,8 @@ namespace GuPiaoTool
                 return;
             }
 
-            this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), false);
+            string retMsg = this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), false);
+            this.DispMsg(retMsg);
         }
 
         /// <summary>
@@ -133,7 +144,8 @@ namespace GuPiaoTool
                 return;
             }
 
-            this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), true);
+            string retMsg = this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), true);
+            this.DispMsg(retMsg);
         }
 
         /// <summary>
@@ -443,7 +455,7 @@ namespace GuPiaoTool
             string result = HttpGet(url, data);
             if (!string.IsNullOrEmpty(result) && result.Length > 20)
             {
-                guPiaoInfo = GetGuPiaoInfo(noList, nameList, result);
+                guPiaoInfo = this.GetGuPiaoInfo(noList, nameList, result);
                 this.DisplayData(guPiaoInfo);
             }
         }
@@ -488,8 +500,11 @@ namespace GuPiaoTool
                 // 判断开板买入
                 if (lineCollection[6].Value != null && (bool)(lineCollection[6].Value))
                 {
-                    this.KaibanMairu(stockCd, guPiaoInfo[i].currentVal, yingkuiPer);
-                    //lineCollection[6].Value = false; // 测试
+                    if (this.KaibanMairu(stockCd, guPiaoInfo[i].currentVal, yingkuiPer))
+                    {
+                        // 如果买了，不管成功失败，下次取消买入，如果想再买，再点击即可
+                        lineCollection[6].Value = false;
+                    }
                 }
             }
 
@@ -502,7 +517,7 @@ namespace GuPiaoTool
         /// </summary>
         /// <param name="stockCd"></param>
         /// <param name="curPrice"></param>
-        private void KaibanMairu(string stockCd, string curPrice, double yingkuiPer)
+        private bool KaibanMairu(string stockCd, string curPrice, double yingkuiPer)
         {
             double nowMoney = Convert.ToDouble(this.lblCanUseMoney.Text);
             double nowPrice = Convert.ToDouble(curPrice) * 100;
@@ -527,8 +542,12 @@ namespace GuPiaoTool
 
                     //MessageBox.Show(stockCd + " " + this.GetCount(buyCount * 100) + " " + (float)nowPrice);
                     this.tradeUtil.BuyStock(stockCd, this.GetCount(buyCount * 100), (float)nowPrice, true);
+
+                    return true;
                 }
             }
+
+            return false;
         }
 
         /// <summary>
@@ -797,6 +816,7 @@ namespace GuPiaoTool
                 }
 
                 lineCollection[6].Value = this.todayGuPiao[i].OrderId;
+                lineCollection[7].Value = this.todayGuPiao[i].OrderDate;
             }
         }
 
@@ -822,24 +842,19 @@ namespace GuPiaoTool
         /// <param name="param"></param>
         private void AsyncCallBack(params object[] param)
         {
+            // 第一步都是显示返回的信息
+            this.DispMsg(this.tradeUtil.RetMsg);
+
             switch (this.tradeUtil.CurOpt)
             {
                 case CurOpt.InitEvent:
                     if (this.tradeUtil.IsSuccess)
                     {
-                        this.DispMsg("初始化成功");
-
                         this.btnRun.Enabled = true;
-                    }
-                    else
-                    {
-                        this.DispMsg(this.tradeUtil.RetMsg);
                     }
                     break;
 
-                case CurOpt.ConnServer:
                 case CurOpt.LoginEvent:
-                    this.DispMsg(this.tradeUtil.RetMsg);
                     if (!this.tradeUtil.isLoginOk)
                     {
                         this.btnRun.Enabled = false;
@@ -863,16 +878,9 @@ namespace GuPiaoTool
                     }
                     break;
 
-                case CurOpt.GetGuPiaoInfo:
-                    this.DispMsg(this.tradeUtil.RetMsg);
-                    break;
-
                 case CurOpt.OrderOKEvent:
                 case CurOpt.OrderSuccessEvent:
                 case CurOpt.CancelOrder:
-                    // 订单成功，需要刷新页面数据
-                    this.DispMsg(this.tradeUtil.RetMsg);
-                    
                     // 从付费接口取得可用股数
                     this.tradeUtil.GetGuPiaoInfo(this.guPiaoBaseInfo);
                     
@@ -883,10 +891,6 @@ namespace GuPiaoTool
 
                     // 设置金额基本信息
                     this.SetMoneyInfo(param);
-                    break;
-
-                case CurOpt.OrderErrEvent:
-                    this.DispMsg(this.tradeUtil.RetMsg);
                     break;
             }
         }

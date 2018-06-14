@@ -46,11 +46,6 @@ namespace GuPiao
         Dictionary<string, GuPiaoInfo> guPiaoBaseInfo;
 
         /// <summary>
-        /// 订单信息
-        /// </summary>
-        Dictionary<string, OrderInfo> orderInfo = new Dictionary<string,OrderInfo>();
-
-        /// <summary>
         /// 券商信息
         /// </summary>
         Dictionary<int, EZMBrokerType> BrokerMap = new Dictionary<int, EZMBrokerType>();
@@ -84,11 +79,6 @@ namespace GuPiao
         string loginId = "";         ///你的登录账号
         string loginPw = "";
         string deptId = "";
-
-        /// <summary>
-        /// 是否是同步操作
-        /// </summary>
-        bool isSyncOpt = true;
 
         #endregion
 
@@ -155,22 +145,12 @@ namespace GuPiao
             this.CurOpt = CurOpt.Init;
 
             this.isLoginOk = false;
-            this.orderInfo.Clear();
 
             // 初始化基础数据
             InitBaseData(cmbAccountType, cmbBrokerType);
 
             // 初始化对象，事件
             InitObjEvent();
-        }
-
-        /// <summary>
-        /// 设置同步、异步
-        /// </summary>
-        /// <param name="pSync"></param>
-        public void SetSync(bool pSync)
-        {
-            this.isSyncOpt = pSync;
         }
 
         /// <summary>
@@ -221,64 +201,15 @@ namespace GuPiao
             m_StockTrade.TradeAccount = this.tradeAccount;/// 交易账号，一般为资金账号
             m_StockTrade.DepartmentID = ushort.Parse(this.deptId);/// 营业部ID
 
-            bool bRet = false;
-            if (this.isSyncOpt)
-            {
-                /// 指定同步连接，直到返回结果
-                bRet = m_StockTrade.LogIn(false);
-                if (bRet)
-                {
-                    this.isLoginOk = true;
-
-                    this.RetMsg = "同步：连接成功！";
-                    this.IsSuccess = true;
-
-                    /*
-                    /// 无错误，获得登录成功的交易连接标识
-                    ushort nTradeID = m_StockTrade.CurTradeID;
-
-                    MessageBox.Show("登录成功，下面开始获取股东代码信息！");
-
-                    /// 获得股东信息
-                    ITradeRecord TradeRecord = m_StockTrade.ShareHolderCode;
-                    if (null != TradeRecord)
-                    {
-                        /// 获得记录集的列数和行数
-                        uint nFieldCount = TradeRecord.FieldCount;
-                        uint nRecordCount = TradeRecord.RecordCount;
-
-                        /// 弹出JSON格式数据包
-                        MessageBox.Show(TradeRecord.GetJsonString());
-
-                        for (uint i = 0; i < nRecordCount; i++)
-                        {
-                            /// 根据列字段名直接取数据，获取股东代码
-                            var StockCode = TradeRecord.GetValueByName(i, "股东代码");
-                            /// 遍历数据集合
-                            for (uint j = 0; j < nFieldCount; j++)
-                            {
-                                /// 获取指定行和列的数据
-                                var temVal = TradeRecord.GetValue(i, j);
-                                var temType = TradeRecord.GetDataType(j);
-                            }
-                        }
-                    }*/
-                }
-            }
-            else
-            {
-                /// 指定异步连接,事件回调的时候会传递自己的交易接口对象
-                bRet = m_StockTrade.LogIn(true);
-            }
-
+            /// 指定异步连接,事件回调的时候会传递自己的交易接口对象
+            bool bRet = m_StockTrade.LogIn(true);
             if (!bRet)
             {
                 /// 连接失败时获取错误描述和类型
                 this.RetMsg = m_StockTrade.LastErrDesc;
                 this.IsSuccess = false;
+                this.DoCallBack(null);
             }
-
-            this.DoCallBack(null);
         }
 
         /// <summary>
@@ -365,33 +296,14 @@ namespace GuPiao
                 }
 
                 EZMExchangeType eExchangeType = this.GetExchangeType(stockCd);
-                OrderInfo order = this.NewOrder(buyPrice.ToString(), OrderType.Buy);
 
-                if (this.isSyncOpt)
-                {
-                    /// 同步提交委托，知道返回结果
-                    ITradeRecord OrderRecord = m_StockTrade.SyncCommitOrder(true, EZMStockOrderType.STOCKORDERTYPE_BUY,
-                        EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, buyPrice, count, eExchangeType);
+                /// 通过AddOrder重复调用可以实现提交多条委托，然后调用CommitOrder一次性提交到服务器
+                /// 限价买
+                uint nReq1 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, buyPrice, count, eExchangeType);
+                //uint nReq2 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, (float)vBuy4, count, eExchangeType);
 
-                    // 买后的操作
-                    order.ReqId = Guid.NewGuid().ToString();
-                    orderInfo.Add(order.ReqId, order);
-
-                    this.AfterBuySellStock(OrderRecord, order.ReqId);
-                }
-                else
-                {
-                    /// 通过AddOrder重复调用可以实现提交多条委托，然后调用CommitOrder一次性提交到服务器
-                    /// 限价买
-                    uint nReq1 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, buyPrice, count, eExchangeType);
-                    //uint nReq2 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, (float)vBuy4, count, eExchangeType);
-
-                    order.ReqId = nReq1.ToString();
-                    orderInfo.Add(order.ReqId, order);
-
-                    /// 真正提交委托操作，每个委托结果通过事件来通知，通过AddOrder返回的请求ID标识
-                    m_StockTrade.CommitOrder(m_StockTrade.CurTradeID, true, EZMRunPriType.RUNPRITYPE_NORMAL);
-                }
+                /// 真正提交委托操作，每个委托结果通过事件来通知，通过AddOrder返回的请求ID标识
+                m_StockTrade.CommitOrder(m_StockTrade.CurTradeID, true, EZMRunPriType.RUNPRITYPE_NORMAL);
             }
             catch (Exception e)
             {
@@ -406,7 +318,7 @@ namespace GuPiao
                 }
             }
 
-            return "交易成功";
+            return "开始买......";
         }
 
         /// <summary>
@@ -446,31 +358,13 @@ namespace GuPiao
                         }
 
                         EZMExchangeType eExchangeType = this.GetExchangeType(stockCd);
-                        OrderInfo order = this.NewOrder(sellPrice.ToString(), OrderType.Sell);
 
-                        if (this.isSyncOpt)
-                        {
-                            /// 同步操作，直到提交委托服务器返回结果
-                            ITradeRecord SellRecord = m_StockTrade.SyncCommitOrder(true, EZMStockOrderType.STOCKORDERTYPE_SALE,
-                                EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, sellPrice, count, eExchangeType);
+                        /// 返回的请求ID，会由事件通知的时候传回，从而知道每个委托的实际结果
+                        uint nReqID = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_SALE,
+                            EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, sellPrice, count, eExchangeType);
 
-                            order.ReqId = Guid.NewGuid().ToString();
-                            orderInfo.Add(order.ReqId, order);
-
-                            this.AfterBuySellStock(SellRecord, order.ReqId);
-                        }
-                        else
-                        {
-                            /// 返回的请求ID，会由事件通知的时候传回，从而知道每个委托的实际结果
-                            uint nReqID = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_SALE,
-                                EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, sellPrice, count, eExchangeType);
-
-                            order.ReqId = nReqID.ToString();
-                            orderInfo.Add(order.ReqId, order);
-
-                            /// 批量提交委托，结果通过事件通知得到
-                            m_StockTrade.CommitOrder(m_StockTrade.CurTradeID, true, EZMRunPriType.RUNPRITYPE_NORMAL);
-                        }
+                        /// 批量提交委托，结果通过事件通知得到
+                        m_StockTrade.CommitOrder(m_StockTrade.CurTradeID, true, EZMRunPriType.RUNPRITYPE_NORMAL);
                     }
                 }
                 else
@@ -493,7 +387,7 @@ namespace GuPiao
                 }
             }
 
-            return "交易成功";
+            return "开始卖......";
         }
 
         /// <summary>
@@ -645,8 +539,8 @@ namespace GuPiao
                         guPiaoInfo.Insert(0, item);
                     }
 
-                    item.OrderDate = Convert.ToString(StockRecord.GetValueByName(nIndex, "委托时间"));
-                    item.OrderId = Convert.ToString(StockRecord.GetValueByName(nIndex, "委托编号"));
+                    item.OrderDate = StockRecord.GetValueByName(nIndex, "委托时间").ToString();
+                    item.OrderId = orderId;
                     item.StockCd = Convert.ToString(StockRecord.GetValueByName(nIndex, "证券代码"));
                     if ("卖出".Equals(Convert.ToString(StockRecord.GetValueByName(nIndex, "买卖标志1"))))
                     {
@@ -674,7 +568,7 @@ namespace GuPiao
                 //MessageBox.Show(guPiaoInfo.Count + " ");
 
                 this.IsSuccess = true;
-                this.RetMsg = "取得当天委托信息成功";
+                this.RetMsg = "取得当天委托信息成功，共 " + nRecordCount + " 条委托";
                 this.callBackF();
             }
             catch (Exception e)
@@ -720,23 +614,14 @@ namespace GuPiao
             // 修改订单状态
             if (this.CommonCheckOrder(OrderRecord, "", OrderStatus.OrderCancel))
             {
-                OrderInfo order = this.orderInfo.FirstOrDefault(p => orderID.Equals(p.Value.OrderId)).Value;
-                if (orderID.Equals(order.OrderId))
-                {
-                    // 修改订单状态
-                    order.OrderStatus = OrderStatus.OrderCancel;
-
-                    // 刷新履历信息
-                    this.IsSuccess = true;
-                    this.RetMsg = "取消订单：成功";
-                    this.callBackF(this.GetMoneyParam());
-                }
-                else
-                {
-                    this.RetMsg = "取消订单：取消失败（没有找到订单信息）";
-                    this.IsSuccess = false;
-                    this.callBackF(this.GetMoneyParam());
-                }
+                // 刷新履历信息
+                this.IsSuccess = true;
+                this.RetMsg = "取消订单：成功";
+                this.callBackF(this.GetMoneyParam());
+            }
+            else
+            {
+                this.callBackF(this.GetMoneyParam());
             }
         }
 
@@ -752,12 +637,6 @@ namespace GuPiao
             // 处理各种事件
             switch (this.CurOpt)
             {
-                // 初始化完成
-                case CurOpt.InitEvent:
-                    this.callBackF();
-                    break;
-
-                case CurOpt.ConnServer:
                 case CurOpt.LoginEvent:
                     if (this.isLoginOk)
                     {
@@ -965,18 +844,6 @@ namespace GuPiao
             {
                 if (OrderRecord.RecordCount > 0)
                 {
-                    if (this.orderInfo.ContainsKey(reqId))
-                    {
-                        OrderInfo order = this.orderInfo[reqId];
-                        order.OrderStatus = orderStatus;
-
-                        ///测试JSON格式数据包
-                        //MessageBox.Show(OrderRecord.GetJsonString());
-
-                        /// 获取前面委托成功的ID
-                        /// 注意有些券商返回的委托成功记录第一个不是委托编号，需要调用GetValueByName来获取委托编号
-                        order.OrderId = OrderRecord.GetValueByName(0, "委托编号").ToString();
-                    }
                     return true;
                 }
                 else
@@ -1000,29 +867,21 @@ namespace GuPiao
         {
             if (this.CommonCheckOrder(OrderRecord, reqId, OrderStatus.Waiting))
             {
-                
+            }
+            else
+            {
+                //MessageBox.Show(m_StockTrade.LastErrDesc);
             }
         }
 
         /// <summary>
         /// 订单成功的处理
         /// </summary>
-        /// <param name="orderId"></param>
+        /// <param name="reqId"></param>
         /// <param name="successJson"></param>
-        private void OrderSuccess(string orderId, string successJson)
+        private void OrderSuccess(string reqId, string successJson)
         {
-            OrderInfo order = this.orderInfo.FirstOrDefault(p => orderId.Equals(p.Value.OrderId)).Value;
-            if (orderId.Equals(order.OrderId))
-            {
-                // 修改订单状态
-                order.OrderStatus = OrderStatus.OrderOk;
-                this.RetMsg = "订单成功";
-            }
-            else
-            {
-                this.RetMsg = "订单成功：但是没有找到订单信息";
-            }
-
+            this.RetMsg = "订单成功";
             this.IsSuccess = true;
         }
 
@@ -1033,15 +892,8 @@ namespace GuPiao
         /// <param name="errInfo"></param>
         private void OrderError(string reqId, string errInfo)
         {
-            if (this.orderInfo.ContainsKey(reqId))
-            {
-                OrderInfo order = this.orderInfo[reqId];
-                order.OrderStatus = OrderStatus.OrderError;
-                order.RetMsg = errInfo;
-
-                this.RetMsg = "订单错误：" + errInfo;
-                this.IsSuccess = false;
-            }
+            this.RetMsg = "订单错误：" + errInfo;
+            this.IsSuccess = false;
         }
 
         #endregion

@@ -56,7 +56,15 @@ namespace GuPiao
             }
 
             this.tradeUtil.IsSuccess = bLoginOK;
-            this.tradeUtil.RetMsg = m_spiTrade.LastErrDesc;
+            if (bLoginOK)
+            {
+                this.tradeUtil.RetMsg = "初始化成功";
+            }
+            else
+            {
+                this.tradeUtil.RetMsg = m_spiTrade.LastErrDesc;
+            }
+            
             this.tradeUtil.DoCallBack(null);
         }
 
@@ -86,6 +94,7 @@ namespace GuPiao
 
                     this.tradeUtil.IsSuccess = true;
                     this.tradeUtil.RetMsg = "异步：连接成功！";
+                    //this.tradeUtil.RetMsg = "链接速度（" + m_spiTrade.CurServerHost + "）： " + m_spiTrade.ConnSpeed.ToString();
                 }
                 //else if (2 == m_nTradeIndex)
                 //{
@@ -193,6 +202,8 @@ namespace GuPiao
         public void ServerErrEvent(ushort nTradeID, uint nReqID)
         {
             this.tradeUtil.CurOpt = CurOpt.ServerErrEvent;
+            this.tradeUtil.RetMsg = "服务器错误：" + m_spiTrade.LastErrDesc;
+            this.tradeUtil.DoCallBack(null);
         }
 
         /// <summary>
