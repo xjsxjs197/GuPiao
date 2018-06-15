@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Windows.Forms;
 using GuPiao;
+using System.Threading;
 
 namespace GuPiaoTool
 {
@@ -123,13 +124,7 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnBuy_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountBuy.Text, this.txtPriceBuy.Text))
-            {
-                return;
-            }
-
-            string retMsg = this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), false);
-            this.DispMsg(retMsg);
+            this.BuyStock(BuySellType.Buy);
         }
 
         /// <summary>
@@ -139,13 +134,7 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnQuictBuy_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountBuy.Text, this.txtPriceBuy.Text))
-            {
-                return;
-            }
-
-            string retMsg = this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), true);
-            this.DispMsg(retMsg);
+            this.BuyStock(BuySellType.QuickBuy);
         }
 
         /// <summary>
@@ -155,13 +144,7 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnSell_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountSell.Text, this.txtPriceSell.Text))
-            {
-                return;
-            }
-
-            string retMsg = this.tradeUtil.SellStock(this.selStockCd, this.GetCount(this.cmbCountSell.Text), this.GetPrice(this.txtPriceSell.Text), false);
-            this.DispMsg(retMsg);
+            this.SellStock(BuySellType.Sell);
         }
 
         /// <summary>
@@ -171,13 +154,27 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void btnQuickSell_Click(object sender, EventArgs e)
         {
-            if (!this.CheckInput(this.cmbCountSell.Text, this.txtPriceSell.Text))
-            {
-                return;
-            }
+            this.SellStock(BuySellType.QuickSell);
+        }
 
-            string retMsg = this.tradeUtil.SellStock(this.selStockCd, this.GetCount(this.cmbCountSell.Text), this.GetPrice(this.txtPriceSell.Text), true);
-            this.DispMsg(retMsg);
+        /// <summary>
+        /// 超级快买
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void sqBuy_Click(object sender, EventArgs e)
+        {
+            this.BuyStock(BuySellType.SuperQuickBuy);
+        }
+
+        /// <summary>
+        /// 超级快卖
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void sqSell_Click(object sender, EventArgs e)
+        {
+            this.SellStock(BuySellType.SuperQuickSell);
         }
 
         /// <summary>
@@ -197,27 +194,11 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void grdGuPiao_SelectionChanged(object sender, EventArgs e)
         {
-            if (this.grdGuPiao.SelectedRows.Count > 0)
-            {
-                DataGridViewRow selectedRow = this.grdGuPiao.SelectedRows[0];
-                // 设置选中的代码
-                string cell0 = selectedRow.Cells[0].Value as string;
-                if (!string.IsNullOrEmpty(cell0))
-                {
-                    this.selStockCd = cell0.Substring(2, 6);
-                }
+            // 选中某一条信息
+            this.SelectGuPiao();
 
-                // 设置最新价格
-                string curPrice = selectedRow.Cells[2].Value as string;
-                this.txtPriceBuy.Text = curPrice;
-                this.txtPriceSell.Text = curPrice;
-
-                // 根据可用余额，当前价格，设置买的按钮状态
-                this.SetBuyInfo(this.lblCanUseMoney.Text, curPrice);
-
-                // 根据可用股数，设置卖的按钮的状态
-                this.SetSellInfo(Convert.ToInt32(selectedRow.Cells[5].Value));
-            }
+            // 设置最新价格
+            this.SetInputPrice();
         }
 
         /// <summary>
@@ -243,6 +224,52 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void grdGuPiao_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
+            // 设置开板买入
+            this.SetKaibanMairu(e);
+
+            // 设置最新价格
+            this.SetInputPrice();
+        }
+
+        #endregion
+
+        #region 私有方法
+
+        /// <summary>
+        /// 买的共通
+        /// </summary>
+        /// <param name="buySellType"></param>
+        private void BuyStock(BuySellType buySellType)
+        {
+            if (!this.CheckInput(this.cmbCountBuy.Text, this.txtPriceBuy.Text))
+            {
+                return;
+            }
+
+            string retMsg = this.tradeUtil.BuyStock(this.selStockCd, this.GetCount(this.cmbCountBuy.Text), this.GetPrice(this.txtPriceBuy.Text), buySellType);
+            this.DispMsg(retMsg);
+        }
+
+        /// <summary>
+        /// 卖的共通
+        /// </summary>
+        /// <param name="buySellType"></param>
+        private void SellStock(BuySellType buySellType)
+        {
+            if (!this.CheckInput(this.cmbCountSell.Text, this.txtPriceSell.Text))
+            {
+                return;
+            }
+
+            string retMsg = this.tradeUtil.SellStock(this.selStockCd, this.GetCount(this.cmbCountSell.Text), this.GetPrice(this.txtPriceSell.Text), buySellType);
+            this.DispMsg(retMsg);
+        }
+
+        /// <summary>
+        /// 设置开板买入
+        /// </summary>
+        private void SetKaibanMairu(DataGridViewCellEventArgs e)
+        {
             if (e.RowIndex < 1 || e.ColumnIndex != 6)
             {
                 return;
@@ -261,9 +288,29 @@ namespace GuPiaoTool
             this.grdGuPiao.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = oldVal;
         }
 
-        #endregion
+        /// <summary>
+        /// 设置卖相关按钮状态
+        /// </summary>
+        /// <param name="enabled"></param>
+        private void SetSellAreaEnabled(bool enabled)
+        {
+            this.cmbCountSell.Enabled = enabled;
+            this.btnSell.Enabled = enabled;
+            this.btnQuickSell.Enabled = enabled;
+            this.btnSqSell.Enabled = enabled;
+        }
 
-        #region 私有方法
+        /// <summary>
+        /// 设置买相关按钮状态
+        /// </summary>
+        /// <param name="enabled"></param>
+        private void SetBuyAreaEnabled(bool enabled)
+        {
+            this.cmbCountBuy.Enabled = enabled;
+            this.btnBuy.Enabled = enabled;
+            this.btnQuictBuy.Enabled = enabled;
+            this.btnSqBuy.Enabled = enabled;
+        }
 
         /// <summary>
         /// 设置卖的按钮状态
@@ -275,15 +322,11 @@ namespace GuPiaoTool
             if (maxCount < 100)
             {
                 this.cmbCountSell.SelectedIndex = -1;
-                this.cmbCountSell.Enabled = false;
-                this.btnSell.Enabled = false;
-                this.btnQuickSell.Enabled = false;
+                this.SetSellAreaEnabled(false);
             }
             else
             {
-                this.cmbCountSell.Enabled = true;
-                this.btnSell.Enabled = true;
-                this.btnQuickSell.Enabled = true;
+                this.SetSellAreaEnabled(true);
 
                 // 设置最大可以卖多少
                 int lastCount = 0;
@@ -323,15 +366,11 @@ namespace GuPiaoTool
             if (nowMoney < nowPrice + 5)
             {
                 this.cmbCountBuy.SelectedIndex = -1;
-                this.cmbCountBuy.Enabled = false;
-                this.btnBuy.Enabled = false;
-                this.btnQuictBuy.Enabled = false;
+                this.SetBuyAreaEnabled(false);
             }
             else
             {
-                this.cmbCountBuy.Enabled = true;
-                this.btnBuy.Enabled = true;
-                this.btnQuictBuy.Enabled = true;
+                this.SetBuyAreaEnabled(true);
 
                 // 设置最大可以买多少
                 int maxNum = 0;
@@ -461,6 +500,47 @@ namespace GuPiaoTool
         }
 
         /// <summary>
+        /// 选中某一条信息
+        /// </summary>
+        private void SelectGuPiao()
+        {
+            if (this.grdGuPiao.SelectedRows.Count > 0)
+            {
+                DataGridViewRow selectedRow = this.grdGuPiao.SelectedRows[0];
+                // 设置选中的代码
+                string cell0 = selectedRow.Cells[0].Value as string;
+                if (!string.IsNullOrEmpty(cell0))
+                {
+                    this.selStockCd = cell0.Substring(2, 6);
+                }
+
+                // 取得最新价格
+                string curPrice = selectedRow.Cells[2].Value as string;
+
+                // 根据可用余额，当前价格，设置买的按钮状态
+                this.SetBuyInfo(this.lblCanUseMoney.Text, curPrice);
+
+                // 根据可用股数，设置卖的按钮的状态
+                this.SetSellInfo(Convert.ToInt32(selectedRow.Cells[5].Value));
+            }
+        }
+
+        /// <summary>
+        /// 设置最新价格
+        /// </summary>
+        private void SetInputPrice()
+        {
+            if (this.grdGuPiao.SelectedRows.Count > 0)
+            {
+                DataGridViewRow selectedRow = this.grdGuPiao.SelectedRows[0];
+                // 设置最新价格
+                string curPrice = selectedRow.Cells[2].Value as string;
+                this.txtPriceBuy.Text = curPrice;
+                this.txtPriceSell.Text = curPrice;
+            }
+        }
+
+        /// <summary>
         /// 显示信息
         /// </summary>
         /// <param name="guPiaoInfo"></param>
@@ -509,7 +589,7 @@ namespace GuPiaoTool
             }
 
             // 更新当前选中信息
-            this.grdGuPiao_SelectionChanged(null, null);
+            this.SelectGuPiao();
         }
 
         /// <summary>
@@ -541,7 +621,7 @@ namespace GuPiaoTool
                     }
 
                     //MessageBox.Show(stockCd + " " + this.GetCount(buyCount * 100) + " " + (float)nowPrice);
-                    this.tradeUtil.BuyStock(stockCd, this.GetCount(buyCount * 100), (float)nowPrice, true);
+                    this.tradeUtil.BuyStock(stockCd, this.GetCount(buyCount * 100), (float)nowPrice, BuySellType.SuperQuickSell);
 
                     return true;
                 }
@@ -711,8 +791,10 @@ namespace GuPiaoTool
             this.txtPriceSell.ReadOnly = !enable;
             this.btnBuy.Enabled = enable;
             this.btnQuictBuy.Enabled = enable;
+            this.btnSqBuy.Enabled = enable;
             this.btnSell.Enabled = enable;
             this.btnQuickSell.Enabled = enable;
+            this.btnSqSell.Enabled = enable;
         }
 
         /// <summary>
@@ -865,33 +947,63 @@ namespace GuPiaoTool
                         this.btnRun.Enabled = true;
                         this.EnableItems(true);
 
-                        // 从付费接口取得可用股数
-                        this.tradeUtil.GetGuPiaoInfo(this.guPiaoBaseInfo);
-
-                        // 设置金额基本信息
-                        this.SetMoneyInfo(param);
-
-                        // 取得当天委托信息
-                        this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
-                        // 显示当前委托信息
-                        this.DispTodayInfo();
+                        // 刷新金额、当天委托信息
+                        this.RefreshMoneyInfo(param);
                     }
                     break;
 
                 case CurOpt.OrderOKEvent:
+                    this.DelayOrderOKEvent(param);
+                    break;
+
                 case CurOpt.OrderSuccessEvent:
                 case CurOpt.CancelOrder:
-                    // 从付费接口取得可用股数
-                    this.tradeUtil.GetGuPiaoInfo(this.guPiaoBaseInfo);
-                    
-                    // 取得当天委托信息
-                    this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
-                    // 显示当前委托信息
-                    this.DispTodayInfo();
-
-                    // 设置金额基本信息
-                    this.SetMoneyInfo(param);
+                    // 刷新金额、当天委托信息
+                    this.RefreshMoneyInfo(param);
                     break;
+            }
+        }
+
+        /// <summary>
+        /// 延时执行OrderOKEvent后面的处理
+        /// </summary>
+        private void DelayOrderOKEvent(object[] param)
+        {
+            Thread thr = new Thread(() =>
+            {
+                // 这里还可以处理些比较耗时的事情。
+                Thread.Sleep(1000);//休眠时间
+                this.Invoke(new Action(() =>
+                {
+                    // 刷新金额、当天委托信息
+                    this.RefreshMoneyInfo(param);
+                }));
+            });
+            thr.Start();
+        }
+
+        /// <summary>
+        /// 刷新金额、当天委托信息
+        /// </summary>
+        /// <param name="param"></param>
+        private void RefreshMoneyInfo(object[] param)
+        {
+            try
+            {
+                // 从付费接口取得可用股数
+                this.tradeUtil.GetGuPiaoInfo(this.guPiaoBaseInfo);
+
+                // 取得当天委托信息
+                this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
+                // 显示当前委托信息
+                this.DispTodayInfo();
+
+                // 设置金额基本信息
+                this.SetMoneyInfo(param);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
             }
         }
 

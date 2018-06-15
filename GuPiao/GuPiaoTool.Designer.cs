@@ -91,6 +91,8 @@
             this.dataGridViewTextBoxColumn6 = new System.Windows.Forms.DataGridViewButtonColumn();
             this.orderId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.orderDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.btnSqSell = new System.Windows.Forms.Button();
+            this.btnSqBuy = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.grdGuPiao)).BeginInit();
             this.pnlBtn.SuspendLayout();
             this.pnlBaseInfo.SuspendLayout();
@@ -152,7 +154,7 @@
             this.grdGuPiao.RowHeadersVisible = false;
             this.grdGuPiao.RowTemplate.Height = 21;
             this.grdGuPiao.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.grdGuPiao.Size = new System.Drawing.Size(724, 173);
+            this.grdGuPiao.Size = new System.Drawing.Size(670, 173);
             this.grdGuPiao.TabIndex = 1;
             // 
             // bianHao
@@ -217,6 +219,8 @@
             // pnlBtn
             // 
             this.pnlBtn.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlBtn.Controls.Add(this.btnSqSell);
+            this.pnlBtn.Controls.Add(this.btnSqBuy);
             this.pnlBtn.Controls.Add(this.txtPriceSell);
             this.pnlBtn.Controls.Add(this.label7);
             this.pnlBtn.Controls.Add(this.cmbCountSell);
@@ -233,7 +237,7 @@
             this.pnlBtn.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlBtn.Location = new System.Drawing.Point(0, 345);
             this.pnlBtn.Name = "pnlBtn";
-            this.pnlBtn.Size = new System.Drawing.Size(724, 59);
+            this.pnlBtn.Size = new System.Drawing.Size(670, 59);
             this.pnlBtn.TabIndex = 3;
             // 
             // txtPriceSell
@@ -289,9 +293,9 @@
             this.btnQuickSell.Enabled = false;
             this.btnQuickSell.Location = new System.Drawing.Point(360, 30);
             this.btnQuickSell.Name = "btnQuickSell";
-            this.btnQuickSell.Size = new System.Drawing.Size(67, 21);
+            this.btnQuickSell.Size = new System.Drawing.Size(60, 21);
             this.btnQuickSell.TabIndex = 9;
-            this.btnQuickSell.Text = "QuictSell";
+            this.btnQuickSell.Text = "Q Sell";
             this.btnQuickSell.UseVisualStyleBackColor = true;
             this.btnQuickSell.Click += new System.EventHandler(this.btnQuickSell_Click);
             // 
@@ -300,7 +304,7 @@
             this.btnSell.Enabled = false;
             this.btnSell.Location = new System.Drawing.Point(290, 30);
             this.btnSell.Name = "btnSell";
-            this.btnSell.Size = new System.Drawing.Size(67, 21);
+            this.btnSell.Size = new System.Drawing.Size(60, 21);
             this.btnSell.TabIndex = 8;
             this.btnSell.Text = "Sell";
             this.btnSell.UseVisualStyleBackColor = true;
@@ -311,9 +315,9 @@
             this.btnQuictBuy.Enabled = false;
             this.btnQuictBuy.Location = new System.Drawing.Point(360, 8);
             this.btnQuictBuy.Name = "btnQuictBuy";
-            this.btnQuictBuy.Size = new System.Drawing.Size(67, 21);
+            this.btnQuictBuy.Size = new System.Drawing.Size(60, 21);
             this.btnQuictBuy.TabIndex = 7;
-            this.btnQuictBuy.Text = "QuickBuy";
+            this.btnQuictBuy.Text = "Q Buy";
             this.btnQuictBuy.UseVisualStyleBackColor = true;
             this.btnQuictBuy.Click += new System.EventHandler(this.btnQuictBuy_Click);
             // 
@@ -322,7 +326,7 @@
             this.btnBuy.Enabled = false;
             this.btnBuy.Location = new System.Drawing.Point(290, 8);
             this.btnBuy.Name = "btnBuy";
-            this.btnBuy.Size = new System.Drawing.Size(67, 21);
+            this.btnBuy.Size = new System.Drawing.Size(60, 21);
             this.btnBuy.TabIndex = 6;
             this.btnBuy.Text = "Buy";
             this.btnBuy.UseVisualStyleBackColor = true;
@@ -395,7 +399,7 @@
             this.pnlBaseInfo.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlBaseInfo.Location = new System.Drawing.Point(0, 286);
             this.pnlBaseInfo.Name = "pnlBaseInfo";
-            this.pnlBaseInfo.Size = new System.Drawing.Size(724, 59);
+            this.pnlBaseInfo.Size = new System.Drawing.Size(670, 59);
             this.pnlBaseInfo.TabIndex = 4;
             // 
             // lblCanGetMoney
@@ -445,6 +449,7 @@
             this.rdoNotSync.TabStop = true;
             this.rdoNotSync.Text = "异步";
             this.rdoNotSync.UseVisualStyleBackColor = true;
+            this.rdoNotSync.Visible = false;
             // 
             // rdoSync
             // 
@@ -456,6 +461,7 @@
             this.rdoSync.TabIndex = 5;
             this.rdoSync.Text = "同步";
             this.rdoSync.UseVisualStyleBackColor = true;
+            this.rdoSync.Visible = false;
             // 
             // lblGuPiaoMoney
             // 
@@ -475,6 +481,7 @@
             this.cmbBrokerType.Name = "cmbBrokerType";
             this.cmbBrokerType.Size = new System.Drawing.Size(81, 20);
             this.cmbBrokerType.TabIndex = 3;
+            this.cmbBrokerType.Visible = false;
             // 
             // label99
             // 
@@ -503,6 +510,7 @@
             this.cmbAccountType.Name = "cmbAccountType";
             this.cmbAccountType.Size = new System.Drawing.Size(81, 20);
             this.cmbAccountType.TabIndex = 2;
+            this.cmbAccountType.Visible = false;
             // 
             // label2
             // 
@@ -512,6 +520,7 @@
             this.label2.Size = new System.Drawing.Size(64, 12);
             this.label2.TabIndex = 1;
             this.label2.Text = "BrokerType";
+            this.label2.Visible = false;
             // 
             // label3
             // 
@@ -530,6 +539,7 @@
             this.label1.Size = new System.Drawing.Size(72, 12);
             this.label1.TabIndex = 0;
             this.label1.Text = "AccountType";
+            this.label1.Visible = false;
             // 
             // grdHis
             // 
@@ -576,7 +586,7 @@
             this.grdHis.RowHeadersVisible = false;
             this.grdHis.RowTemplate.Height = 21;
             this.grdHis.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.grdHis.Size = new System.Drawing.Size(724, 113);
+            this.grdHis.Size = new System.Drawing.Size(670, 113);
             this.grdHis.TabIndex = 5;
             // 
             // dataGridViewTextBoxColumn1
@@ -646,11 +656,33 @@
             this.orderDate.ReadOnly = true;
             this.orderDate.Visible = false;
             // 
+            // btnSqSell
+            // 
+            this.btnSqSell.Enabled = false;
+            this.btnSqSell.Location = new System.Drawing.Point(430, 30);
+            this.btnSqSell.Name = "btnSqSell";
+            this.btnSqSell.Size = new System.Drawing.Size(60, 21);
+            this.btnSqSell.TabIndex = 15;
+            this.btnSqSell.Text = "SQ Sell";
+            this.btnSqSell.UseVisualStyleBackColor = true;
+            this.btnSqSell.Click += new System.EventHandler(this.sqSell_Click);
+            // 
+            // btnSqBuy
+            // 
+            this.btnSqBuy.Enabled = false;
+            this.btnSqBuy.Location = new System.Drawing.Point(430, 8);
+            this.btnSqBuy.Name = "btnSqBuy";
+            this.btnSqBuy.Size = new System.Drawing.Size(60, 21);
+            this.btnSqBuy.TabIndex = 14;
+            this.btnSqBuy.Text = "SQ Buy";
+            this.btnSqBuy.UseVisualStyleBackColor = true;
+            this.btnSqBuy.Click += new System.EventHandler(this.sqBuy_Click);
+            // 
             // GuPiaoTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(724, 404);
+            this.ClientSize = new System.Drawing.Size(670, 404);
             this.Controls.Add(this.grdGuPiao);
             this.Controls.Add(this.grdHis);
             this.Controls.Add(this.pnlBaseInfo);
@@ -717,6 +749,8 @@
         private System.Windows.Forms.DataGridViewButtonColumn dataGridViewTextBoxColumn6;
         private System.Windows.Forms.DataGridViewTextBoxColumn orderId;
         private System.Windows.Forms.DataGridViewTextBoxColumn orderDate;
+        private System.Windows.Forms.Button btnSqSell;
+        private System.Windows.Forms.Button btnSqBuy;
     }
 }
 

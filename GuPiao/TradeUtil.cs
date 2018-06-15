@@ -273,7 +273,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockCd"></param>
         /// <returns></returns>
-        public string BuyStock(string stockCd, uint count, float price, bool isQuick) 
+        public string BuyStock(string stockCd, uint count, float price, BuySellType buySellType) 
         {
             this.CurOpt = CurOpt.BuyStock;
             ITradeRecord StockRecord = null;
@@ -288,19 +288,28 @@ namespace GuPiao
 
                 /// 取当前价
                 float buyPrice = price;
-                if (isQuick)
+                if (buySellType == BuySellType.QuickBuy)
                 {
-                    //var vBuy4 = StockRecord.GetValueFloat(0, 5);
                     var vBuy5 = StockRecord.GetValueByName(0, "卖一价");
+                    buyPrice = (float)vBuy5;
+                }
+                else if (buySellType == BuySellType.SuperQuickBuy)
+                {
+                    var vBuy5 = StockRecord.GetValueByName(0, "卖三价");
                     buyPrice = (float)vBuy5;
                 }
 
                 EZMExchangeType eExchangeType = this.GetExchangeType(stockCd);
 
                 /// 通过AddOrder重复调用可以实现提交多条委托，然后调用CommitOrder一次性提交到服务器
-                /// 限价买
-                uint nReq1 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, buyPrice, count, eExchangeType);
-                //uint nReq2 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, (float)vBuy4, count, eExchangeType);
+                if (buySellType == BuySellType.SuperQuickBuy)
+                {
+                    uint nReq1 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_MARKETFIVETOCANCEL, stockCd, buyPrice, count, eExchangeType);
+                }
+                else
+                {
+                    uint nReq1 = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_BUY, EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, buyPrice, count, eExchangeType);
+                }
 
                 /// 真正提交委托操作，每个委托结果通过事件来通知，通过AddOrder返回的请求ID标识
                 m_StockTrade.CommitOrder(m_StockTrade.CurTradeID, true, EZMRunPriType.RUNPRITYPE_NORMAL);
@@ -326,7 +335,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockCd"></param>
         /// <returns></returns>
-        public string SellStock(string stockCd, uint count, float price, bool isQuick)
+        public string SellStock(string stockCd, uint count, float price, BuySellType buySellType)
         {
             this.CurOpt = CurOpt.SellStock;
             ITradeRecord StockRecord = null;
@@ -351,17 +360,30 @@ namespace GuPiao
                     else
                     {
                         float sellPrice = price;
-                        if (isQuick)
+                        if (buySellType == BuySellType.QuickSell)
                         {
                             var varVal = StockRecord.GetValueByName(0, "买一价");
+                            sellPrice = (float)varVal;
+                        }
+                        else if (buySellType == BuySellType.SuperQuickSell)
+                        {
+                            var varVal = StockRecord.GetValueByName(0, "买三价");
                             sellPrice = (float)varVal;
                         }
 
                         EZMExchangeType eExchangeType = this.GetExchangeType(stockCd);
 
                         /// 返回的请求ID，会由事件通知的时候传回，从而知道每个委托的实际结果
-                        uint nReqID = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_SALE,
-                            EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, sellPrice, count, eExchangeType);
+                        if (buySellType == BuySellType.SuperQuickSell)
+                        {
+                            uint nReqID = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_SALE,
+                                EZMOrderPriceType.ORDERPRICETYPE_MARKETFIVETOCANCEL, stockCd, sellPrice, count, eExchangeType);
+                        }
+                        else
+                        {
+                            uint nReqID = m_StockTrade.AddOrder(EZMStockOrderType.STOCKORDERTYPE_SALE,
+                                EZMOrderPriceType.ORDERPRICETYPE_LIMIT, stockCd, sellPrice, count, eExchangeType);
+                        }
 
                         /// 批量提交委托，结果通过事件通知得到
                         m_StockTrade.CommitOrder(m_StockTrade.CurTradeID, true, EZMRunPriType.RUNPRITYPE_NORMAL);
@@ -539,7 +561,7 @@ namespace GuPiao
                         guPiaoInfo.Insert(0, item);
                     }
 
-                    item.OrderDate = StockRecord.GetValueByName(nIndex, "委托时间").ToString();
+                    item.OrderDate = Convert.ToString(StockRecord.GetValueByName(nIndex, "委托时间"));
                     item.OrderId = orderId;
                     item.StockCd = Convert.ToString(StockRecord.GetValueByName(nIndex, "证券代码"));
                     if ("卖出".Equals(Convert.ToString(StockRecord.GetValueByName(nIndex, "买卖标志1"))))
