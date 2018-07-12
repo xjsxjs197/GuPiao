@@ -441,14 +441,6 @@ namespace GuPiaoTool
                     this.grdGuPiao.Rows[1].Selected = true;
                 }
 
-                // 启动定时器
-                timersTimer = new System.Timers.Timer();
-                timersTimer.Enabled = true;
-                timersTimer.Interval = 1000; // 每1秒更新数据
-                timersTimer.AutoReset = true;
-                timersTimer.Elapsed += new System.Timers.ElapsedEventHandler(timersTimer_Elapsed);
-                timersTimer.SynchronizingObject = this;
-
                 // 按钮控制
                 this.btnRun.Text = "刷  新";
             }
@@ -456,6 +448,19 @@ namespace GuPiaoTool
             {
                 MessageBox.Show(ex.StackTrace);
             }
+        }
+
+        /// <summary>
+        /// 初始化定时器
+        /// </summary>
+        private void InitTimer()
+        {
+            timersTimer = new System.Timers.Timer();
+            timersTimer.Enabled = true;
+            timersTimer.Interval = 1000; // 每1秒更新数据
+            timersTimer.AutoReset = true;
+            timersTimer.Elapsed += new System.Timers.ElapsedEventHandler(timersTimer_Elapsed);
+            timersTimer.SynchronizingObject = this;
         }
 
         /// <summary>
@@ -1158,6 +1163,9 @@ namespace GuPiaoTool
 
                         // 刷新金额、当天委托信息
                         this.RefreshMoneyInfo(param);
+
+                        // 启动定时器
+                        this.InitTimer();
                     }
                     break;
 
