@@ -68,7 +68,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BuySellPoint.cs" />
     <Compile Include="BuySellType.cs" />
+    <Compile Include="Consts.cs" />
     <Compile Include="OrderStatus.cs" />
     <Compile Include="CurOpt.cs" />
     <Compile Include="GuPiaoInfo.cs" />

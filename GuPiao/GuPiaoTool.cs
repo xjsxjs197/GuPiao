@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
@@ -10,12 +11,18 @@ using System.Threading;
 
 namespace GuPiaoTool
 {
+    /// <summary>
+    /// 财富雪球
+    /// 自动化交易平台，带来财富，想雪球一样越贵越大
+    /// </summary>
     public partial class GuPiaoTool : Form
     {
         #region 全局变量
 
         List<string> noList = new List<string>();
         List<string> nameList = new List<string>();
+        List<BuySellPoint> buySellPoints = new List<BuySellPoint>();
+        BuySellPoint defaultBuySellPoint = new BuySellPoint();
         System.Timers.Timer timersTimer = null;
         bool isRuning = false;
         TradeUtil tradeUtil = new TradeUtil();
@@ -24,17 +31,23 @@ namespace GuPiaoTool
         /// <summary>
         /// 从Sina取得的数据
         /// </summary>
-        List<GuPiaoInfo> guPiaoInfo = null;
+        List<GuPiaoInfo> guPiaoInfo = new List<GuPiaoInfo>();
         
         /// <summary>
         /// 股票的基本信息
         /// </summary>
-        Dictionary<string, GuPiaoInfo> guPiaoBaseInfo = new Dictionary<string,GuPiaoInfo>();
+        Dictionary<string, GuPiaoInfo> guPiaoBaseInfo = new Dictionary<string, GuPiaoInfo>();
 
         /// <summary>
         /// 当天的交易信息
         /// </summary>
         List<OrderInfo> todayGuPiao = new List<OrderInfo>();
+
+        /// <summary>
+        /// UI线程的同步上下文
+        /// </summary>
+        SynchronizationContext mSyncContext = null;
+
 
         #endregion
 
@@ -47,6 +60,9 @@ namespace GuPiaoTool
         {
             InitializeComponent();
 
+            //获取UI线程同步上下文
+            this.mSyncContext = SynchronizationContext.Current;
+
             this.rdoSync.CheckedChanged += new EventHandler(this.rdoSync_CheckedChanged);
             this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
             this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
@@ -54,7 +70,7 @@ namespace GuPiaoTool
             this.grdGuPiao.CellContentClick += new DataGridViewCellEventHandler(this.grdGuPiao_CellContentClick);
 
             // 设置信息
-            this.tradeUtil.SetCallBack(this.AsyncCallBack);
+            this.tradeUtil.SetCallBack(this.ThreadAsyncCallBack);
             this.tradeUtil.SetGuPiaoInfo(this.guPiaoBaseInfo);
 
             // 初始化基本信息
@@ -419,8 +435,11 @@ namespace GuPiaoTool
                 RefreshPage();
 
                 // 默认选中第二条记录（第一条是大盘）
-                this.grdGuPiao.Rows[0].Selected = false;
-                this.grdGuPiao.Rows[1].Selected = true;
+                if (this.grdGuPiao.Rows.Count > 2)
+                {
+                    this.grdGuPiao.Rows[0].Selected = false;
+                    this.grdGuPiao.Rows[1].Selected = true;
+                }
 
                 // 启动定时器
                 timersTimer = new System.Timers.Timer();
@@ -432,12 +451,114 @@ namespace GuPiaoTool
 
                 // 按钮控制
                 this.btnRun.Text = "刷  新";
-
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.StackTrace);
             }
+        }
+
+        /// <summary>
+        /// 检查是否可以自动卖
+        /// </summary>
+        private void CheckAutoCell(object state)
+        {
+            foreach (GuPiaoInfo guPiaoItem in this.guPiaoInfo)
+            {
+                if (this.CanAutoSell(guPiaoItem))
+                {
+                    // 可以自动卖
+                    string retMsg = this.tradeUtil.SellStock(guPiaoItem.fundcode.Substring(2, 6), guPiaoItem.CanUseCount, 999.0f, BuySellType.QuickSell);
+                    
+                    // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+                    mSyncContext.Post(this.ThreadDispMsg, retMsg);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 检查是否可以自动卖
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private bool CanAutoSell(GuPiaoInfo item)
+        {
+            if (item.CanUseCount == 0)
+            {
+                return false;
+            }
+
+            // 判断高点卖
+            double yingkuiPer = this.SetYinkuiPer(item, null);
+            if (yingkuiPer > 0 && this.CanAutoTopSell(item, yingkuiPer))
+            {
+                return true;
+            }
+
+            // 判断低点卖
+            if (yingkuiPer < 0 && this.CanAutoBottomSell(item, yingkuiPer))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 检查是否可以自动高点卖
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="yingkuiPer"></param>
+        /// <returns></returns>
+        private bool CanAutoTopSell(GuPiaoInfo item, double yingkuiPer)
+        {
+            // 判断高点卖
+            if (item.isWaitingSell)
+            {
+                // 在犹豫时间内判断
+                if (yingkuiPer > item.topSellPoint)
+                {
+                    // 如果有升高的趋势，重新设置高点，重新开始犹豫等待
+                    item.topSellPoint = yingkuiPer;
+                    item.curSellWaitTime = item.sellWaitTime;
+                }
+                else
+                {
+                    // 如果开始下降
+                    if (yingkuiPer < (item.topSellPoint - item.waitPoint))
+                    {
+                        // 低于了最高点 - 犹豫点，开始自动卖
+                        item.isWaitingSell = false;
+                        return true;
+                    }
+                }
+            }
+            else if (yingkuiPer > item.topSellPoint)
+            {
+                // 到达设置的卖点，开始犹豫等待
+                item.isWaitingSell = true;
+                item.curSellWaitTime = item.sellWaitTime;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 检查是否可以自动低点卖
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="yingkuiPer"></param>
+        /// <returns></returns>
+        private bool CanAutoBottomSell(GuPiaoInfo item, double yingkuiPer)
+        {
+            // 判断低点卖
+            if (yingkuiPer < item.bottomSellPoint)
+            {
+                // 只要低于设置的低点，就自动卖出
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -464,6 +585,7 @@ namespace GuPiaoTool
         /// </summary>
         private bool LoadBaseData()
         {
+            // 读取基础数据
             string[] baseInfo = File.ReadAllLines(@"./基础数据.txt", Encoding.UTF8);
             noList = new List<string>();
             nameList = new List<string>();
@@ -480,6 +602,32 @@ namespace GuPiaoTool
                 return false;
             }
 
+            // 读取买卖点配置信息
+            buySellPoints.Clear();
+            baseInfo = File.ReadAllLines(@"./BuyCellPointInfo.txt", Encoding.UTF8);
+            for (int i = 1; i < baseInfo.Length; i++)
+            {
+                string[] buyCellInfos = baseInfo[i].Split(' ');
+                BuySellPoint buyCellItem = new BuySellPoint();
+                buyCellItem.StockCd = buyCellInfos[0];
+                buyCellItem.TopSellPoint = Convert.ToInt32(buyCellInfos[1]);
+                buyCellItem.BottomSellPoint = Convert.ToInt32(buyCellInfos[2]);
+                buyCellItem.SellWaitTime = Convert.ToInt32(buyCellInfos[3]);
+                buyCellItem.WaitPoint = Convert.ToInt32(buyCellInfos[4]);
+                buySellPoints.Add(buyCellItem);
+            }
+
+            if (buySellPoints.Count == 0)
+            {
+                MessageBox.Show("买卖点信息有误！");
+                return false;
+            }
+
+            defaultBuySellPoint.TopSellPoint = buySellPoints[0].TopSellPoint;
+            defaultBuySellPoint.BottomSellPoint = buySellPoints[0].BottomSellPoint;
+            defaultBuySellPoint.SellWaitTime = buySellPoints[0].SellWaitTime;
+            defaultBuySellPoint.WaitPoint = buySellPoints[0].WaitPoint;
+
             return true;
         }
 
@@ -488,14 +636,27 @@ namespace GuPiaoTool
         /// </summary>
         private void RefreshPage()
         {
+            ThreadPool.QueueUserWorkItem(new WaitCallback(this.MultThreadRefreshPage));
+        }
+
+        /// <summary>
+        /// 多线程刷新页面
+        /// </summary>
+        private void MultThreadRefreshPage(object state)
+        {
             // 从Sina取得基础数据
             string url = "http://hq.sinajs.cn/list=" + string.Join(",", noList.ToArray());
             string data = "";
             string result = HttpGet(url, data);
             if (!string.IsNullOrEmpty(result) && result.Length > 20)
             {
-                guPiaoInfo = this.GetGuPiaoInfo(noList, nameList, result);
-                this.DisplayData(guPiaoInfo);
+                this.GetGuPiaoInfo(noList, nameList, result);
+
+                // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+                mSyncContext.Post(this.DisplayData, null);
+
+                // 检查是否可以自动卖
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoCell));
             }
         }
 
@@ -543,8 +704,7 @@ namespace GuPiaoTool
         /// <summary>
         /// 显示信息
         /// </summary>
-        /// <param name="guPiaoInfo"></param>
-        private void DisplayData(List<GuPiaoInfo> guPiaoInfo)
+        private void DisplayData(object param)
         {
             int newRow;
             double yingkuiPer;
@@ -555,12 +715,12 @@ namespace GuPiaoTool
                 {
                     newRow = this.grdGuPiao.Rows.Add();
                 }
-                
+
                 DataGridViewCellCollection lineCollection = this.grdGuPiao.Rows[newRow].Cells;
                 lineCollection[0].Value = guPiaoInfo[i].fundcode + "(" + guPiaoInfo[i].name + ")";
                 lineCollection[1].Value = guPiaoInfo[i].zuoriShoupanVal;
                 lineCollection[2].Value = guPiaoInfo[i].currentVal;
-                
+
                 yingkuiPer = this.SetYinkuiPer(guPiaoInfo[i], lineCollection[3]);
 
                 // 设置股数信息
@@ -573,9 +733,13 @@ namespace GuPiaoTool
                 }
                 else
                 {
-                    lineCollection[4].Value = 0;
-                    lineCollection[5].Value = 0;
+                    lineCollection[4].Value = (uint)0;
+                    lineCollection[5].Value = (uint)0;
                 }
+
+                // 更新股数信息
+                guPiaoInfo[i].TotalCount = (uint)lineCollection[4].Value;
+                guPiaoInfo[i].CanUseCount = (uint)lineCollection[5].Value;
 
                 // 判断开板买入
                 if (lineCollection[6].Value != null && (bool)(lineCollection[6].Value))
@@ -641,19 +805,22 @@ namespace GuPiaoTool
             decimal zuoriShoupanVal = decimal.Parse(item.zuoriShoupanVal);
             double yingkuiPer = (double)((currentVal - zuoriShoupanVal) / zuoriShoupanVal * 100);
 
-            cellItem.Value = yingkuiPer.ToString("00.00");
+            if (cellItem != null)
+            {
+                cellItem.Value = yingkuiPer.ToString("00.00");
 
-            if (yingkuiPer > 0)
-            {
-                cellItem.Style.ForeColor = Color.Red;
-            }
-            else if (yingkuiPer < 0)
-            {
-                cellItem.Style.ForeColor = Color.Green;
-            }
-            else 
-            {
-                cellItem.Style.ForeColor = Color.Black;
+                if (yingkuiPer > 0)
+                {
+                    cellItem.Style.ForeColor = Color.Red;
+                }
+                else if (yingkuiPer < 0)
+                {
+                    cellItem.Style.ForeColor = Color.Green;
+                }
+                else
+                {
+                    cellItem.Style.ForeColor = Color.Black;
+                }
             }
 
             return yingkuiPer;
@@ -665,11 +832,8 @@ namespace GuPiaoTool
         /// <param name="noList"></param>
         /// <param name="nameList"></param>
         /// <param name="guPiaoJsInfo"></param>
-        /// <returns></returns>
-        private List<GuPiaoInfo> GetGuPiaoInfo(List<string> noList, List<string> nameList, string guPiaoJsInfo)
+        private void GetGuPiaoInfo(List<string> noList, List<string> nameList, string guPiaoJsInfo)
         {
-            List<GuPiaoInfo> infoList = new List<GuPiaoInfo>();
-
             string[] guPiao = guPiaoJsInfo.Split(';');
             for (int i = 0; i < guPiao.Length; i++)
             {
@@ -678,15 +842,39 @@ namespace GuPiaoTool
                     break;
                 }
 
-                GuPiaoInfo item = new GuPiaoInfo();
-                infoList.Add(item);
-                item.fundcode = noList[i];
-                item.name = nameList[i];
-
                 string[] lines = guPiao[i].Split('=');
                 string[] details = lines[1].Split(',');
-                item.jinriKaipanVal  = details[1];
-                item.zuoriShoupanVal = details[2];
+
+                GuPiaoInfo item = this.guPiaoInfo.FirstOrDefault(p => p.fundcode.Equals(noList[i]));
+                if (item == null)
+                {
+                    item = new GuPiaoInfo();
+                    item.fundcode = noList[i];
+                    item.name = nameList[i];
+                    item.jinriKaipanVal = details[1];
+                    item.zuoriShoupanVal = details[2];
+                    item.hisVal = new List<double>();
+
+                    // 取得自动的卖点
+                    BuySellPoint pointInfo = this.buySellPoints.FirstOrDefault(p => p.StockCd.Equals(item.fundcode));
+                    if (pointInfo == null)
+                    {
+                        item.topSellPoint = this.defaultBuySellPoint.TopSellPoint;
+                        item.bottomSellPoint = -this.defaultBuySellPoint.BottomSellPoint;
+                        item.sellWaitTime = this.defaultBuySellPoint.SellWaitTime;
+                        item.waitPoint = this.defaultBuySellPoint.WaitPoint;
+                    }
+                    else
+                    {
+                        item.topSellPoint = pointInfo.TopSellPoint;
+                        item.bottomSellPoint = -pointInfo.BottomSellPoint;
+                        item.sellWaitTime = pointInfo.SellWaitTime;
+                        item.waitPoint = pointInfo.WaitPoint;
+                    }
+
+                    this.guPiaoInfo.Add(item);
+                }
+                
                 item.currentVal      = details[3];
                 item.zuigaoVal       = details[4];
                 item.zuidiVal        = details[5];
@@ -716,9 +904,9 @@ namespace GuPiaoTool
                 item.valOut5         = details[29];
                 item.date            = details[30];
                 item.time            = details[31];
-            }
 
-            return infoList;
+                //item.hisVal.Add(double.Parse(item.currentVal));
+            }
         }
 
         /// <summary>
@@ -861,12 +1049,21 @@ namespace GuPiaoTool
         }
 
         /// <summary>
+        /// 显示各种操作信息(多线程内部调用)
+        /// </summary>
+        /// <param name="retMsg"></param>
+        private void ThreadDispMsg(object retMsg)
+        {
+            this.DispMsg(retMsg.ToString());
+        }
+
+        /// <summary>
         /// 显示各种操作信息
         /// </summary>
         /// <param name="retMsg"></param>
         private void DispMsg(string retMsg)
         {
-            this.Text = retMsg;
+            this.Text = "财富雪球 " + retMsg;
         }
 
         /// <summary>
@@ -919,11 +1116,23 @@ namespace GuPiaoTool
         }
 
         /// <summary>
+        /// 异步的回调方法（多线程内调用）
+        /// </summary>
+        /// <param name="param"></param>
+        private void ThreadAsyncCallBack(params object[] param)
+        {
+            // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+            mSyncContext.Post(this.AsyncCallBack, param);
+        }
+
+        /// <summary>
         /// 异步的回调方法
         /// </summary>
         /// <param name="param"></param>
-        private void AsyncCallBack(params object[] param)
+        private void AsyncCallBack(object threadParam)
         {
+            object[] param = (object[])threadParam;
+
             // 第一步都是显示返回的信息
             this.DispMsg(this.tradeUtil.RetMsg);
 
@@ -953,7 +1162,7 @@ namespace GuPiaoTool
                     break;
 
                 case CurOpt.OrderOKEvent:
-                    this.DelayOrderOKEvent(param);
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(this.DelayOrderOKEvent), param);
                     break;
 
                 case CurOpt.OrderSuccessEvent:
@@ -967,19 +1176,23 @@ namespace GuPiaoTool
         /// <summary>
         /// 延时执行OrderOKEvent后面的处理
         /// </summary>
-        private void DelayOrderOKEvent(object[] param)
+        private void DelayOrderOKEvent(object state)
         {
-            Thread thr = new Thread(() =>
-            {
-                // 这里还可以处理些比较耗时的事情。
-                Thread.Sleep(1000);//休眠时间
-                this.Invoke(new Action(() =>
-                {
-                    // 刷新金额、当天委托信息
-                    this.RefreshMoneyInfo(param);
-                }));
-            });
-            thr.Start();
+            // 休眠时间
+            Thread.Sleep(1000);
+
+            // 刷新金额、当天委托信息
+            // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+            mSyncContext.Post(this.ThreadRefreshMoneyInfo, state);
+        }
+
+        /// <summary>
+        /// 刷新金额、当天委托信息(多线程中调用)
+        /// </summary>
+        /// <param name="param"></param>
+        private void ThreadRefreshMoneyInfo(object param)
+        {
+            this.RefreshMoneyInfo((object[])param);
         }
 
         /// <summary>

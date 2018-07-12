@@ -55,6 +55,8 @@
             this.CanUseCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.kaibanMairu = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.pnlBtn = new System.Windows.Forms.Panel();
+            this.btnSqSell = new System.Windows.Forms.Button();
+            this.btnSqBuy = new System.Windows.Forms.Button();
             this.txtPriceSell = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.cmbCountSell = new System.Windows.Forms.ComboBox();
@@ -91,8 +93,6 @@
             this.dataGridViewTextBoxColumn6 = new System.Windows.Forms.DataGridViewButtonColumn();
             this.orderId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.orderDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.btnSqSell = new System.Windows.Forms.Button();
-            this.btnSqBuy = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.grdGuPiao)).BeginInit();
             this.pnlBtn.SuspendLayout();
             this.pnlBaseInfo.SuspendLayout();
@@ -239,6 +239,28 @@
             this.pnlBtn.Name = "pnlBtn";
             this.pnlBtn.Size = new System.Drawing.Size(670, 59);
             this.pnlBtn.TabIndex = 3;
+            // 
+            // btnSqSell
+            // 
+            this.btnSqSell.Enabled = false;
+            this.btnSqSell.Location = new System.Drawing.Point(430, 30);
+            this.btnSqSell.Name = "btnSqSell";
+            this.btnSqSell.Size = new System.Drawing.Size(60, 21);
+            this.btnSqSell.TabIndex = 15;
+            this.btnSqSell.Text = "SQ Sell";
+            this.btnSqSell.UseVisualStyleBackColor = true;
+            this.btnSqSell.Click += new System.EventHandler(this.sqSell_Click);
+            // 
+            // btnSqBuy
+            // 
+            this.btnSqBuy.Enabled = false;
+            this.btnSqBuy.Location = new System.Drawing.Point(430, 8);
+            this.btnSqBuy.Name = "btnSqBuy";
+            this.btnSqBuy.Size = new System.Drawing.Size(60, 21);
+            this.btnSqBuy.TabIndex = 14;
+            this.btnSqBuy.Text = "SQ Buy";
+            this.btnSqBuy.UseVisualStyleBackColor = true;
+            this.btnSqBuy.Click += new System.EventHandler(this.sqBuy_Click);
             // 
             // txtPriceSell
             // 
@@ -656,28 +678,6 @@
             this.orderDate.ReadOnly = true;
             this.orderDate.Visible = false;
             // 
-            // btnSqSell
-            // 
-            this.btnSqSell.Enabled = false;
-            this.btnSqSell.Location = new System.Drawing.Point(430, 30);
-            this.btnSqSell.Name = "btnSqSell";
-            this.btnSqSell.Size = new System.Drawing.Size(60, 21);
-            this.btnSqSell.TabIndex = 15;
-            this.btnSqSell.Text = "SQ Sell";
-            this.btnSqSell.UseVisualStyleBackColor = true;
-            this.btnSqSell.Click += new System.EventHandler(this.sqSell_Click);
-            // 
-            // btnSqBuy
-            // 
-            this.btnSqBuy.Enabled = false;
-            this.btnSqBuy.Location = new System.Drawing.Point(430, 8);
-            this.btnSqBuy.Name = "btnSqBuy";
-            this.btnSqBuy.Size = new System.Drawing.Size(60, 21);
-            this.btnSqBuy.TabIndex = 14;
-            this.btnSqBuy.Text = "SQ Buy";
-            this.btnSqBuy.UseVisualStyleBackColor = true;
-            this.btnSqBuy.Click += new System.EventHandler(this.sqBuy_Click);
-            // 
             // GuPiaoTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -690,7 +690,7 @@
             this.MaximizeBox = false;
             this.Name = "GuPiaoTool";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
-            this.Text = "Get Money";
+            this.Text = "财富雪球";
             ((System.ComponentModel.ISupportInitialize)(this.grdGuPiao)).EndInit();
             this.pnlBtn.ResumeLayout(false);
             this.pnlBtn.PerformLayout();

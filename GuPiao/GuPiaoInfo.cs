@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 namespace GuPiaoTool
 {
     public class GuPiaoInfo
@@ -27,6 +28,51 @@ namespace GuPiaoTool
         /// 当前价格
         /// </summary>
         public string currentVal { get; set; }
+
+        /// <summary>
+        /// 当天历史价格
+        /// </summary>
+        public List<double> hisVal { get; set; }
+
+        /// <summary>
+        /// 自动卖的等待时间
+        /// </summary>
+        public int sellWaitTime { get; set; }
+
+        /// <summary>
+        /// 当前的等待时间
+        /// </summary>
+        public int curSellWaitTime { get; set; }
+
+        /// <summary>
+        /// 自动买的等待时间
+        /// </summary>
+        public int buyWaitTime { get; set; }
+
+        /// <summary>
+        /// 高位卖点
+        /// </summary>
+        public double topSellPoint { get; set; }
+
+        /// <summary>
+        /// 低位卖点
+        /// </summary>
+        public double bottomSellPoint { get; set; }
+
+        /// <summary>
+        /// 犹豫的点（上下浮动的点）
+        /// </summary>
+        public double waitPoint { get; set; }
+
+        /// <summary>
+        /// 正在等待卖
+        /// </summary>
+        public bool isWaitingSell { get; set; }
+
+        /// <summary>
+        /// 正在等待买
+        /// </summary>
+        public bool isWaitingBuy { get; set; }
 
         /// <summary>
         /// 今日最高价
