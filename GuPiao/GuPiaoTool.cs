@@ -557,10 +557,27 @@ namespace GuPiaoTool
         private bool CanAutoBottomSell(GuPiaoInfo item, double yingkuiPer)
         {
             // 判断低点卖
-            if (yingkuiPer < item.bottomSellPoint)
+            if (item.isWaitingSell)
             {
-                // 只要低于设置的低点，就自动卖出
-                return true;
+                // 如果开始下降
+                if (yingkuiPer < (item.bottomSellPoint - item.waitPoint))
+                {
+                    // 低于了最低点 - 犹豫点，开始自动卖
+                    item.isWaitingSell = false;
+                    return true;
+                }
+                else if (yingkuiPer > item.bottomSellPoint)
+                {
+                    // 已经升高到卖点以上了，取消自动卖的等待
+                    item.isWaitingSell = false;
+                    item.curSellWaitTime = item.sellWaitTime;
+                }
+            }
+            else if (yingkuiPer < item.bottomSellPoint)
+            {
+                // 到达设置的卖点，开始犹豫等待
+                item.isWaitingSell = true;
+                item.curSellWaitTime = item.sellWaitTime;
             }
 
             return false;
