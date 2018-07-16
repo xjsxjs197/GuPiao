@@ -29,6 +29,11 @@ namespace GuPiaoTool
         string selStockCd = string.Empty;
 
         /// <summary>
+        /// 最大记录10秒数据
+        /// </summary>
+        int maxSecond = 10;
+
+        /// <summary>
         /// 从Sina取得的数据
         /// </summary>
         List<GuPiaoInfo> guPiaoInfo = new List<GuPiaoInfo>();
@@ -377,8 +382,8 @@ namespace GuPiaoTool
         /// <param name="curPrice"></param>
         private void SetBuyInfo(string canUseMoney, string curPrice)
         {
-            double nowMoney = Convert.ToDouble(canUseMoney);
-            double nowPrice = Convert.ToDouble(curPrice) * 100;
+            float nowMoney = float.Parse(canUseMoney);
+            float nowPrice = float.Parse(curPrice) * 100;
             if (nowMoney < nowPrice + 5)
             {
                 this.cmbCountBuy.SelectedIndex = -1;
@@ -494,7 +499,7 @@ namespace GuPiaoTool
             }
 
             // 判断高点卖
-            double yingkuiPer = this.SetYinkuiPer(item, null);
+            float yingkuiPer = this.SetYinkuiPer(item, null);
             if (yingkuiPer > 0 && this.CanAutoTopSell(item, yingkuiPer))
             {
                 return true;
@@ -515,7 +520,7 @@ namespace GuPiaoTool
         /// <param name="item"></param>
         /// <param name="yingkuiPer"></param>
         /// <returns></returns>
-        private bool CanAutoTopSell(GuPiaoInfo item, double yingkuiPer)
+        private bool CanAutoTopSell(GuPiaoInfo item, float yingkuiPer)
         {
             // 判断高点卖
             if (item.isWaitingSell)
@@ -554,7 +559,7 @@ namespace GuPiaoTool
         /// <param name="item"></param>
         /// <param name="yingkuiPer"></param>
         /// <returns></returns>
-        private bool CanAutoBottomSell(GuPiaoInfo item, double yingkuiPer)
+        private bool CanAutoBottomSell(GuPiaoInfo item, float yingkuiPer)
         {
             // 判断低点卖
             if (item.isWaitingSell)
@@ -581,6 +586,46 @@ namespace GuPiaoTool
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// 检查均值数据（10秒，5秒，3秒等）
+        /// </summary>
+        /// <param name="state"></param>
+        private void CheckSecondPoints(object state)
+        { 
+            GuPiaoInfo item = (GuPiaoInfo)state;
+            List<float> hisVal = item.hisVal;
+            if (hisVal.Count < maxSecond)
+            {
+                return;
+            }
+
+            lock (hisVal)
+            {
+                // 计算5秒均值
+                this.CheckSecondsVal(item.secondsPoints[0], hisVal, 5);
+
+                // 计算10秒均值
+                this.CheckSecondsVal(item.secondsPoints[1], hisVal, 10);
+            }
+        }
+
+        /// <summary>
+        /// 计算N秒的均值数据
+        /// </summary>
+        private void CheckSecondsVal(float[] secondPoints, List<float> hisVal, int second)
+        {
+            int index = hisVal.Count - 1;
+            float sum = 0.0f;
+            while (second > 0)
+            {
+                sum += hisVal[second];
+                second--;
+            }
+
+            secondPoints[0] = secondPoints[1];
+            secondPoints[1] = sum / second;
         }
 
         /// <summary>
@@ -729,7 +774,7 @@ namespace GuPiaoTool
         private void DisplayData(object param)
         {
             int newRow;
-            double yingkuiPer;
+            float yingkuiPer;
             for (int i = 0; i < guPiaoInfo.Count; i++)
             {
                 newRow = i;
@@ -783,10 +828,10 @@ namespace GuPiaoTool
         /// </summary>
         /// <param name="stockCd"></param>
         /// <param name="curPrice"></param>
-        private bool KaibanMairu(string stockCd, string curPrice, double yingkuiPer)
+        private bool KaibanMairu(string stockCd, string curPrice, float yingkuiPer)
         {
-            double nowMoney = Convert.ToDouble(this.lblCanUseMoney.Text);
-            double nowPrice = Convert.ToDouble(curPrice) * 100;
+            float nowMoney = float.Parse(this.lblCanUseMoney.Text);
+            float nowPrice = float.Parse(curPrice) * 100;
             if (yingkuiPer < 9.5 && nowMoney > (nowPrice + 5))
             {
                 // 未涨停，并且有钱
@@ -821,11 +866,11 @@ namespace GuPiaoTool
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private double SetYinkuiPer(GuPiaoInfo item, DataGridViewCell cellItem)
+        private float SetYinkuiPer(GuPiaoInfo item, DataGridViewCell cellItem)
         {
             decimal currentVal = decimal.Parse(item.currentVal);
             decimal zuoriShoupanVal = decimal.Parse(item.zuoriShoupanVal);
-            double yingkuiPer = (double)((currentVal - zuoriShoupanVal) / zuoriShoupanVal * 100);
+            float yingkuiPer = (float)((currentVal - zuoriShoupanVal) / zuoriShoupanVal * 100);
 
             if (cellItem != null)
             {
@@ -875,7 +920,12 @@ namespace GuPiaoTool
                     item.name = nameList[i];
                     item.jinriKaipanVal = details[1];
                     item.zuoriShoupanVal = details[2];
-                    item.hisVal = new List<double>();
+                    item.hisVal = new List<float>();
+                    item.secondsPoints = new List<float[]>();
+                    // 5秒均值数据
+                    item.secondsPoints.Add(new float[2]);
+                    // 10秒均值数据
+                    item.secondsPoints.Add(new float[2]);
 
                     // 取得自动的卖点
                     BuySellPoint pointInfo = this.buySellPoints.FirstOrDefault(p => p.StockCd.Equals(item.fundcode));
@@ -927,7 +977,18 @@ namespace GuPiaoTool
                 item.date            = details[30];
                 item.time            = details[31];
 
-                //item.hisVal.Add(double.Parse(item.currentVal));
+                // 保持当前秒数据，只保存设置的最大个数
+                lock (item.hisVal) 
+                {
+                    item.hisVal.Add(float.Parse(item.currentVal));
+                    if (item.hisVal.Count > maxSecond)
+                    {
+                        item.hisVal.RemoveAt(0);
+                    }
+                }
+
+                // 检查均值数据（10秒，5秒，3秒等）
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckSecondPoints), item);
             }
         }
 

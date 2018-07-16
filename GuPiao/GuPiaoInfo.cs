@@ -30,9 +30,15 @@ namespace GuPiaoTool
         public string currentVal { get; set; }
 
         /// <summary>
-        /// 当天历史价格
+        /// 记录秒的数据
         /// </summary>
-        public List<double> hisVal { get; set; }
+        public List<float> hisVal { get; set; }
+
+        /// <summary>
+        /// 记录多秒的均值数据
+        /// 3秒，5秒，10秒等，每个数据两个值，当前值和上一个值
+        /// </summary>
+        public List<float[]> secondsPoints { get; set; }
 
         /// <summary>
         /// 自动卖的等待时间
@@ -52,17 +58,17 @@ namespace GuPiaoTool
         /// <summary>
         /// 高位卖点
         /// </summary>
-        public double topSellPoint { get; set; }
+        public float topSellPoint { get; set; }
 
         /// <summary>
         /// 低位卖点
         /// </summary>
-        public double bottomSellPoint { get; set; }
+        public float bottomSellPoint { get; set; }
 
         /// <summary>
         /// 犹豫的点（上下浮动的点）
         /// </summary>
-        public double waitPoint { get; set; }
+        public float waitPoint { get; set; }
 
         /// <summary>
         /// 正在等待卖

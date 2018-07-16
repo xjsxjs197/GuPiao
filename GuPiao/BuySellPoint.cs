@@ -18,22 +18,22 @@ namespace GuPiao
         /// <summary>
         /// 高位卖点
         /// </summary>
-        public int TopSellPoint { get; set; }
+        public float TopSellPoint { get; set; }
 
         /// <summary>
         /// 低位卖点
         /// </summary>
-        public int BottomSellPoint { get; set; }
+        public float BottomSellPoint { get; set; }
 
         /// <summary>
         /// 高位买点
         /// </summary>
-        public int TopBuyPoint { get; set; }
+        public float TopBuyPoint { get; set; }
 
         /// <summary>
         /// 低位买点
         /// </summary>
-        public int BottomBuyPoint { get; set; }
+        public float BottomBuyPoint { get; set; }
 
         /// <summary>
         /// 自动卖的等待时间
@@ -48,6 +48,6 @@ namespace GuPiao
         /// <summary>
         /// 犹豫的点（上下浮动的点）
         /// </summary>
-        public int WaitPoint { get; set; }
+        public float WaitPoint { get; set; }
     }
 }
