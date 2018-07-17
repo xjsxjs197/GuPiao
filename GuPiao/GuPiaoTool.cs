@@ -28,10 +28,29 @@ namespace GuPiaoTool
         TradeUtil tradeUtil = new TradeUtil();
         string selStockCd = string.Empty;
 
+        string toolsTitle = "财富雪球V4.0";
+
+        /// <summary>
+        /// 记录Log信息
+        /// </summary>
+        List<string> logInfo = new List<string>();
+
         /// <summary>
         /// 最大记录10秒数据
         /// </summary>
         int maxSecond = 10;
+
+        /// <summary>
+        /// 检查趋势时的判断值（秒）
+        /// 超过就是向上或向下
+        /// </summary>
+        float trendChkVal1 = 0.5f;
+
+        /// <summary>
+        /// 检查趋势时的判断值（5秒）
+        /// 超过就是向上或向下
+        /// </summary>
+        float trendChkVal5 = 0.3f;
 
         /// <summary>
         /// 从Sina取得的数据
@@ -53,7 +72,6 @@ namespace GuPiaoTool
         /// </summary>
         SynchronizationContext mSyncContext = null;
 
-
         #endregion
 
         #region 初始化
@@ -65,6 +83,8 @@ namespace GuPiaoTool
         {
             InitializeComponent();
 
+            this.Text = this.toolsTitle;
+
             //获取UI线程同步上下文
             this.mSyncContext = SynchronizationContext.Current;
 
@@ -72,7 +92,7 @@ namespace GuPiaoTool
             this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
             this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
             this.grdHis.CellContentClick += new DataGridViewCellEventHandler(this.grdHis_CellContentClick);
-            this.grdGuPiao.CellContentClick += new DataGridViewCellEventHandler(this.grdGuPiao_CellContentClick);
+            //this.grdGuPiao.CellContentClick += new DataGridViewCellEventHandler(this.grdGuPiao_CellContentClick);
 
             // 设置信息
             this.tradeUtil.SetCallBack(this.ThreadAsyncCallBack);
@@ -206,6 +226,9 @@ namespace GuPiaoTool
         private void GuPiaoTool_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.tradeUtil.TradeRelease();
+
+            // 记录Log信息
+            File.WriteAllLines(@"./logs/" + DateTime.Now.ToString("yyyyMMdd") + ".txt", this.logInfo.ToArray(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -238,6 +261,7 @@ namespace GuPiaoTool
             this.tradeUtil.CancelOrder(lineCollection[0].Value as string, lineCollection[6].Value as string);
         }
 
+        /*
         /// <summary>
         /// 特殊功能
         /// </summary>
@@ -250,7 +274,7 @@ namespace GuPiaoTool
 
             // 设置最新价格
             this.SetInputPrice();
-        }
+        }*/
 
         #endregion
 
@@ -382,8 +406,8 @@ namespace GuPiaoTool
         /// <param name="curPrice"></param>
         private void SetBuyInfo(string canUseMoney, string curPrice)
         {
-            float nowMoney = float.Parse(canUseMoney);
-            float nowPrice = float.Parse(curPrice) * 100;
+            float nowMoney = (float)Convert.ToDouble(canUseMoney);
+            float nowPrice = (float)Convert.ToDouble(curPrice) * 100;
             if (nowMoney < nowPrice + 5)
             {
                 this.cmbCountBuy.SelectedIndex = -1;
@@ -471,19 +495,110 @@ namespace GuPiaoTool
         /// <summary>
         /// 检查是否可以自动卖
         /// </summary>
-        private void CheckAutoCell(object state)
+        private void CheckAutoSell(object state)
         {
-            foreach (GuPiaoInfo guPiaoItem in this.guPiaoInfo)
+            try
             {
-                if (this.CanAutoSell(guPiaoItem))
+                foreach (GuPiaoInfo guPiaoItem in this.guPiaoInfo)
                 {
-                    // 可以自动卖
-                    string retMsg = this.tradeUtil.SellStock(guPiaoItem.fundcode.Substring(2, 6), guPiaoItem.CanUseCount, 999.0f, BuySellType.QuickSell);
-                    
-                    // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
-                    mSyncContext.Post(this.ThreadDispMsg, retMsg);
+                    if (this.CanAutoSell(guPiaoItem))
+                    {
+                        // 可以自动卖
+                        string retMsg = this.tradeUtil.SellStock(guPiaoItem.fundcode.Substring(2, 6), guPiaoItem.CanUseCount, 999.0f, BuySellType.QuickSell);
+
+                        // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+                        mSyncContext.Post(this.ThreadDispMsg, retMsg);
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// 检查是否可以自动买
+        /// </summary>
+        private void CheckAutoBuy(object state)
+        {
+            Dictionary<string, string> buyInfo = new Dictionary<string, string>();
+            try
+            {
+                foreach (GuPiaoInfo guPiaoItem in this.guPiaoInfo)
+                {
+                    string trendTxt = string.Empty;
+                    string stockInfo = guPiaoItem.fundcode + "(" + guPiaoItem.name + ")";
+                    switch (this.CanAutoBuy(guPiaoItem))
+                    {
+                        case 5:
+                            trendTxt = "↑";
+                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
+                            break;
+
+                        case 10:
+                            trendTxt = "↑↑";
+                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
+                            break;
+
+                        case -5:
+                            trendTxt = "↓";
+                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
+                            break;
+
+                        case -10:
+                            trendTxt = "↓↓";
+                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
+                            break;
+                    }
+
+                    buyInfo.Add(stockInfo, trendTxt);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+            }
+
+            // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+            mSyncContext.Post(this.DispTrendInfo, buyInfo);
+        }
+
+        /// <summary>
+        /// 设置页面的趋势
+        /// </summary>
+        /// <param name="state"></param>
+        private void DispTrendInfo(object state)
+        {
+            Dictionary<string, string> buyInfo = (Dictionary<string, string>)state;
+            for (int i = 1; i < this.grdGuPiao.Rows.Count; i++)
+            {
+                DataGridViewCellCollection lineCollection = this.grdGuPiao.Rows[i].Cells;
+                string stockCd = lineCollection[0].Value.ToString();
+                if (buyInfo.ContainsKey(stockCd))
+                {
+                    lineCollection["buyFlg"].Value = buyInfo[stockCd];
+                }
+            }
+        }
+
+        /// <summary>
+        /// 检查是否可以自动买
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private int CanAutoBuy(GuPiaoInfo item)
+        {
+            /*
+            float nowMoney = (float)Convert.ToDouble(this.lblCanUseMoney.Text);
+            float nowPrice = (float)Convert.ToDouble(item.currentVal) * 100;
+            if (nowMoney < nowPrice + 5)
+            {
+                return 0;
+            }*/
+
+            // 返回趋势的值
+            return this.CheckValTrend(item);
         }
 
         /// <summary>
@@ -500,16 +615,38 @@ namespace GuPiaoTool
 
             // 判断高点卖
             float yingkuiPer = this.SetYinkuiPer(item, null);
-            if (yingkuiPer > 0 && this.CanAutoTopSell(item, yingkuiPer))
+            if (yingkuiPer > item.topSellPoint || yingkuiPer < item.bottomSellPoint)
             {
-                return true;
+                // 大于高位卖点或低于低位卖点时
+                // 并且趋势向下，卖出
+                if (this.CheckValTrend(item) <= -5)
+                {
+                    // 5秒趋势向下
+                    return true;
+                }
+            }
+            else
+            {
+                // 正常情况下，如果10秒趋势向下，卖出
+                if (this.CheckValTrend(item) <= -10)
+                {
+                    // 10秒趋势向下
+                    return true;
+                }
             }
 
-            // 判断低点卖
-            if (yingkuiPer < 0 && this.CanAutoBottomSell(item, yingkuiPer))
-            {
-                return true;
-            }
+
+
+            //if (yingkuiPer > 0 && this.CanAutoTopSell(item, yingkuiPer))
+            //{
+            //    return true;
+            //}
+
+            //// 判断低点卖
+            //if (yingkuiPer < 0 && this.CanAutoBottomSell(item, yingkuiPer))
+            //{
+            //    return true;
+            //}
 
             return false;
         }
@@ -603,11 +740,14 @@ namespace GuPiaoTool
 
             lock (hisVal)
             {
-                // 计算5秒均值
-                this.CheckSecondsVal(item.secondsPoints[0], hisVal, 5);
+                lock (item.secondsPoints)
+                {
+                    // 计算5秒均值
+                    this.CheckSecondsVal(item.secondsPoints[0], hisVal, 5);
 
-                // 计算10秒均值
-                this.CheckSecondsVal(item.secondsPoints[1], hisVal, 10);
+                    // 计算10秒均值
+                    this.CheckSecondsVal(item.secondsPoints[1], hisVal, 10);
+                }
             }
         }
 
@@ -618,14 +758,90 @@ namespace GuPiaoTool
         {
             int index = hisVal.Count - 1;
             float sum = 0.0f;
+            int oldSecond = second;
             while (second > 0)
             {
-                sum += hisVal[second];
+                sum += hisVal[index--];
                 second--;
             }
 
             secondPoints[0] = secondPoints[1];
-            secondPoints[1] = sum / second;
+            secondPoints[1] = sum / oldSecond;
+        }
+
+        /// <summary>
+        /// 检查走势
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>5：5秒向上，10：10秒向上，-5：5秒向下，-10：10秒向下，0无变化</returns>
+        private int CheckValTrend(GuPiaoInfo item)
+        {
+            if (item.hisVal.Count < maxSecond)
+            {
+                return 0;
+            }
+
+            int index = item.hisVal.Count - 1;
+            lock (item.hisVal)
+            {
+                lock (item.secondsPoints)
+                {
+                    // 检查当前秒向下走势
+                    if ((item.hisVal[index - 1] - item.hisVal[index]) > this.trendChkVal1)
+                    {
+                        // 检查5秒向下趋势
+                        float[] secondPoints5 = item.secondsPoints[0];
+                        if (secondPoints5[0] - secondPoints5[1] > this.trendChkVal5)
+                        {
+                            // 检查10秒向下趋势
+                            float[] secondPoints10 = item.secondsPoints[1];
+                            if (secondPoints10[0] - secondPoints10[1] > this.trendChkVal5)
+                            {
+                                // 1秒，5秒，10秒都向下
+                                return -10;
+                            }
+                            else
+                            {
+                                // 1秒，5秒都向下
+                                return -5;
+                            }
+                        }
+                        else
+                        {
+                            // 1秒向下
+                            return -1;
+                        }
+                    }
+                    else if ((item.hisVal[index] - item.hisVal[index - 1]) > this.trendChkVal1)
+                    {
+                        // 检查向上趋势
+                        // 检查5秒向上趋势
+                        float[] secondPoints5 = item.secondsPoints[0];
+                        if (secondPoints5[1] - secondPoints5[0] > this.trendChkVal5)
+                        {
+                            // 检查10秒向上趋势
+                            float[] secondPoints10 = item.secondsPoints[1];
+                            if (secondPoints10[1] - secondPoints10[0] > this.trendChkVal5)
+                            {
+                                // 1秒，5秒，10秒都向上
+                                return 10;
+                            }
+                            else
+                            {
+                                // 1秒，5秒都向上
+                                return 5;
+                            }
+                        }
+                        else
+                        {
+                            // 1秒向上
+                            return 1;
+                        }
+                    }
+                }
+            }
+
+            return 0;
         }
 
         /// <summary>
@@ -723,7 +939,10 @@ namespace GuPiaoTool
                 mSyncContext.Post(this.DisplayData, null);
 
                 // 检查是否可以自动卖
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoCell));
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoSell));
+
+                // 检查是否可以自动买
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoBuy));
             }
         }
 
@@ -808,6 +1027,7 @@ namespace GuPiaoTool
                 guPiaoInfo[i].TotalCount = (uint)lineCollection[4].Value;
                 guPiaoInfo[i].CanUseCount = (uint)lineCollection[5].Value;
 
+                /*
                 // 判断开板买入
                 if (lineCollection[6].Value != null && (bool)(lineCollection[6].Value))
                 {
@@ -816,7 +1036,7 @@ namespace GuPiaoTool
                         // 如果买了，不管成功失败，下次取消买入，如果想再买，再点击即可
                         lineCollection[6].Value = false;
                     }
-                }
+                }*/
             }
 
             // 更新当前选中信息
@@ -1146,7 +1366,7 @@ namespace GuPiaoTool
         /// <param name="retMsg"></param>
         private void DispMsg(string retMsg)
         {
-            this.Text = "财富雪球 " + retMsg;
+            this.Text = this.toolsTitle + " " + retMsg;
         }
 
         /// <summary>

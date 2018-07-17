@@ -31,12 +31,6 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle17 = new System.Windows.Forms.DataGridViewCellStyle();
@@ -45,15 +39,14 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
             this.btnRun = new System.Windows.Forms.Button();
             this.grdGuPiao = new System.Windows.Forms.DataGridView();
-            this.bianHao = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.zuoriVal = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.currentVal = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.yinkuiPer = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.totalCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.CanUseCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.kaibanMairu = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.pnlBtn = new System.Windows.Forms.Panel();
             this.btnSqSell = new System.Windows.Forms.Button();
             this.btnSqBuy = new System.Windows.Forms.Button();
@@ -93,6 +86,13 @@
             this.dataGridViewTextBoxColumn6 = new System.Windows.Forms.DataGridViewButtonColumn();
             this.orderId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.orderDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.bianHao = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.zuoriVal = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.currentVal = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.yinkuiPer = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.totalCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.CanUseCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.buyFlg = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.grdGuPiao)).BeginInit();
             this.pnlBtn.SuspendLayout();
             this.pnlBaseInfo.SuspendLayout();
@@ -130,7 +130,7 @@
             this.yinkuiPer,
             this.totalCount,
             this.CanUseCount,
-            this.kaibanMairu});
+            this.buyFlg});
             dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Window;
             dataGridViewCellStyle8.Font = new System.Drawing.Font("MS UI Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
@@ -156,65 +156,6 @@
             this.grdGuPiao.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.grdGuPiao.Size = new System.Drawing.Size(670, 173);
             this.grdGuPiao.TabIndex = 1;
-            // 
-            // bianHao
-            // 
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.bianHao.DefaultCellStyle = dataGridViewCellStyle2;
-            this.bianHao.HeaderText = "bianHao";
-            this.bianHao.Name = "bianHao";
-            this.bianHao.ReadOnly = true;
-            // 
-            // zuoriVal
-            // 
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle3.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
-            this.zuoriVal.DefaultCellStyle = dataGridViewCellStyle3;
-            this.zuoriVal.HeaderText = "zuoriVal";
-            this.zuoriVal.Name = "zuoriVal";
-            this.zuoriVal.ReadOnly = true;
-            // 
-            // currentVal
-            // 
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle4.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
-            this.currentVal.DefaultCellStyle = dataGridViewCellStyle4;
-            this.currentVal.HeaderText = "currentVal";
-            this.currentVal.Name = "currentVal";
-            this.currentVal.ReadOnly = true;
-            // 
-            // yinkuiPer
-            // 
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle5.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
-            this.yinkuiPer.DefaultCellStyle = dataGridViewCellStyle5;
-            this.yinkuiPer.HeaderText = "yinkuiPer";
-            this.yinkuiPer.Name = "yinkuiPer";
-            this.yinkuiPer.ReadOnly = true;
-            // 
-            // totalCount
-            // 
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            this.totalCount.DefaultCellStyle = dataGridViewCellStyle6;
-            this.totalCount.HeaderText = "totalCount";
-            this.totalCount.Name = "totalCount";
-            this.totalCount.ReadOnly = true;
-            this.totalCount.Width = 80;
-            // 
-            // CanUseCount
-            // 
-            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            this.CanUseCount.DefaultCellStyle = dataGridViewCellStyle7;
-            this.CanUseCount.HeaderText = "CanUseCount";
-            this.CanUseCount.Name = "CanUseCount";
-            this.CanUseCount.ReadOnly = true;
-            this.CanUseCount.Width = 80;
-            // 
-            // kaibanMairu
-            // 
-            this.kaibanMairu.HeaderText = "kaibanMairu";
-            this.kaibanMairu.Name = "kaibanMairu";
-            this.kaibanMairu.ReadOnly = true;
             // 
             // pnlBtn
             // 
@@ -678,6 +619,67 @@
             this.orderDate.ReadOnly = true;
             this.orderDate.Visible = false;
             // 
+            // bianHao
+            // 
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.bianHao.DefaultCellStyle = dataGridViewCellStyle2;
+            this.bianHao.HeaderText = "bianHao";
+            this.bianHao.Name = "bianHao";
+            this.bianHao.ReadOnly = true;
+            // 
+            // zuoriVal
+            // 
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle3.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.zuoriVal.DefaultCellStyle = dataGridViewCellStyle3;
+            this.zuoriVal.HeaderText = "zuoriVal";
+            this.zuoriVal.Name = "zuoriVal";
+            this.zuoriVal.ReadOnly = true;
+            // 
+            // currentVal
+            // 
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle4.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.currentVal.DefaultCellStyle = dataGridViewCellStyle4;
+            this.currentVal.HeaderText = "currentVal";
+            this.currentVal.Name = "currentVal";
+            this.currentVal.ReadOnly = true;
+            // 
+            // yinkuiPer
+            // 
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle5.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.yinkuiPer.DefaultCellStyle = dataGridViewCellStyle5;
+            this.yinkuiPer.HeaderText = "yinkuiPer";
+            this.yinkuiPer.Name = "yinkuiPer";
+            this.yinkuiPer.ReadOnly = true;
+            // 
+            // totalCount
+            // 
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            this.totalCount.DefaultCellStyle = dataGridViewCellStyle6;
+            this.totalCount.HeaderText = "totalCount";
+            this.totalCount.Name = "totalCount";
+            this.totalCount.ReadOnly = true;
+            this.totalCount.Width = 80;
+            // 
+            // CanUseCount
+            // 
+            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            this.CanUseCount.DefaultCellStyle = dataGridViewCellStyle7;
+            this.CanUseCount.HeaderText = "CanUseCount";
+            this.CanUseCount.Name = "CanUseCount";
+            this.CanUseCount.ReadOnly = true;
+            this.CanUseCount.Width = 80;
+            // 
+            // buyFlg
+            // 
+            this.buyFlg.HeaderText = "buyFlg";
+            this.buyFlg.Name = "buyFlg";
+            this.buyFlg.ReadOnly = true;
+            this.buyFlg.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.buyFlg.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            // 
             // GuPiaoTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -734,13 +736,6 @@
         private System.Windows.Forms.Label lblCanUseMoney;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.DataGridView grdHis;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bianHao;
-        private System.Windows.Forms.DataGridViewTextBoxColumn zuoriVal;
-        private System.Windows.Forms.DataGridViewTextBoxColumn currentVal;
-        private System.Windows.Forms.DataGridViewTextBoxColumn yinkuiPer;
-        private System.Windows.Forms.DataGridViewTextBoxColumn totalCount;
-        private System.Windows.Forms.DataGridViewTextBoxColumn CanUseCount;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn kaibanMairu;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
@@ -751,6 +746,13 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn orderDate;
         private System.Windows.Forms.Button btnSqSell;
         private System.Windows.Forms.Button btnSqBuy;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bianHao;
+        private System.Windows.Forms.DataGridViewTextBoxColumn zuoriVal;
+        private System.Windows.Forms.DataGridViewTextBoxColumn currentVal;
+        private System.Windows.Forms.DataGridViewTextBoxColumn yinkuiPer;
+        private System.Windows.Forms.DataGridViewTextBoxColumn totalCount;
+        private System.Windows.Forms.DataGridViewTextBoxColumn CanUseCount;
+        private System.Windows.Forms.DataGridViewTextBoxColumn buyFlg;
     }
 }
 
