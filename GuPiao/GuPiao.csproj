@@ -108,6 +108,7 @@
     </Compile>
     <Compile Include="TradeEventSink.cs" />
     <Compile Include="TradeUtil.cs" />
+    <Compile Include="Win32API.cs" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="MSScriptControl">

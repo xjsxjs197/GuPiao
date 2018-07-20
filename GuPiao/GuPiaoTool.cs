@@ -36,6 +36,11 @@ namespace GuPiaoTool
         List<string> logInfo = new List<string>();
 
         /// <summary>
+        /// 记录错误Log信息
+        /// </summary>
+        List<string> logError = new List<string>();
+
+        /// <summary>
         /// 最大记录10秒数据
         /// </summary>
         int maxSecond = 10;
@@ -44,13 +49,19 @@ namespace GuPiaoTool
         /// 检查趋势时的判断值（秒）
         /// 超过就是向上或向下
         /// </summary>
-        float trendChkVal1 = 0.5f;
+        float trendChkVal1 = 0.1f;
 
         /// <summary>
         /// 检查趋势时的判断值（5秒）
         /// 超过就是向上或向下
         /// </summary>
-        float trendChkVal5 = 0.3f;
+        float trendChkVal5 = 0.45f;
+
+        /// <summary>
+        /// 检查趋势时的判断值（10秒）
+        /// 超过就是向上或向下
+        /// </summary>
+        float trendChkVal10 = 0.8f;
 
         /// <summary>
         /// 从Sina取得的数据
@@ -93,6 +104,9 @@ namespace GuPiaoTool
             this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
             this.grdHis.CellContentClick += new DataGridViewCellEventHandler(this.grdHis_CellContentClick);
             //this.grdGuPiao.CellContentClick += new DataGridViewCellEventHandler(this.grdGuPiao_CellContentClick);
+
+            // 修改系统时间
+            this.ChangeSystemTime();
 
             // 设置信息
             this.tradeUtil.SetCallBack(this.ThreadAsyncCallBack);
@@ -228,7 +242,24 @@ namespace GuPiaoTool
             this.tradeUtil.TradeRelease();
 
             // 记录Log信息
-            File.WriteAllLines(@"./logs/" + DateTime.Now.ToString("yyyyMMdd") + ".txt", this.logInfo.ToArray(), Encoding.UTF8);
+            if (this.logInfo.Count > 0)
+            {
+                File.WriteAllLines(@"./logs/" + DateTime.Now.ToString("yyyyMMdd") + "PointTrend.txt", this.logInfo.ToArray(), Encoding.UTF8);
+            }
+
+            //// 测试用，保存所有数据
+            //StringBuilder sb = new StringBuilder();
+            //foreach (GuPiaoInfo item in this.guPiaoInfo)
+            //{
+            //    sb.Append(item.fundcode).Append("\r\n");
+            //    item.allPointsVal[0].ForEach(p => sb.Append(p.ToString("00.00")).Append(" "));
+            //    sb.Append("\r\n");
+            //    item.allPointsVal[1].ForEach(p => sb.Append(p.ToString("00.00")).Append(" "));
+            //    sb.Append("\r\n");
+            //    item.allPointsVal[2].ForEach(p => sb.Append(p.ToString("00.00")).Append(" "));
+            //    sb.Append("\r\n");
+            //}
+            //File.WriteAllText(@"./logs/" + DateTime.Now.ToString("yyyyMMdd") + "PointVal.txt", sb.ToString(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -238,11 +269,19 @@ namespace GuPiaoTool
         /// <param name="e"></param>
         private void grdGuPiao_SelectionChanged(object sender, EventArgs e)
         {
-            // 选中某一条信息
-            this.SelectGuPiao();
+            try
+            {
+                // 选中某一条信息
+                this.SelectGuPiao();
 
-            // 设置最新价格
-            this.SetInputPrice();
+                // 设置最新价格
+                this.SetInputPrice();
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), ex);
+            }
         }
 
         /// <summary>
@@ -279,6 +318,23 @@ namespace GuPiaoTool
         #endregion
 
         #region 私有方法
+
+        /// <summary>
+        /// 修改系统时间
+        /// </summary>
+        private void ChangeSystemTime()
+        {
+            // 取得当前系统时间
+            DateTime t = DateTime.Now;
+            // 修改为2018/4/23
+            DateTime newTm = new DateTime(2018, 4, 23, t.Hour, t.Minute, t.Second, t.Millisecond);
+
+            // 转换System.DateTime到SYSTEMTIME
+            SYSTEMTIME st = new SYSTEMTIME();
+            st.FromDateTime(newTm);
+            // 调用Win32 API设置系统时间
+            Win32API.SetLocalTime(ref st);
+        }
 
         /// <summary>
         /// 买的共通
@@ -475,7 +531,8 @@ namespace GuPiaoTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.StackTrace);
+                //MessageBox.Show(ex.StackTrace);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), ex);
             }
         }
 
@@ -513,7 +570,8 @@ namespace GuPiaoTool
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                //MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
             }
         }
 
@@ -557,7 +615,8 @@ namespace GuPiaoTool
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                //MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
             }
 
             // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
@@ -570,15 +629,23 @@ namespace GuPiaoTool
         /// <param name="state"></param>
         private void DispTrendInfo(object state)
         {
-            Dictionary<string, string> buyInfo = (Dictionary<string, string>)state;
-            for (int i = 1; i < this.grdGuPiao.Rows.Count; i++)
+            try
             {
-                DataGridViewCellCollection lineCollection = this.grdGuPiao.Rows[i].Cells;
-                string stockCd = lineCollection[0].Value.ToString();
-                if (buyInfo.ContainsKey(stockCd))
+                Dictionary<string, string> buyInfo = (Dictionary<string, string>)state;
+                for (int i = 1; i < this.grdGuPiao.Rows.Count; i++)
                 {
-                    lineCollection["buyFlg"].Value = buyInfo[stockCd];
+                    DataGridViewCellCollection lineCollection = this.grdGuPiao.Rows[i].Cells;
+                    string stockCd = lineCollection[0].Value.ToString();
+                    if (buyInfo.ContainsKey(stockCd))
+                    {
+                        lineCollection["buyFlg"].Value = buyInfo[stockCd];
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                //MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
             }
         }
 
@@ -613,40 +680,42 @@ namespace GuPiaoTool
                 return false;
             }
 
-            // 判断高点卖
             float yingkuiPer = this.SetYinkuiPer(item, null);
-            if (yingkuiPer > item.topSellPoint || yingkuiPer < item.bottomSellPoint)
-            {
-                // 大于高位卖点或低于低位卖点时
-                // 并且趋势向下，卖出
-                if (this.CheckValTrend(item) <= -5)
-                {
-                    // 5秒趋势向下
-                    return true;
-                }
-            }
-            else
-            {
-                // 正常情况下，如果10秒趋势向下，卖出
-                if (this.CheckValTrend(item) <= -10)
-                {
-                    // 10秒趋势向下
-                    return true;
-                }
-            }
 
-
-
-            //if (yingkuiPer > 0 && this.CanAutoTopSell(item, yingkuiPer))
+            //// 使用趋势判断
+            //// 判断高点卖
+            //if (yingkuiPer > item.topSellPoint || yingkuiPer < item.bottomSellPoint)
             //{
-            //    return true;
+            //    // 大于高位卖点或低于低位卖点时
+            //    // 并且趋势向下，卖出
+            //    if (this.CheckValTrend(item) <= -5)
+            //    {
+            //        // 5秒趋势向下
+            //        return true;
+            //    }
+            //}
+            //else
+            //{
+            //    // 正常情况下，如果10秒趋势向下，卖出
+            //    if (this.CheckValTrend(item) <= -10)
+            //    {
+            //        // 10秒趋势向下
+            //        return true;
+            //    }
             //}
 
-            //// 判断低点卖
-            //if (yingkuiPer < 0 && this.CanAutoBottomSell(item, yingkuiPer))
-            //{
-            //    return true;
-            //}
+            // 使用设定的卖点判断
+            // 判断高点卖
+            if (yingkuiPer > 0 && this.CanAutoTopSell(item, yingkuiPer))
+            {
+                return true;
+            }
+
+            // 判断低点卖
+            if (yingkuiPer < 0 && this.CanAutoBottomSell(item, yingkuiPer))
+            {
+                return true;
+            }
 
             return false;
         }
@@ -698,28 +767,33 @@ namespace GuPiaoTool
         /// <returns></returns>
         private bool CanAutoBottomSell(GuPiaoInfo item, float yingkuiPer)
         {
-            // 判断低点卖
-            if (item.isWaitingSell)
+            //// 判断低点卖
+            //if (item.isWaitingSell)
+            //{
+            //    // 如果开始下降
+            //    if (yingkuiPer < (item.bottomSellPoint - item.waitPoint))
+            //    {
+            //        // 低于了最低点 - 犹豫点，开始自动卖
+            //        item.isWaitingSell = false;
+            //        return true;
+            //    }
+            //    else if (yingkuiPer > item.bottomSellPoint)
+            //    {
+            //        // 已经升高到卖点以上了，取消自动卖的等待
+            //        item.isWaitingSell = false;
+            //        item.curSellWaitTime = item.sellWaitTime;
+            //    }
+            //}
+            //else if (yingkuiPer < item.bottomSellPoint)
+            //{
+            //    // 到达设置的卖点，开始犹豫等待
+            //    item.isWaitingSell = true;
+            //    item.curSellWaitTime = item.sellWaitTime;
+            //}
+
+            if (yingkuiPer < item.bottomSellPoint)
             {
-                // 如果开始下降
-                if (yingkuiPer < (item.bottomSellPoint - item.waitPoint))
-                {
-                    // 低于了最低点 - 犹豫点，开始自动卖
-                    item.isWaitingSell = false;
-                    return true;
-                }
-                else if (yingkuiPer > item.bottomSellPoint)
-                {
-                    // 已经升高到卖点以上了，取消自动卖的等待
-                    item.isWaitingSell = false;
-                    item.curSellWaitTime = item.sellWaitTime;
-                }
-            }
-            else if (yingkuiPer < item.bottomSellPoint)
-            {
-                // 到达设置的卖点，开始犹豫等待
-                item.isWaitingSell = true;
-                item.curSellWaitTime = item.sellWaitTime;
+                return true;
             }
 
             return false;
@@ -747,6 +821,11 @@ namespace GuPiaoTool
 
                     // 计算10秒均值
                     this.CheckSecondsVal(item.secondsPoints[1], hisVal, 10);
+
+                    //// 测试用，保存所有数据
+                    //item.allPointsVal[0].Add((float)Convert.ToDouble(item.currentVal));
+                    //item.allPointsVal[1].Add(item.secondsPoints[0][1]);
+                    //item.allPointsVal[2].Add(item.secondsPoints[1][1]);
                 }
             }
         }
@@ -759,7 +838,7 @@ namespace GuPiaoTool
             int index = hisVal.Count - 1;
             float sum = 0.0f;
             int oldSecond = second;
-            while (second > 0)
+            while (second > 0 && index >= 0)
             {
                 sum += hisVal[index--];
                 second--;
@@ -781,64 +860,73 @@ namespace GuPiaoTool
                 return 0;
             }
 
-            int index = item.hisVal.Count - 1;
-            lock (item.hisVal)
+            try
             {
-                lock (item.secondsPoints)
+
+                lock (item.hisVal)
                 {
-                    // 检查当前秒向下走势
-                    if ((item.hisVal[index - 1] - item.hisVal[index]) > this.trendChkVal1)
+                    int index = item.hisVal.Count - 1;
+                    lock (item.secondsPoints)
                     {
-                        // 检查5秒向下趋势
-                        float[] secondPoints5 = item.secondsPoints[0];
-                        if (secondPoints5[0] - secondPoints5[1] > this.trendChkVal5)
+                        // 检查当前秒向下走势
+                        if ((item.hisVal[index - 1] - item.hisVal[index]) > this.trendChkVal1)
                         {
-                            // 检查10秒向下趋势
-                            float[] secondPoints10 = item.secondsPoints[1];
-                            if (secondPoints10[0] - secondPoints10[1] > this.trendChkVal5)
+                            // 检查5秒向下趋势
+                            float[] secondPoints5 = item.secondsPoints[0];
+                            if (secondPoints5[0] - secondPoints5[1] > this.trendChkVal5)
                             {
-                                // 1秒，5秒，10秒都向下
-                                return -10;
+                                // 检查10秒向下趋势
+                                float[] secondPoints10 = item.secondsPoints[1];
+                                if (secondPoints10[0] - secondPoints10[1] > this.trendChkVal10)
+                                {
+                                    // 1秒，5秒，10秒都向下
+                                    return -10;
+                                }
+                                else
+                                {
+                                    // 1秒，5秒都向下
+                                    return -5;
+                                }
                             }
                             else
                             {
-                                // 1秒，5秒都向下
-                                return -5;
+                                // 1秒向下
+                                return -1;
                             }
                         }
-                        else
+                        else if ((item.hisVal[index] - item.hisVal[index - 1]) > this.trendChkVal1)
                         {
-                            // 1秒向下
-                            return -1;
-                        }
-                    }
-                    else if ((item.hisVal[index] - item.hisVal[index - 1]) > this.trendChkVal1)
-                    {
-                        // 检查向上趋势
-                        // 检查5秒向上趋势
-                        float[] secondPoints5 = item.secondsPoints[0];
-                        if (secondPoints5[1] - secondPoints5[0] > this.trendChkVal5)
-                        {
-                            // 检查10秒向上趋势
-                            float[] secondPoints10 = item.secondsPoints[1];
-                            if (secondPoints10[1] - secondPoints10[0] > this.trendChkVal5)
+                            // 检查向上趋势
+                            // 检查5秒向上趋势
+                            float[] secondPoints5 = item.secondsPoints[0];
+                            if (secondPoints5[1] - secondPoints5[0] > this.trendChkVal5)
                             {
-                                // 1秒，5秒，10秒都向上
-                                return 10;
+                                // 检查10秒向上趋势
+                                float[] secondPoints10 = item.secondsPoints[1];
+                                if (secondPoints10[1] - secondPoints10[0] > this.trendChkVal10)
+                                {
+                                    // 1秒，5秒，10秒都向上
+                                    return 10;
+                                }
+                                else
+                                {
+                                    // 1秒，5秒都向上
+                                    return 5;
+                                }
                             }
                             else
                             {
-                                // 1秒，5秒都向上
-                                return 5;
+                                // 1秒向上
+                                return 1;
                             }
-                        }
-                        else
-                        {
-                            // 1秒向上
-                            return 1;
                         }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                //MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
             }
 
             return 0;
@@ -927,22 +1015,29 @@ namespace GuPiaoTool
         /// </summary>
         private void MultThreadRefreshPage(object state)
         {
-            // 从Sina取得基础数据
-            string url = "http://hq.sinajs.cn/list=" + string.Join(",", noList.ToArray());
-            string data = "";
-            string result = HttpGet(url, data);
-            if (!string.IsNullOrEmpty(result) && result.Length > 20)
+            try
             {
-                this.GetGuPiaoInfo(noList, nameList, result);
+                // 从Sina取得基础数据
+                string url = "http://hq.sinajs.cn/list=" + string.Join(",", noList.ToArray());
+                string data = "";
+                string result = HttpGet(url, data);
+                if (!string.IsNullOrEmpty(result) && result.Length > 20)
+                {
+                    this.GetGuPiaoInfo(noList, nameList, result);
 
-                // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
-                mSyncContext.Post(this.DisplayData, null);
+                    // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+                    mSyncContext.Post(this.DisplayData, null);
 
-                // 检查是否可以自动卖
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoSell));
+                    // 检查是否可以自动卖
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoSell));
 
-                // 检查是否可以自动买
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoBuy));
+                    // 检查是否可以自动买
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoBuy));
+                }
+            }
+            catch (Exception e)
+            {
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
             }
         }
 
@@ -1146,6 +1241,12 @@ namespace GuPiaoTool
                     item.secondsPoints.Add(new float[2]);
                     // 10秒均值数据
                     item.secondsPoints.Add(new float[2]);
+
+                    // 测试用
+                    item.allPointsVal = new List<List<float>>();
+                    item.allPointsVal.Add(new List<float>());
+                    item.allPointsVal.Add(new List<float>());
+                    item.allPointsVal.Add(new List<float>());
 
                     // 取得自动的卖点
                     BuySellPoint pointInfo = this.buySellPoints.FirstOrDefault(p => p.StockCd.Equals(item.fundcode));
@@ -1522,8 +1623,34 @@ namespace GuPiaoTool
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
             }
+        }
+
+        /// <summary>
+        /// 写入错误Log
+        /// </summary>
+        /// <param name="state"></param>
+        private void AppendErrorLog(object state)
+        {
+            string errorLogFile = @".\logs\" + DateTime.Now.ToString("yyyyMMdd") + "_err.txt";
+            List<string> errorInfo = new List<string>();
+            if (File.Exists(errorLogFile))
+            {
+                errorInfo.AddRange(File.ReadAllLines(errorLogFile, Encoding.UTF8));
+                if (errorInfo.Count > 0 && string.IsNullOrEmpty(errorInfo[errorInfo.Count - 1]))
+                {
+                    errorInfo.RemoveAt(errorInfo.Count - 1);
+                }
+            }
+
+            Exception e = (Exception)state;
+            errorInfo.Add((string)(DateTime.Now.ToString("HH:mm:ss") + " " + e.Message + "\n" + e.StackTrace));
+
+            File.WriteAllLines(errorLogFile, errorInfo.ToArray(), Encoding.UTF8);
+
+            // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+            mSyncContext.Post(this.ThreadDispMsg, errorInfo[errorInfo.Count - 1]);
         }
 
         #endregion

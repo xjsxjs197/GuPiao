@@ -41,6 +41,12 @@ namespace GuPiaoTool
         public List<float[]> secondsPoints { get; set; }
 
         /// <summary>
+        /// 记录多秒的所有数据（测试用）
+        /// 1秒，5秒，10秒
+        /// </summary>
+        public List<List<float>> allPointsVal { get; set; }
+
+        /// <summary>
         /// 自动卖的等待时间
         /// </summary>
         public int sellWaitTime { get; set; }
