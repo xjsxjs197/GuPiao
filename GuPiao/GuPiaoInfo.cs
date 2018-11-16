@@ -1,5 +1,6 @@
 ﻿
 using System.Collections.Generic;
+using System.Text;
 namespace GuPiaoTool
 {
     public class GuPiaoInfo
@@ -30,21 +31,24 @@ namespace GuPiaoTool
         public string currentVal { get; set; }
 
         /// <summary>
-        /// 记录秒的数据
+        /// 当前秒数
         /// </summary>
-        public List<float> hisVal { get; set; }
+        public int secCounter { get; set; }
 
         /// <summary>
-        /// 记录多秒的均值数据
-        /// 3秒，5秒，10秒等，每个数据两个值，当前值和上一个值
+        /// 记录上一个最小时间段的数据
         /// </summary>
-        public List<float[]> secondsPoints { get; set; }
+        public float lastVal { get; set; }
 
         /// <summary>
-        /// 记录多秒的所有数据（测试用）
-        /// 1秒，5秒，10秒
+        /// 记录多个时间段的走势信息
         /// </summary>
-        public List<List<float>> allPointsVal { get; set; }
+        public List<float> valsList { get; set; }
+
+        /// <summary>
+        /// 当前趋势（B开头为买，S开头为卖，连续的相同字母越多，越强烈）
+        /// </summary>
+        public StringBuilder curTrend { get; set; }
 
         /// <summary>
         /// 自动卖的等待时间
@@ -75,6 +79,16 @@ namespace GuPiaoTool
         /// 犹豫的点（上下浮动的点）
         /// </summary>
         public float waitPoint { get; set; }
+
+        /// <summary>
+        /// 可以自动卖
+        /// </summary>
+        public bool isAutoSell { get; set; }
+
+        /// <summary>
+        /// 可以自动买
+        /// </summary>
+        public bool isAutoBuy { get; set; }
 
         /// <summary>
         /// 正在等待卖

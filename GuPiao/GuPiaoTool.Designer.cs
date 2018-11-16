@@ -93,6 +93,8 @@
             this.totalCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.CanUseCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.buyFlg = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.autoBuy = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.autoSell = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.grdGuPiao)).BeginInit();
             this.pnlBtn.SuspendLayout();
             this.pnlBaseInfo.SuspendLayout();
@@ -130,7 +132,9 @@
             this.yinkuiPer,
             this.totalCount,
             this.CanUseCount,
-            this.buyFlg});
+            this.buyFlg,
+            this.autoBuy,
+            this.autoSell});
             dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Window;
             dataGridViewCellStyle8.Font = new System.Drawing.Font("MS UI Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
@@ -154,7 +158,7 @@
             this.grdGuPiao.RowHeadersVisible = false;
             this.grdGuPiao.RowTemplate.Height = 21;
             this.grdGuPiao.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.grdGuPiao.Size = new System.Drawing.Size(670, 173);
+            this.grdGuPiao.Size = new System.Drawing.Size(689, 173);
             this.grdGuPiao.TabIndex = 1;
             // 
             // pnlBtn
@@ -178,7 +182,7 @@
             this.pnlBtn.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlBtn.Location = new System.Drawing.Point(0, 345);
             this.pnlBtn.Name = "pnlBtn";
-            this.pnlBtn.Size = new System.Drawing.Size(670, 59);
+            this.pnlBtn.Size = new System.Drawing.Size(689, 59);
             this.pnlBtn.TabIndex = 3;
             // 
             // btnSqSell
@@ -362,7 +366,7 @@
             this.pnlBaseInfo.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlBaseInfo.Location = new System.Drawing.Point(0, 286);
             this.pnlBaseInfo.Name = "pnlBaseInfo";
-            this.pnlBaseInfo.Size = new System.Drawing.Size(670, 59);
+            this.pnlBaseInfo.Size = new System.Drawing.Size(689, 59);
             this.pnlBaseInfo.TabIndex = 4;
             // 
             // lblCanGetMoney
@@ -549,7 +553,7 @@
             this.grdHis.RowHeadersVisible = false;
             this.grdHis.RowTemplate.Height = 21;
             this.grdHis.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.grdHis.Size = new System.Drawing.Size(670, 113);
+            this.grdHis.Size = new System.Drawing.Size(689, 113);
             this.grdHis.TabIndex = 5;
             // 
             // dataGridViewTextBoxColumn1
@@ -635,6 +639,7 @@
             this.zuoriVal.HeaderText = "zuoriVal";
             this.zuoriVal.Name = "zuoriVal";
             this.zuoriVal.ReadOnly = true;
+            this.zuoriVal.Width = 80;
             // 
             // currentVal
             // 
@@ -644,6 +649,7 @@
             this.currentVal.HeaderText = "currentVal";
             this.currentVal.Name = "currentVal";
             this.currentVal.ReadOnly = true;
+            this.currentVal.Width = 80;
             // 
             // yinkuiPer
             // 
@@ -653,6 +659,7 @@
             this.yinkuiPer.HeaderText = "yinkuiPer";
             this.yinkuiPer.Name = "yinkuiPer";
             this.yinkuiPer.ReadOnly = true;
+            this.yinkuiPer.Width = 80;
             // 
             // totalCount
             // 
@@ -679,12 +686,27 @@
             this.buyFlg.ReadOnly = true;
             this.buyFlg.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.buyFlg.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.buyFlg.Width = 60;
+            // 
+            // autoBuy
+            // 
+            this.autoBuy.HeaderText = "autoBuy";
+            this.autoBuy.Name = "autoBuy";
+            this.autoBuy.ReadOnly = true;
+            this.autoBuy.Width = 60;
+            // 
+            // autoSell
+            // 
+            this.autoSell.HeaderText = "autoSell";
+            this.autoSell.Name = "autoSell";
+            this.autoSell.ReadOnly = true;
+            this.autoSell.Width = 60;
             // 
             // GuPiaoTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(670, 404);
+            this.ClientSize = new System.Drawing.Size(689, 404);
             this.Controls.Add(this.grdGuPiao);
             this.Controls.Add(this.grdHis);
             this.Controls.Add(this.pnlBaseInfo);
@@ -753,6 +775,8 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn totalCount;
         private System.Windows.Forms.DataGridViewTextBoxColumn CanUseCount;
         private System.Windows.Forms.DataGridViewTextBoxColumn buyFlg;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn autoBuy;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn autoSell;
     }
 }
 

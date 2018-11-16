@@ -699,6 +699,42 @@ namespace GuPiao
             }
         }
 
+        /// <summary>
+        /// 取得当前最新的金额信息
+        /// </summary>
+        public object[] GetCurrentMoneyInfo()
+        {
+            ITradeRecord StockRecord = null;
+            object[] moneyInfo = null;
+
+            try
+            {
+                StockRecord = this.GetStockInfo("000001");
+                if (!this.IsSuccess)
+                {
+                    moneyInfo = null;
+                }
+                else
+                {
+                    moneyInfo = this.GetMoneyParam();
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+            }
+            finally
+            {
+                if (StockRecord != null)
+                {
+                    StockRecord.Clear();
+                    StockRecord = null;
+                }
+            }
+
+            return moneyInfo;
+        }
+
         #endregion
 
         #region 私有方法

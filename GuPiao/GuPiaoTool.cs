@@ -31,6 +31,21 @@ namespace GuPiaoTool
         string toolsTitle = "财富雪球V4.0";
 
         /// <summary>
+        /// 每N秒检查一次
+        /// </summary>
+        const int VAL_CHK_RANGE = 5;
+
+        /// <summary>
+        /// 最大记录的数据块数（10分钟=600秒=5秒*120）
+        /// </summary>
+        const int MAX_BLOCK = 120;
+
+        /// <summary>
+        /// 判断趋势用的最小值
+        /// </summary>
+        const float CHK_MIN_VAL = 0.1f;
+
+        /// <summary>
         /// 记录Log信息
         /// </summary>
         List<string> logInfo = new List<string>();
@@ -39,29 +54,6 @@ namespace GuPiaoTool
         /// 记录错误Log信息
         /// </summary>
         List<string> logError = new List<string>();
-
-        /// <summary>
-        /// 最大记录10秒数据
-        /// </summary>
-        int maxSecond = 10;
-
-        /// <summary>
-        /// 检查趋势时的判断值（秒）
-        /// 超过就是向上或向下
-        /// </summary>
-        float trendChkVal1 = 0.1f;
-
-        /// <summary>
-        /// 检查趋势时的判断值（5秒）
-        /// 超过就是向上或向下
-        /// </summary>
-        float trendChkVal5 = 0.45f;
-
-        /// <summary>
-        /// 检查趋势时的判断值（10秒）
-        /// 超过就是向上或向下
-        /// </summary>
-        float trendChkVal10 = 0.8f;
 
         /// <summary>
         /// 从Sina取得的数据
@@ -102,8 +94,8 @@ namespace GuPiaoTool
             this.rdoSync.CheckedChanged += new EventHandler(this.rdoSync_CheckedChanged);
             this.FormClosing += new FormClosingEventHandler(this.GuPiaoTool_FormClosing);
             this.grdGuPiao.SelectionChanged += new EventHandler(this.grdGuPiao_SelectionChanged);
+            this.grdGuPiao.CellContentClick += new DataGridViewCellEventHandler(this.grdGuPiao_CellContentClick);
             this.grdHis.CellContentClick += new DataGridViewCellEventHandler(this.grdHis_CellContentClick);
-            //this.grdGuPiao.CellContentClick += new DataGridViewCellEventHandler(this.grdGuPiao_CellContentClick);
 
             // 修改系统时间
             this.ChangeSystemTime();
@@ -298,6 +290,41 @@ namespace GuPiaoTool
 
             DataGridViewCellCollection lineCollection = this.grdHis.Rows[e.RowIndex].Cells;
             this.tradeUtil.CancelOrder(lineCollection[0].Value as string, lineCollection[6].Value as string);
+        }
+
+        /// <summary>
+        /// 设置自动买卖
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void grdGuPiao_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 1 || (e.ColumnIndex != 7 && e.ColumnIndex != 8))
+            {
+                return;
+            }
+
+            object oldVal = this.grdGuPiao.Rows[e.RowIndex].Cells[e.ColumnIndex].Value;
+            if (oldVal == null || (bool)oldVal == false)
+            {
+                oldVal = true;
+            }
+            else
+            {
+                oldVal = false;
+            }
+
+            this.grdGuPiao.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = oldVal;
+
+            // 更新自动买卖标志
+            if (e.ColumnIndex == 7)
+            {
+                this.guPiaoInfo[e.RowIndex].isAutoBuy = (bool)oldVal;
+            }
+            else
+            {
+                this.guPiaoInfo[e.RowIndex].isAutoSell = (bool)oldVal;
+            }
         }
 
         /*
@@ -587,30 +614,11 @@ namespace GuPiaoTool
                 {
                     string trendTxt = string.Empty;
                     string stockInfo = guPiaoItem.fundcode + "(" + guPiaoItem.name + ")";
-                    switch (this.CanAutoBuy(guPiaoItem))
-                    {
-                        case 5:
-                            trendTxt = "↑";
-                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
-                            break;
+                    
+                    // 判断当前走势
+                    this.CheckValTrend(guPiaoItem);
 
-                        case 10:
-                            trendTxt = "↑↑";
-                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
-                            break;
-
-                        case -5:
-                            trendTxt = "↓";
-                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
-                            break;
-
-                        case -10:
-                            trendTxt = "↓↓";
-                            this.logInfo.Add(stockInfo + " " + DateTime.Now.ToString("HHmmss") + " " + trendTxt);
-                            break;
-                    }
-
-                    buyInfo.Add(stockInfo, trendTxt);
+                    buyInfo.Add(stockInfo, guPiaoItem.curTrend.ToString());
                 }
             }
             catch (Exception e)
@@ -647,25 +655,6 @@ namespace GuPiaoTool
                 //MessageBox.Show(e.Message + "\n" + e.StackTrace);
                 ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
             }
-        }
-
-        /// <summary>
-        /// 检查是否可以自动买
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private int CanAutoBuy(GuPiaoInfo item)
-        {
-            /*
-            float nowMoney = (float)Convert.ToDouble(this.lblCanUseMoney.Text);
-            float nowPrice = (float)Convert.ToDouble(item.currentVal) * 100;
-            if (nowMoney < nowPrice + 5)
-            {
-                return 0;
-            }*/
-
-            // 返回趋势的值
-            return this.CheckValTrend(item);
         }
 
         /// <summary>
@@ -800,136 +789,83 @@ namespace GuPiaoTool
         }
 
         /// <summary>
-        /// 检查均值数据（10秒，5秒，3秒等）
+        /// 判断当前走势
         /// </summary>
         /// <param name="state"></param>
-        private void CheckSecondPoints(object state)
+        private void CheckValTrend(object state)
         { 
             GuPiaoInfo item = (GuPiaoInfo)state;
-            List<float> hisVal = item.hisVal;
-            if (hisVal.Count < maxSecond)
+            List<float> valsList = item.valsList;
+            if (valsList.Count < 2)
             {
                 return;
             }
 
-            lock (hisVal)
+            lock (valsList)
             {
-                lock (item.secondsPoints)
+                int index = valsList.Count - 1;
+                if (valsList[index] > CHK_MIN_VAL && valsList[index - 1] > CHK_MIN_VAL)
                 {
-                    // 计算5秒均值
-                    this.CheckSecondsVal(item.secondsPoints[0], hisVal, 5);
+                    // 当前是上升趋势
+                    item.curTrend.Append("B");
 
-                    // 计算10秒均值
-                    this.CheckSecondsVal(item.secondsPoints[1], hisVal, 10);
-
-                    //// 测试用，保存所有数据
-                    //item.allPointsVal[0].Add((float)Convert.ToDouble(item.currentVal));
-                    //item.allPointsVal[1].Add(item.secondsPoints[0][1]);
-                    //item.allPointsVal[2].Add(item.secondsPoints[1][1]);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 计算N秒的均值数据
-        /// </summary>
-        private void CheckSecondsVal(float[] secondPoints, List<float> hisVal, int second)
-        {
-            int index = hisVal.Count - 1;
-            float sum = 0.0f;
-            int oldSecond = second;
-            while (second > 0 && index >= 0)
-            {
-                sum += hisVal[index--];
-                second--;
-            }
-
-            secondPoints[0] = secondPoints[1];
-            secondPoints[1] = sum / oldSecond;
-        }
-
-        /// <summary>
-        /// 检查走势
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns>5：5秒向上，10：10秒向上，-5：5秒向下，-10：10秒向下，0无变化</returns>
-        private int CheckValTrend(GuPiaoInfo item)
-        {
-            if (item.hisVal.Count < maxSecond)
-            {
-                return 0;
-            }
-
-            try
-            {
-
-                lock (item.hisVal)
-                {
-                    int index = item.hisVal.Count - 1;
-                    lock (item.secondsPoints)
+                    // 判断以前的趋势，如果是下降或水平，则说明到底部了，上升趋势可能会很强烈
+                    index -= 2;
+                    while (index >= 1)
                     {
-                        // 检查当前秒向下走势
-                        if ((item.hisVal[index - 1] - item.hisVal[index]) > this.trendChkVal1)
+                        if (valsList[index] <= CHK_MIN_VAL && valsList[index - 1] <= CHK_MIN_VAL)
                         {
-                            // 检查5秒向下趋势
-                            float[] secondPoints5 = item.secondsPoints[0];
-                            if (secondPoints5[0] - secondPoints5[1] > this.trendChkVal5)
+                            if (item.curTrend.Length < 3)
                             {
-                                // 检查10秒向下趋势
-                                float[] secondPoints10 = item.secondsPoints[1];
-                                if (secondPoints10[0] - secondPoints10[1] > this.trendChkVal10)
-                                {
-                                    // 1秒，5秒，10秒都向下
-                                    return -10;
-                                }
-                                else
-                                {
-                                    // 1秒，5秒都向下
-                                    return -5;
-                                }
+                                item.curTrend.Append("B");
                             }
                             else
                             {
-                                // 1秒向下
-                                return -1;
+                                break;
                             }
                         }
-                        else if ((item.hisVal[index] - item.hisVal[index - 1]) > this.trendChkVal1)
+                        else
                         {
-                            // 检查向上趋势
-                            // 检查5秒向上趋势
-                            float[] secondPoints5 = item.secondsPoints[0];
-                            if (secondPoints5[1] - secondPoints5[0] > this.trendChkVal5)
-                            {
-                                // 检查10秒向上趋势
-                                float[] secondPoints10 = item.secondsPoints[1];
-                                if (secondPoints10[1] - secondPoints10[0] > this.trendChkVal10)
-                                {
-                                    // 1秒，5秒，10秒都向上
-                                    return 10;
-                                }
-                                else
-                                {
-                                    // 1秒，5秒都向上
-                                    return 5;
-                                }
-                            }
-                            else
-                            {
-                                // 1秒向上
-                                return 1;
-                            }
+                            break;
                         }
+
+                        index -= 2;
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                //MessageBox.Show(e.Message + "\n" + e.StackTrace);
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
-            }
+                else if (valsList[index] <= -CHK_MIN_VAL && valsList[index - 1] <= -CHK_MIN_VAL)
+                {
+                    // 当前是下降趋势
+                    item.curTrend.Append("S");
 
-            return 0;
+                    // 判断以前的趋势，如果是上升或水平，则说明到顶部了，下降趋势可能会很强烈
+                    index -= 2;
+                    while (index >= 1)
+                    {
+                        if (valsList[index] > -CHK_MIN_VAL && valsList[index - 1] > -CHK_MIN_VAL)
+                        {
+                            if (item.curTrend.Length < 3)
+                            {
+                                item.curTrend.Append("S");
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+
+                        index -= 2;
+                    }
+                }
+                else
+                { 
+                    // 清空当前趋势
+                    item.curTrend.Length = 0;
+                }
+            }
         }
 
         /// <summary>
@@ -948,6 +884,10 @@ namespace GuPiaoTool
                 }
 
                 timersTimer.Start();
+
+                // 获取最新的金额信息
+                object[] moneyInfo = this.tradeUtil.GetCurrentMoneyInfo();
+                this.RefreshMoneyInfo(moneyInfo);
             }
         }
 
@@ -1029,7 +969,7 @@ namespace GuPiaoTool
                     mSyncContext.Post(this.DisplayData, null);
 
                     // 检查是否可以自动卖
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoSell));
+                    //ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoSell));
 
                     // 检查是否可以自动买
                     ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoBuy));
@@ -1235,18 +1175,11 @@ namespace GuPiaoTool
                     item.name = nameList[i];
                     item.jinriKaipanVal = details[1];
                     item.zuoriShoupanVal = details[2];
-                    item.hisVal = new List<float>();
-                    item.secondsPoints = new List<float[]>();
-                    // 5秒均值数据
-                    item.secondsPoints.Add(new float[2]);
-                    // 10秒均值数据
-                    item.secondsPoints.Add(new float[2]);
 
-                    // 测试用
-                    item.allPointsVal = new List<List<float>>();
-                    item.allPointsVal.Add(new List<float>());
-                    item.allPointsVal.Add(new List<float>());
-                    item.allPointsVal.Add(new List<float>());
+                    item.secCounter = 1;
+                    item.valsList = new List<float>();
+                    item.lastVal = float.Parse(details[3]);
+                    item.curTrend = new StringBuilder();
 
                     // 取得自动的卖点
                     BuySellPoint pointInfo = this.buySellPoints.FirstOrDefault(p => p.StockCd.Equals(item.fundcode));
@@ -1298,18 +1231,27 @@ namespace GuPiaoTool
                 item.date            = details[30];
                 item.time            = details[31];
 
-                // 保持当前秒数据，只保存设置的最大个数
-                lock (item.hisVal) 
+                // 每个时间段检查一次数据
+                if (item.secCounter < VAL_CHK_RANGE)
                 {
-                    item.hisVal.Add(float.Parse(item.currentVal));
-                    if (item.hisVal.Count > maxSecond)
+                    item.secCounter++;
+                }
+                else
+                {
+                    item.secCounter = 1;
+                    float curVal = float.Parse(item.currentVal);
+                    item.valsList.Add(curVal - item.lastVal);
+                    item.lastVal = curVal;
+
+                    // 判断是否达到最大记录数
+                    if (item.valsList.Count > MAX_BLOCK)
                     {
-                        item.hisVal.RemoveAt(0);
+                        item.valsList.RemoveAt(0);
                     }
                 }
 
-                // 检查均值数据（10秒，5秒，3秒等）
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckSecondPoints), item);
+                // 判断当前走势
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckValTrend), item);
             }
         }
 
