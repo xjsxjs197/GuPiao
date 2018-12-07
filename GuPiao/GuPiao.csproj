@@ -12,12 +12,15 @@
     <AssemblyName>GuPiao</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetZone>LocalIntranet</TargetZone>
+    <GenerateManifests>false</GenerateManifests>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\</OutputPath>
+    <OutputPath>..\Bin\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -26,20 +29,22 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\</OutputPath>
+    <OutputPath>..\Bin\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Interop.MSScriptControl, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="Interop.ZMTradeCom, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.Office.Interop.Excel, Version=12.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\Microsoft.Office.Interop.Excel.dll</HintPath>
+      <HintPath>..\Bin\Microsoft.Office.Interop.Excel.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Vbe.Interop, Version=12.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\Microsoft.Vbe.Interop.dll</HintPath>
+      <HintPath>..\Bin\Microsoft.Vbe.Interop.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL" />
     <Reference Include="System" />
@@ -68,24 +73,41 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BuySellPoint.cs" />
-    <Compile Include="BuySellType.cs" />
-    <Compile Include="Consts.cs" />
-    <Compile Include="OrderStatus.cs" />
-    <Compile Include="CurOpt.cs" />
-    <Compile Include="GuPiaoInfo.cs" />
+    <Compile Include="Common\BuySellPoint.cs" />
+    <Compile Include="Common\BuySellType.cs" />
+    <Compile Include="QushiCheck\ChkUpQushi.cs" />
+    <Compile Include="Common\Consts.cs" />
+    <Compile Include="QushiCheck\ChkDownQushi.cs" />
+    <Compile Include="QushiCheck\ChkDownBreakQushi.cs" />
+    <Compile Include="QushiCheck\ChkUpBreakQushi.cs" />
+    <Compile Include="QushiCheck\ChkDownBreakDaysQushi.cs" />
+    <Compile Include="QushiCheck\ChkDownDecreaseQushi.cs" />
+    <Compile Include="CreateQushi.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CreateQushi.Designer.cs">
+      <DependentUpon>CreateQushi.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Common\OrderStatus.cs" />
+    <Compile Include="Common\CurOpt.cs" />
+    <Compile Include="Common\GuPiaoInfo.cs" />
     <Compile Include="GuPiaoTool.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="GuPiaoTool.Designer.cs">
       <DependentUpon>GuPiaoTool.cs</DependentUpon>
     </Compile>
-    <Compile Include="OrderInfo.cs" />
-    <Compile Include="OrderType.cs" />
+    <Compile Include="Common\OrderInfo.cs" />
+    <Compile Include="Common\OrderType.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="CreateQushi.resx">
+      <DependentUpon>CreateQushi.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="GuPiaoTool.resx">
       <DependentUpon>GuPiaoTool.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -97,6 +119,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -106,27 +129,16 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="TradeEventSink.cs" />
-    <Compile Include="TradeUtil.cs" />
-    <Compile Include="Win32API.cs" />
+    <Compile Include="QushiCheck\QushiBase.cs" />
+    <Compile Include="Trade\TradeEventSink.cs" />
+    <Compile Include="Trade\TradeUtil.cs" />
+    <Compile Include="Common\Win32API.cs" />
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="MSScriptControl">
-      <Guid>{0E59F1D2-1FBE-11D0-8FF2-00A0D10038BC}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-    </COMReference>
-    <COMReference Include="ZMTradeCom">
-      <Guid>{6BCE7660-252F-4E95-A303-6AFA519F3138}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-    </COMReference>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{006DCF31-D7F3-4AD3-8037-6BC11FD1AA34}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

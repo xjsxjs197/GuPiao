@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.IO;
 using GuPiaoTool;
+using GuPiao;
 
 namespace GuPiaoTool
 {
@@ -17,7 +18,7 @@ namespace GuPiaoTool
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new GuPiaoTool());
+            Application.Run(new CreateQushi());
 
             /*try
             {

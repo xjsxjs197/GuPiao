@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using GuPiao;
-using System.Threading;
+using Hanhua.Common;
 
 namespace GuPiaoTool
 {
@@ -960,7 +960,7 @@ namespace GuPiaoTool
                 // 从Sina取得基础数据
                 string url = "http://hq.sinajs.cn/list=" + string.Join(",", noList.ToArray());
                 string data = "";
-                string result = HttpGet(url, data);
+                string result = Util.HttpGet(url, data, Encoding.UTF8);
                 if (!string.IsNullOrEmpty(result) && result.Length > 20)
                 {
                     this.GetGuPiaoInfo(noList, nameList, result);
@@ -1253,54 +1253,6 @@ namespace GuPiaoTool
                 // 判断当前走势
                 ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckValTrend), item);
             }
-        }
-
-        /// <summary>
-        /// Http发送Post请求方法
-        /// </summary>
-        /// <param name="Url"></param>
-        /// <param name="postDataStr"></param>
-        /// <returns></returns>
-        private static string HttpPost(string Url, string postDataStr)
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Url);
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.ContentLength = postDataStr.Length;
-            StreamWriter writer = new StreamWriter(request.GetRequestStream(), Encoding.ASCII);
-            writer.Write(postDataStr);
-            writer.Flush();
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            string encoding = response.ContentEncoding;
-            if (encoding == null || encoding.Length < 1)
-            {
-                encoding = "UTF-8"; //默认编码  
-            }
-            StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.GetEncoding(encoding));
-            string retString = reader.ReadToEnd();
-            return retString;
-        }
-
-        /// <summary>
-        /// Http发送Get请求方法
-        /// </summary>
-        /// <param name="Url"></param>
-        /// <param name="postDataStr"></param>
-        /// <returns></returns>
-        private static string HttpGet(string Url, string postDataStr)
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Url + (postDataStr == "" ? "" : "?") + postDataStr);
-            request.Method = "GET";
-            request.ContentType = "text/html;charset=UTF-8";
-
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            Stream myResponseStream = response.GetResponseStream();
-            StreamReader myStreamReader = new StreamReader(myResponseStream, Encoding.UTF8);
-            string retString = myStreamReader.ReadToEnd();
-            myStreamReader.Close();
-            myResponseStream.Close();
-
-            return retString;
         }
 
         /// <summary>
