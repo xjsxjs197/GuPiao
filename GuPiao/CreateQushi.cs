@@ -298,6 +298,19 @@ namespace GuPiao
             }
         }
 
+        /// <summary>
+        /// 只能输入数字
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void txtCdSearch_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar != '\b' && !Char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
         #endregion
 
         #region " 公有方法 "
@@ -942,10 +955,10 @@ namespace GuPiao
 
             // 最大、最小值信息
             decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
-            decimal step = 290 / (minMaxInfo[1] - minMaxInfo[0]);
+            decimal step = 370 / (minMaxInfo[1] - minMaxInfo[0]);
 
             // 设定图片
-            Bitmap imgQushi = new Bitmap(600, 320);
+            Bitmap imgQushi = new Bitmap(800, 400);
             Graphics grp = Graphics.FromImage(imgQushi);
             grp.SmoothingMode = SmoothingMode.AntiAlias;
             grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
