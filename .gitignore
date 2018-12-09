@@ -48,3 +48,7 @@ Common/obj/Debug/Refactor/Common.dll
 Common/obj/Debug/ResolveAssemblyReference.cache
 GuPiao/bin/Json100r3.zip
 GuPiao/bin/Interop.MSScriptControl.dll
+Bin/Common.dll
+Bin/Data.rar
+Bin/GuPiao.vshost.exe.manifest
+Bin/Common.dll

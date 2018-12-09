@@ -61,7 +61,7 @@ namespace GuPiao
         private int curIdx = 0;
 
         /// <summary>
-        /// 当前显示的数据名称信息
+        /// 所有数据的名称信息
         /// </summary>
         private List<string> allStock = new List<string>();
 
@@ -74,6 +74,26 @@ namespace GuPiao
         /// 当前数据的时间
         /// </summary>
         private string dataDate = string.Empty;
+
+        /// <summary>
+        /// 当前显示的数据信息
+        /// </summary>
+        private List<decimal> curStockData = new List<decimal>();
+
+        /// <summary>
+        /// 当前显示的数据信息(5日数据)
+        /// </summary>
+        private List<decimal> curStockJibie5Data = new List<decimal>();
+
+        /// <summary>
+        /// 当前显示的数据信息(10日数据)
+        /// </summary>
+        private List<decimal> curStockJibie10Data = new List<decimal>();
+
+        /// <summary>
+        /// 当前数据的名称
+        /// </summary>
+        private string curStockName = string.Empty;
 
         #endregion
 
@@ -189,6 +209,9 @@ namespace GuPiao
             // 释放gid和pen资源
             g.Dispose();
             p.Dispose();
+
+            // 显示当前位置的数据信息
+            this.DisplayCurDayInfo(e.X, imgBk.Width);
         }
 
         /// <summary>
@@ -198,12 +221,20 @@ namespace GuPiao
         /// <param name="e"></param>
         private void imgBody_MouseLeave(object sender, EventArgs e)
         {
+            if (this.imgBody.Image == null)
+            {
+                return;
+            }
+
             // 清除图像
             Bitmap imgBk = new Bitmap(this.imgBody.Image.Width, this.imgBody.Image.Height);
             Graphics g = Graphics.FromImage(imgBk);
             g.Clear(Color.Transparent);
             this.imgBody.BackgroundImage = imgBk;
             g.Dispose();
+
+            // 显示当前位置的数据信息
+            this.SetTitle(this.allStock[this.curIdx], this.dataDate, 0);
         }
 
         /// <summary>
@@ -583,19 +614,57 @@ namespace GuPiao
         }
 
         /// <summary>
+        /// 显示当前位置的数据信息
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="imgWidth"></param>
+        private void DisplayCurDayInfo(int x, int imgWidth)
+        {
+            x -= x % IMG_X_STEP;
+            int pos = (int)((imgWidth - x - IMG_X_STEP) / IMG_X_STEP);
+            if (pos >= 0 && pos <= this.curStockData.Count - 1)
+            {
+                DateTime dt = DateTime.ParseExact(this.dataDate, "yyyyMMdd", System.Globalization.CultureInfo.CurrentCulture);
+
+                this.SetTitle(this.allStock[this.curIdx], dt.AddDays(-pos).ToString("yyyyMMdd"), pos);
+            }
+        }
+
+        /// <summary>
         /// 设置当前标题
         /// </summary>
         /// <param name="stockCd"></param>
-        private void SetTitle(string stockCd)
+        private void SetTitle(string stockCd, string dataDate, int idx)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(stockCd).Append(" ");
+            sb.Append(this.curStockName).Append(" ");
 
-            string[] allLine = this.GetStockFileContent(stockCd);
-            if (allLine != null && allLine.Length > 2)
+            if (!string.IsNullOrEmpty(dataDate))
             {
-                string[] lineData = allLine[1].Split(',');
-                sb.Append(lineData[2]).Append(" ").Append(lineData[3]);
+                sb.Append(dataDate.Substring(0, 4)).Append("年");
+                sb.Append(dataDate.Substring(4, 2)).Append("月");
+                sb.Append(dataDate.Substring(6, 2)).Append("日");
+                sb.Append(" ");
+            }
+
+            if (this.curStockData.Count > 0)
+            {
+                sb.Append(" ");
+                sb.Append("1:").Append(this.curStockData[idx]);
+                sb.Append("   ");
+            }
+
+            if (this.curStockJibie5Data.Count > 0)
+            {
+                sb.Append("5:").Append(this.curStockJibie5Data[idx]);
+                sb.Append("   ");
+            }
+
+            if (this.curStockJibie10Data.Count > 0)
+            {
+                sb.Append("10:").Append(this.curStockJibie10Data[idx]);
+                sb.Append("   ");
             }
 
             this.Text = TITLE + sb.ToString();
@@ -604,15 +673,32 @@ namespace GuPiao
         /// <summary>
         /// 检查当前趋势
         /// </summary>
-        /// <param name="stockCd"></param>
+        /// <param name="stockCdData"></param>
         /// <returns></returns>
-        private bool ChkQushi(string stockCd, QushiBase chkQushi)
+        private bool ChkQushi(string stockCdData, QushiBase chkQushi)
         {
-            // 读取所有信息
-            List<decimal> stockInfos = this.GetStockHistoryInfo(CSV_FOLDER + stockCd + ".csv");
-            if (stockInfos.Count == 0)
+            // 获得数据信息
+            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
+            if (dataInfo == null)
             {
                 return false;
+            }
+
+            return chkQushi.StartCheck((List<decimal>)dataInfo["stockInfos"]);
+        }
+
+        /// <summary>
+        /// 根据StockCd取得相关数据信息
+        /// </summary>
+        /// <param name="stockCdData"></param>
+        /// <returns></returns>
+        private Dictionary<string, object> GetStockInfo(string stockCdData)
+        {
+            // 读取所有信息
+            List<decimal> stockInfos = this.GetStockHistoryInfo(CSV_FOLDER + stockCdData + ".csv");
+            if (stockInfos.Count == 0)
+            {
+                return null;
             }
 
             // 取得最大、最小值
@@ -620,10 +706,14 @@ namespace GuPiao
             decimal[] minMaxInfo = this.GetMaxMinStock(stockInfos);
             if (minMaxInfo[0] == 0 || minMaxInfo[1] == 0 || (minMaxInfo[1] - minMaxInfo[0]) == 0 || stockInfos.Count == 0)
             {
-                return false;
+                return null;
             }
 
-            return chkQushi.StartCheck(stockInfos);
+            Dictionary<string, object> dicRet = new Dictionary<string, object>();
+            dicRet.Add("stockInfos", stockInfos);
+            dicRet.Add("minMaxInfo", minMaxInfo);
+
+            return dicRet;
         }
 
         /// <summary>
@@ -743,12 +833,57 @@ namespace GuPiao
                     this.btnAft.Enabled = true;
                 }
 
+                // 设置当前数据
+                this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
+
+                // 设置当前数据名称
+                this.SetCurStockName(this.allStock[this.curIdx]);
+
                 // 显示标题
-                this.SetTitle(this.allStock[this.curIdx]);
+                this.SetTitle(this.allStock[this.curIdx], this.dataDate, 0);
             }
 
             // 显示数量信息
             this.lblCntInfo.Text = (this.curIdx + 1) + "/" + this.allStock.Count;
+        }
+
+        /// <summary>
+        /// 设置当前数据名称
+        /// </summary>
+        /// <param name="stockCd"></param>
+        private void SetCurStockName(string stockCd)
+        {
+            this.curStockName = string.Empty;
+
+            string[] allLine = this.GetStockFileContent(stockCd);
+            if (allLine != null && allLine.Length > 2)
+            {
+                string[] lineData = allLine[1].Split(',');
+                this.curStockName = lineData[2];
+            }
+        }
+
+        /// <summary>
+        /// 设置当前数据
+        /// </summary>
+        /// <param name="stockCdData"></param>
+        private void SetCurStockData(string stockCdData)
+        {
+            // 获得数据信息
+            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
+            if (dataInfo == null)
+            {
+                return;
+            }
+
+            // 基础数据信息
+            this.curStockData = (List<decimal>)dataInfo["stockInfos"];
+
+            // 取得5日级别信息
+            this.curStockJibie5Data = this.GetJibieStockInfo(this.curStockData, 5);
+
+            // 取得10日级别信息
+            this.curStockJibie10Data = this.GetJibieStockInfo(this.curStockData, 10);
         }
 
         /// <summary>
@@ -792,23 +927,21 @@ namespace GuPiao
         /// <summary>
         /// 画趋势图
         /// </summary>
-        /// <param name="stockCd"></param>
-        private void CreateQushiImg(string stockCd)
+        /// <param name="stockCdData"></param>
+        private void CreateQushiImg(string stockCdData)
         {
-            // 读取所有信息
-            List<decimal> stockInfos = this.GetStockHistoryInfo(CSV_FOLDER + stockCd + ".csv");
-            if (stockInfos.Count == 0)
+            // 获得数据信息
+            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
+            if (dataInfo == null)
             {
                 return;
             }
 
-            // 取得最大、最小值
-            // 期间还处理了一下0，等于前一天的值
-            decimal[] minMaxInfo = this.GetMaxMinStock(stockInfos);
-            if (minMaxInfo[0] == 0 || minMaxInfo[1] == 0 || (minMaxInfo[1] - minMaxInfo[0]) == 0 || stockInfos.Count == 0)
-            {
-                return;
-            }
+            // 基础数据信息
+            List<decimal> stockInfos = (List<decimal>)dataInfo["stockInfos"];
+
+            // 最大、最小值信息
+            decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
             decimal step = 290 / (minMaxInfo[1] - minMaxInfo[0]);
 
             // 设定图片
@@ -816,7 +949,6 @@ namespace GuPiao
             Graphics grp = Graphics.FromImage(imgQushi);
             grp.SmoothingMode = SmoothingMode.AntiAlias;
             grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-
 
             // 开始画日线
             this.DrawStockQushi(stockInfos, step, minMaxInfo[0], imgQushi, new Pen(Color.Black, 1F), grp);
@@ -843,11 +975,11 @@ namespace GuPiao
             bool hasBuyPoint = this.DrawStockBuySellPoint(stockInfos, stockInfo5Jibie, step, minMaxInfo[0], imgQushi, grp);
             if (hasBuyPoint)
             {
-                this.hasBuyPointsStock.Add(stockCd.Substring(0, 6));
+                this.hasBuyPointsStock.Add(stockCdData.Substring(0, 6));
             }
 
             // 保存图片
-            imgQushi.Save(IMG_FOLDER + stockCd.Substring(0, 6) + ".png");
+            imgQushi.Save(IMG_FOLDER + stockCdData.Substring(0, 6) + ".png");
         }
 
         /// <summary>
