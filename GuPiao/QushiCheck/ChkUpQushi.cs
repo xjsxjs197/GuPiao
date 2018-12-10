@@ -17,14 +17,14 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected override bool ChkQushi(List<decimal> stockInfos)
+        protected override bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
         {
             this.qushiDays = 0;
             int index = 0;
             int maxCnt = stockInfos.Count - 1;
             while (index < maxCnt)
             {
-                if (stockInfos[index] > stockInfos[index + 1] * Consts.LIMIT_VAL)
+                if (stockInfos[index].Value > stockInfos[index + 1].Value * Consts.LIMIT_VAL)
                 {
                     this.qushiDays++;
                     index++;

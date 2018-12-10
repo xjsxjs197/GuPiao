@@ -17,7 +17,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected override bool ChkQushi(List<decimal> stockInfos)
+        protected override bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
         {
             if (stockInfos.Count < BREAK_CHK_MIN_LEN)
             {
@@ -25,7 +25,7 @@ namespace GuPiao
             }
 
             // 最后一天开始向下走
-            if (stockInfos[0] * Consts.LIMIT_VAL < stockInfos[1])
+            if (stockInfos[0].Value * Consts.LIMIT_VAL < stockInfos[1].Value)
             {
                 // 以前都是向上走
                 this.qushiDays = 0;
@@ -33,7 +33,7 @@ namespace GuPiao
                 int maxCnt = stockInfos.Count - 1;
                 while (index < maxCnt)
                 {
-                    if (stockInfos[index] > stockInfos[index + 1] * Consts.LIMIT_VAL)
+                    if (stockInfos[index].Value > stockInfos[index + 1].Value * Consts.LIMIT_VAL)
                     {
                         this.qushiDays++;
                         index++;

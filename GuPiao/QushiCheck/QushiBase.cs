@@ -45,7 +45,7 @@ namespace GuPiao
         /// <summary>
         /// 开始查找
         /// </summary>
-        public bool StartCheck(List<decimal> stockInfos)
+        public bool StartCheck(List<KeyValuePair<string, decimal>> stockInfos)
         {
             return this.ChkQushi(stockInfos);
         }
@@ -68,7 +68,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected virtual bool ChkQushi(List<decimal> stockInfos)
+        protected virtual bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
         {
             return false;
         }

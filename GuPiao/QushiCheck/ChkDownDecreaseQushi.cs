@@ -17,7 +17,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected override bool ChkQushi(List<decimal> stockInfos)
+        protected override bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
         {
             this.qushiDays = 0;
             int index = 0;
@@ -25,9 +25,9 @@ namespace GuPiao
             int maxCnt = stockInfos.Count - 1;
             while (index < maxCnt)
             {
-                if (stockInfos[index] * Consts.LIMIT_VAL < stockInfos[index + 1])
+                if (stockInfos[index].Value * Consts.LIMIT_VAL < stockInfos[index + 1].Value)
                 {
-                    decimal tmp = stockInfos[index + 1] - (stockInfos[index] * Consts.LIMIT_VAL);
+                    decimal tmp = stockInfos[index + 1].Value - (stockInfos[index].Value * Consts.LIMIT_VAL);
                     if (tmp >= diffVal)
                     {
                         diffVal = tmp;
