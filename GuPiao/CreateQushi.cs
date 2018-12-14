@@ -292,6 +292,10 @@ namespace GuPiao
                     this.cmbCon.Enabled = true;
                     break;
 
+                case "查看次新":
+                    this.Do(this.ThreadChkQushi, new ChkCixin(), this.cmbCon, selectedText);
+                    break;
+
                 default:
                     // 显示所有信息
                     this.DisplayAllStockPng(null);
@@ -418,6 +422,9 @@ namespace GuPiao
 
              // 设置按钮可用
             this.mSyncContext.Post(this.UISetBtnEnable, this.btnGetAllStock);
+
+            // 重新设置结束时间
+            this.dataDate = endDay;
         }
 
         /// <summary>
@@ -686,23 +693,44 @@ namespace GuPiao
             if (this.curStockData.Count > 0)
             {
                 sb.Append(" ");
-                sb.Append("1:").Append(this.curStockData[idx].Value);
+                sb.Append("1:").Append(this.GetStockValInfo(this.curStockData, idx));
                 sb.Append("   ");
             }
 
             if (this.curStockJibie5Data.Count > 0)
             {
-                sb.Append("5:").Append(this.curStockJibie5Data[idx].Value);
+                sb.Append("5:").Append(this.GetStockValInfo(this.curStockJibie5Data, idx));
                 sb.Append("   ");
             }
 
             if (this.curStockJibie10Data.Count > 0)
             {
-                sb.Append("10:").Append(this.curStockJibie10Data[idx].Value);
+                sb.Append("10:").Append(this.GetStockValInfo(this.curStockJibie10Data, idx));
                 sb.Append("   ");
             }
 
             this.Text = TITLE + sb.ToString();
+        }
+
+        /// <summary>
+        /// 取得当前价位和变动比率
+        /// </summary>
+        /// <param name="stockInfos"></param>
+        /// <param name="idx"></param>
+        /// <returns></returns>
+        private string GetStockValInfo(List<KeyValuePair<string, decimal>> stockInfos, int idx)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(stockInfos[idx].Value);
+            if (idx > 0)
+            {
+                sb.Append("(");
+                decimal tmp = (stockInfos[idx - 1].Value - stockInfos[idx].Value) * 100 / stockInfos[idx].Value;
+                sb.Append(tmp.ToString("0.00"));
+                sb.Append(")");
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

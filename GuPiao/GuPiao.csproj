@@ -129,6 +129,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="QushiCheck\ChkCixin.cs" />
     <Compile Include="QushiCheck\QushiBase.cs" />
     <Compile Include="Trade\TradeEventSink.cs" />
     <Compile Include="Trade\TradeUtil.cs" />

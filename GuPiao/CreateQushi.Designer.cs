@@ -113,6 +113,7 @@
             this.cmbCon.Items.AddRange(new object[] {
             "显示所有",
             "查看买点",
+            "查看次新",
             "下跌递减",
             "下跌转折",
             "下跌转折两天",

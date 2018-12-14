@@ -18,6 +18,11 @@ namespace GuPiao
         protected const int BREAK_CHK_MIN_LEN = 20;
 
         /// <summary>
+        /// 查看次新时的天数限定
+        /// </summary>
+        protected const int CIXIN_MIN_DAY = 25;
+
+        /// <summary>
         /// 检查的天数
         /// </summary>
         protected int checkDays;
