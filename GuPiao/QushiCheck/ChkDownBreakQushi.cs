@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using GuPiao.Common;
 
 namespace GuPiao
 {
@@ -17,7 +18,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected override bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
+        protected override bool ChkQushi(List<BaseDataInfo> stockInfos)
         {
             if (stockInfos.Count < BREAK_CHK_MIN_LEN)
             {
@@ -25,7 +26,7 @@ namespace GuPiao
             }
 
             // 最后一天开始向上走
-            if (stockInfos[0].Value > stockInfos[1].Value * Consts.LIMIT_VAL)
+            if (stockInfos[0].DayVal > stockInfos[1].DayVal * Consts.LIMIT_VAL)
             {
                 // 以前都是向下走
                 this.qushiDays = 0;
@@ -33,7 +34,7 @@ namespace GuPiao
                 int maxCnt = stockInfos.Count - 1;
                 while (index < maxCnt)
                 {
-                    if (stockInfos[index].Value * Consts.LIMIT_VAL < stockInfos[index + 1].Value)
+                    if (stockInfos[index].DayVal * Consts.LIMIT_VAL < stockInfos[index + 1].DayVal)
                     {
                         this.qushiDays++;
                         index++;

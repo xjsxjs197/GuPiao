@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using GuPiao.Common;
 
 namespace GuPiao
 {
@@ -17,7 +18,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected override bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
+        protected override bool ChkQushi(List<BaseDataInfo> stockInfos)
         {
             if (stockInfos.Count > 0 && stockInfos.Count < CIXIN_MIN_DAY)
             {

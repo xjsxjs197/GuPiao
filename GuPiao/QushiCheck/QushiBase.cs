@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using GuPiao.Common;
 
 namespace GuPiao
 {
@@ -50,7 +51,7 @@ namespace GuPiao
         /// <summary>
         /// 开始查找
         /// </summary>
-        public bool StartCheck(List<KeyValuePair<string, decimal>> stockInfos)
+        public bool StartCheck(List<BaseDataInfo> stockInfos)
         {
             return this.ChkQushi(stockInfos);
         }
@@ -73,7 +74,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected virtual bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
+        protected virtual bool ChkQushi(List<BaseDataInfo> stockInfos)
         {
             return false;
         }

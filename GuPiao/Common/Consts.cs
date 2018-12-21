@@ -29,5 +29,25 @@ namespace GuPiao
         /// 查找趋势时连续的天数
         /// </summary>
         public const int QUSHI_CONTINUE_DAYS = 3;
+
+        /// <summary>
+        /// 顶分型
+        /// </summary>
+        public const int TOP_TYPE = int.MaxValue;
+
+        /// <summary>
+        /// 底分型
+        /// </summary>
+        public const int BOTTOM_TYPE = int.MinValue;
+
+        /// <summary>
+        /// 数据结束，没有出现分型
+        /// </summary>
+        public const int NONE_TYPE = 9999999;
+
+        /// <summary>
+        /// 卖点判断基数
+        /// </summary>
+        public const decimal SELL_VAL = (decimal)1.01;
     }
 }

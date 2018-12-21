@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using GuPiao.Common;
 
 namespace GuPiao
 {
@@ -17,14 +18,14 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockInfos"></param>
         /// <returns>是否查找成功</returns>
-        protected override bool ChkQushi(List<KeyValuePair<string, decimal>> stockInfos)
+        protected override bool ChkQushi(List<BaseDataInfo> stockInfos)
         {
             this.qushiDays = 0;
             int index = 0;
             int maxCnt = stockInfos.Count - 1;
             while (index < maxCnt)
             {
-                if (stockInfos[index].Value * Consts.LIMIT_VAL < stockInfos[index + 1].Value)
+                if (stockInfos[index].DayVal * Consts.LIMIT_VAL < stockInfos[index + 1].DayVal)
                 {
                     this.qushiDays++;
                     index++;

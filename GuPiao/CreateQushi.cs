@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using Hanhua.Common;
+using GuPiao.Common;
+using System.Globalization;
 
 namespace GuPiao
 {
@@ -80,17 +82,17 @@ namespace GuPiao
         /// <summary>
         /// 当前显示的数据信息
         /// </summary>
-        private List<KeyValuePair<string, decimal>> curStockData = new List<KeyValuePair<string, decimal>>();
+        private List<BaseDataInfo> curStockData = new List<BaseDataInfo>();
 
         /// <summary>
         /// 当前显示的数据信息(5日数据)
         /// </summary>
-        private List<KeyValuePair<string, decimal>> curStockJibie5Data = new List<KeyValuePair<string, decimal>>();
+        private List<BaseDataInfo> curStockJibie5Data = new List<BaseDataInfo>();
 
         /// <summary>
         /// 当前显示的数据信息(10日数据)
         /// </summary>
-        private List<KeyValuePair<string, decimal>> curStockJibie10Data = new List<KeyValuePair<string, decimal>>();
+        private List<BaseDataInfo> curStockJibie10Data = new List<BaseDataInfo>();
 
         /// <summary>
         /// 当前数据的名称
@@ -324,6 +326,8 @@ namespace GuPiao
 
         #region " 私有方法 "
 
+        #region " 各种数据处理 "
+
         /// <summary>
         /// 多线程取得所有数据
         /// </summary>
@@ -525,137 +529,753 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 是否是创业板数据
+        /// 检查当前趋势
         /// </summary>
-        /// <param name="stockCd"></param>
+        /// <param name="stockCdData"></param>
         /// <returns></returns>
-        private bool IsChuangyeStock(string stockCd)
+        private bool ChkQushi(string stockCdData, QushiBase chkQushi)
         {
-            return stockCd.StartsWith("300");
+            // 获得数据信息
+            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
+            if (dataInfo == null)
+            {
+                return false;
+            }
+
+            return chkQushi.StartCheck((List<BaseDataInfo>)dataInfo["stockInfos"]);
         }
 
         /// <summary>
-        /// 保存趋势过滤的结果
+        /// 根据StockCd取得相关数据信息
         /// </summary>
-        private void SaveQushiResult(string fileName)
-        { 
-            if (this.allStock.Count == 0 || string.IsNullOrEmpty(fileName))
+        /// <param name="stockCdData"></param>
+        /// <returns></returns>
+        private Dictionary<string, object> GetStockInfo(string stockCdData)
+        {
+            // 读取所有信息
+            List<BaseDataInfo> stockInfos = this.GetStockHistoryInfo(CSV_FOLDER + stockCdData + ".csv");
+            if (stockInfos.Count == 0)
+            {
+                return null;
+            }
+
+            // 取得最大、最小值
+            // 期间还处理了一下0，等于前一天的值
+            decimal[] minMaxInfo = this.GetMaxMinStock(stockInfos);
+            if (minMaxInfo[0] == 0 || minMaxInfo[1] == 0 || (minMaxInfo[1] - minMaxInfo[0]) == 0 || stockInfos.Count == 0)
+            {
+                return null;
+            }
+
+            Dictionary<string, object> dicRet = new Dictionary<string, object>();
+            dicRet.Add("stockInfos", stockInfos);
+            dicRet.Add("minMaxInfo", minMaxInfo);
+
+            return dicRet;
+        }
+
+        /// <summary>
+        /// 画趋势图
+        /// </summary>
+        /// <param name="stockCdData"></param>
+        private void CreateQushiImg(string stockCdData)
+        {
+            // 获得数据信息
+            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
+            if (dataInfo == null)
             {
                 return;
             }
 
-            StringBuilder sb = new StringBuilder();
-            foreach (string shortName in this.allStock)
-            {
-                string[] allLine = this.GetStockFileContent(shortName);
-                if (allLine != null && allLine.Length > 2)
-                {
-                    sb.Append(shortName).Append(" ");
+            // 基础数据信息
+            List<BaseDataInfo> stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
 
-                    string[] lineData = allLine[1].Split(',');
-                    sb.Append(lineData[2]).Append(" ").Append(lineData[3]).Append("\r\n");
-                }
+            // 最大、最小值信息
+            decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
+            decimal step = 370 / (minMaxInfo[1] - minMaxInfo[0]);
+
+            // 设定图片
+            Bitmap imgQushi = new Bitmap(600, 400);
+            Graphics grp = Graphics.FromImage(imgQushi);
+            grp.SmoothingMode = SmoothingMode.AntiAlias;
+            grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            // 开始画日线
+            this.DrawStockQushi(stockInfos, step, minMaxInfo[0], imgQushi, new Pen(Color.Black, 1F), grp);
+
+            // 取得5日级别信息
+            List<BaseDataInfo> stockInfo5Jibie = this.GetJibieStockInfo(stockInfos, 5);
+
+            // 开始画5日线
+            if (stockInfo5Jibie.Count > 0)
+            {
+                this.DrawStockQushi(stockInfo5Jibie, step, minMaxInfo[0], imgQushi, new Pen(Color.Green, 1F), grp);
             }
 
-            File.WriteAllText(RESULT_FOLDER + fileName + ".txt", sb.ToString(), Encoding.UTF8);
+            /*
+            // 取得10日级别信息
+            List<BaseDataInfo> stockInfo10Jibie = this.GetJibieStockInfo(stockInfos, 10);
+
+            // 开始画10日线
+            if (stockInfo10Jibie.Count > 0)
+            {
+                this.DrawStockQushi(stockInfo10Jibie, step, minMaxInfo[0], imgQushi, new Pen(Color.Red, 1F), grp);
+            }
+
+            // 趋势图上画买卖点
+            string tmpDate = this.dataDate;
+            bool hasBuyPoint = this.DrawStockBuySellPoint(stockInfos, stockInfo5Jibie, step, minMaxInfo[0], imgQushi, grp);
+            if (hasBuyPoint)
+            {
+                this.hasBuyPointsStock.Add(new KeyValuePair<string, string>(stockCdData.Substring(0, 6), this.dataDate));
+                this.dataDate = tmpDate;
+            }*/
+
+            // 开始分型笔的线段
+            List<BaseDataInfo> fenXingInfo = this.GetFenxingPenInfo(stockInfos);
+            List<BaseDataInfo> fenXingInfo5 = this.GetFenxingPenInfo(stockInfo5Jibie);
+            fenXingInfo.Reverse();
+            fenXingInfo5.Reverse();
+            string tmpDate = this.dataDate;
+            bool hasBuyPoint = this.DrawFenxingPen(fenXingInfo, fenXingInfo5, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp);
+            if (hasBuyPoint)
+            {
+                this.hasBuyPointsStock.Add(new KeyValuePair<string, string>(stockCdData.Substring(0, 6), this.dataDate));
+                this.dataDate = tmpDate;
+            }
+
+            // 保存图片
+            imgQushi.Save(IMG_FOLDER + stockCdData.Substring(0, 6) + ".png");
         }
 
         /// <summary>
-        /// 读取包括买点信息的数据
+        /// 取得股票历史数据
         /// </summary>
-        private void LoadHasBuyPointsInfo()
+        /// <param name="stockFile"></param>
+        /// <returns></returns>
+        private List<BaseDataInfo> GetStockHistoryInfo(string stockFile)
         {
-            string file = RESULT_FOLDER + "BuyPoints.txt";
-            this.hasBuyPointsStock.Clear();
-            if (File.Exists(file))
+            List<BaseDataInfo> stockInfo = new List<BaseDataInfo>();
+            if (string.IsNullOrEmpty(stockFile) || !File.Exists(stockFile))
             {
-                string[] allLine = File.ReadAllLines(file, Encoding.UTF8);
-                if (allLine != null && allLine.Length > 0)
+                return stockInfo;
+            }
+
+            string[] allLine = File.ReadAllLines(stockFile, Encoding.UTF8);
+            for (int i = 1; i < allLine.Length && i <= MAX_DAYS; i++)
+            {
+                if (allLine[i].IndexOf("Error") > 0)
                 {
-                    foreach (string line in allLine)
+                    stockInfo.Clear();
+                    return stockInfo;
+                }
+
+                string[] allItems = allLine[i].Split(',');
+                if (allItems.Length > 3)
+                {
+                    BaseDataInfo dayInfo = new BaseDataInfo();
+                    dayInfo.Day = allItems[0].Replace("-", "");
+                    if (i == 1 && !this.IsValidStock(dayInfo.Day))
                     {
-                        if (string.IsNullOrEmpty(line))
+                        stockInfo.Clear();
+                        return stockInfo;
+                    }
+                    dayInfo.DayVal = decimal.Parse(allItems[3]);
+                    dayInfo.DayMaxVal = decimal.Parse(allItems[4]);
+                    dayInfo.DayMinVal = decimal.Parse(allItems[5]);
+
+                    stockInfo.Add(dayInfo);
+                }
+            }
+
+            return stockInfo;
+        }
+
+        /// <summary>
+        /// 取得当前级别的信息
+        /// </summary>
+        /// <param name="stockInfos"></param>
+        /// <param name="jibie">5、10、30等级别</param>
+        /// <returns></returns>
+        private List<BaseDataInfo> GetJibieStockInfo(List<BaseDataInfo> stockInfos, int jibie)
+        {
+            List<BaseDataInfo> stockInfo = new List<BaseDataInfo>();
+
+            int index = 0;
+            int jibieCount = jibie - 1;
+            int maxCount = stockInfos.Count - jibie;
+            decimal total = 0;
+            decimal minVal = decimal.MaxValue;
+            decimal maxVal = 0;
+
+            while (index <= maxCount)
+            {
+                total = 0;
+                minVal = decimal.MaxValue;
+                maxVal = 0;
+                for (int i = 0; i <= jibieCount; i++)
+                {
+                    total += stockInfos[index + i].DayVal;
+                    maxVal = Math.Max(stockInfos[index + i].DayVal, maxVal);
+                    minVal = Math.Max(stockInfos[index + i].DayVal, minVal);
+                }
+
+                BaseDataInfo item = new BaseDataInfo();
+                item.Day = stockInfos[index].Day;
+                item.DayVal = total / jibie;
+                item.DayMaxVal = maxVal;
+                item.DayMinVal = minVal;
+
+                stockInfo.Add(item);
+
+                index++;
+            }
+
+            if (stockInfo.Count > 0)
+            {
+                while (stockInfo.Count < stockInfos.Count)
+                {
+                    stockInfo.Add(stockInfo[stockInfo.Count - 1]);
+                }
+            }
+
+            return stockInfo;
+        }
+
+        /// <summary>
+        /// 开始画趋势图
+        /// </summary>
+        /// <param name="stockInfo"></param>
+        /// <param name="step"></param>
+        private void DrawStockQushi(List<BaseDataInfo> stockInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
+        {
+            int startX = img.Width - IMG_X_STEP;
+            int x1 = startX;
+            int y1 = this.GetYPos(img.Height, stockInfo[0].DayVal, minVal, step);
+            int x2 = 0;
+            int y2 = 0;
+            int index = 1;
+            while (index <= stockInfo.Count - 1)
+            {
+                x2 = startX - IMG_X_STEP;
+                y2 = this.GetYPos(img.Height, stockInfo[index].DayVal, minVal, step);
+
+                grp.DrawLine(pen, x1, y1, x2, y2);
+                x1 = x2;
+                y1 = y2;
+
+                index++;
+                startX -= IMG_X_STEP;
+            }
+        }
+
+        /// <summary>
+        /// 趋势图上画买卖点
+        /// </summary>
+        /// <param name="stockInfo"></param>
+        /// <param name="step"></param>
+        private bool DrawStockBuySellPoint(List<BaseDataInfo> stockInfo, List<BaseDataInfo> jibie5StockInfo, decimal step, decimal minVal, Bitmap img, Graphics grp)
+        {
+            if (jibie5StockInfo.Count == 0 || jibie5StockInfo.Count != stockInfo.Count)
+            {
+                return false;
+            }
+
+            int curQushi = 0; // 当前趋势，负数：下跌，0：转折，正数：上涨
+            Brush buyBush = new SolidBrush(Color.Red);
+            Brush sellBush = new SolidBrush(Color.Green);
+            Font font = new Font(new FontFamily("Microsoft YaHei"), 6, FontStyle.Bold);
+            bool hasBuyPoint = false;
+            bool buyed = false;
+
+            for (int i = stockInfo.Count - 2; i >= 0; i--)
+            {
+                // 当前上涨
+                if (stockInfo[i].DayVal > stockInfo[i + 1].DayVal * Consts.LIMIT_VAL)
+                {
+                    if (curQushi < 0)
+                    {
+                        // 原来是下跌，如果满足转折条件（连续N天，并且超过5日线）
+                        if (-curQushi > Consts.QUSHI_CONTINUE_DAYS && stockInfo[i].DayVal >= jibie5StockInfo[i].DayVal)
                         {
-                            continue;
+                            // 画买点
+                            grp.FillEllipse(buyBush, img.Width - IMG_X_STEP * (i + 3), this.GetYPos(img.Height, stockInfo[i + 1].DayVal, minVal, step), 7, 7);
+                            hasBuyPoint = true;
+                            buyed = true;
+                            this.dataDate = stockInfo[i + 1].Day;
                         }
 
-                        string[] lineTxt = line.Split(' ');
-                        this.hasBuyPointsStock.Add(new KeyValuePair<string, string>(lineTxt[0], lineTxt[1]));
+                        // 趋势标志恢复
+                        curQushi = 0;
+                    }
+                    else
+                    {
+                        // 原来就是上涨，趋势的标志增大
+                        curQushi++;
+                    }
+                }
+                // 当前是下跌
+                else if (stockInfo[i].DayVal * Consts.LIMIT_VAL < stockInfo[i + 1].DayVal)
+                {
+                    if (curQushi > 0)
+                    {
+                        if (buyed)
+                        {
+                            // 原来是上涨,并且已经有买点时才画卖点
+                            grp.FillEllipse(sellBush, img.Width - IMG_X_STEP * (i + 3), this.GetYPos(img.Height, stockInfo[i + 1].DayVal, minVal, step), 7, 7);
+                            buyed = false;
+                        }
+
+                        // 趋势标志恢复
+                        curQushi = 0;
+                    }
+                    else
+                    {
+                        // 原来就是下跌，趋势的标志增大
+                        curQushi--;
                     }
                 }
             }
+
+            return hasBuyPoint;
         }
 
-        /// <summary>
-        /// 保存包括买点信息的数据
-        /// </summary>
-        private void SaveHasBuyPointsInfo()
-        {
-            // 买点排序
-            this.hasBuyPointsStock.Sort(this.BuyPointCompare);
+        #endregion
 
-            List<string> tmpList = new List<string>();
-            this.hasBuyPointsStock.ForEach(p => tmpList.Add(p.Key + " " + p.Value));
-
-            File.WriteAllLines(RESULT_FOLDER + "BuyPoints.txt", tmpList.ToArray(), Encoding.UTF8);
-        }
+        #region " 分型处理相关 "
 
         /// <summary>
-        /// 对象比较
+        /// 开始分型笔的线段
         /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        private int BuyPointCompare(KeyValuePair<string, string> a, KeyValuePair<string, string> b)
+        /// <param name="stockInfo"></param>
+        /// <param name="step"></param>
+        private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, List<BaseDataInfo> fenXingInfo5, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
         {
-            return string.Compare(b.Value, a.Value);
-        }
-
-        /// <summary>
-        /// 设置当前的数据时间
-        /// </summary>
-        private void SetDataDate()
-        {
-            FilePosInfo fileInfo = null;
-
-            // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER).Where(p => !p.IsFolder).ToList();
-            if (allCsv.Count > 0)
+            if (fenXingInfo.Count == 0 || fenXingInfo5.Count == 0 || fenXingInfo.Count != fenXingInfo5.Count)
             {
-                fileInfo = allCsv[0];
+                return false;
+            }
+
+            int x1 = img.Width - (fenXingInfo.Count * IMG_X_STEP);
+            int y1 = this.GetYPos(img.Height, fenXingInfo[0].DayVal, minVal, step);
+            int x2 = 0;
+            int y2 = 0;
+            decimal curVal;
+            int maxCnt = fenXingInfo.Count - 2;
+            Brush buyBush = new SolidBrush(Color.Red);
+            Brush sellBush = new SolidBrush(Color.Green);
+            Font font = new Font(new FontFamily("Microsoft YaHei"), 6, FontStyle.Bold);
+            bool hasBuyPoint = false;
+            bool buyed = false;
+            decimal buyPrice = 0;
+
+            for (int index = maxCnt; index >= 0; index--)
+            {
+                if (fenXingInfo[index].NextPen != PenStatus.ToPening || index == 0)
+                {
+                    x2 = img.Width - (index + 1) * IMG_X_STEP;
+                    //curVal = stockInfo[index].CurPen == PenStatus.DownPen ? stockInfo[index].DayMinVal : stockInfo[index].DayMaxVal;
+                    curVal = fenXingInfo[index].DayVal;
+                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+
+                    if (fenXingInfo[index].CurPen == PenStatus.UpPen)
+                    {
+                        if (!buyed)
+                        {
+                            // 没有买点时画买点
+                            grp.FillEllipse(buyBush, x2, y2, 7, 7);
+                            hasBuyPoint = true;
+                            buyed = true;
+                            buyPrice = fenXingInfo[index].DayVal;
+                            this.dataDate = fenXingInfo[index].Day;
+                        }
+                    }
+                    else if (buyed)
+                    {
+                        if (fenXingInfo[index].CurPen == PenStatus.DownPen 
+                            || fenXingInfo[index].DayVal < buyPrice * Consts.SELL_VAL
+                            || fenXingInfo[index].DayVal < fenXingInfo5[index].DayVal)
+                        {
+                            // 已经有买点时才画卖点
+                            grp.FillEllipse(sellBush, x2, y2, 7, 7);
+                            buyed = false;
+                        }
+                    }
+
+                    //// 写字用做标识
+                    //if (fenXingInfo[index].CurPen == PenStatus.DownPen)
+                    //{
+                    //    grp.DrawString("T", font, sellBush, x2, y2);
+                    //}
+                    //else
+                    //{
+                    //    grp.DrawString("B", font, buyBush, x2, y2);
+                    //}
+
+                    grp.DrawLine(pen, x1, y1, x2, y2);
+                    x1 = x2;
+                    y1 = y2;
+                }
+            }
+
+            return hasBuyPoint;
+        }
+
+        /// <summary>
+        /// 取得分型、笔信息
+        /// </summary>
+        /// <param name="stockInfo"></param>
+        /// <returns></returns>
+        private List<BaseDataInfo> GetFenxingPenInfo(List<BaseDataInfo> stockInfo)
+        {
+            List<BaseDataInfo> ret = new List<BaseDataInfo>();
+            if (stockInfo.Count < 6)
+            {
+                return ret;
+            }
+
+            // 循环查找分型情报
+            for (int i = stockInfo.Count - 1; i >= 2;)
+            {
+                // 查找分型情报
+                int[] fenxing = this.ChkFenxing(stockInfo, i);
+
+                // 将分型情报位置之前的分型形成中情报保存
+                this.SetRangeFenxing(ret, stockInfo, i, fenxing[1] + 2);
+
+                if (fenxing[0] == Consts.NONE_TYPE)
+                {
+                    // 将最后的分型形成中情报保存
+                    this.SetRangeFenxing(ret, stockInfo, fenxing[1] + 1, 0);
+                    return ret;
+                }
+
+                // 重置位置信息
+                i = fenxing[1];
+
+                // 保存当前分型信息
+                BaseDataInfo befFenxin = ret[ret.Count - 1];
+                BaseDataInfo curFenxin = new BaseDataInfo();
+                curFenxin.Day = stockInfo[i + 1].Day;
+                ret.Add(curFenxin);
+
+                if (fenxing[0] == Consts.TOP_TYPE)
+                {
+                    if (befFenxin.CurPen == PenStatus.ToPening)
+                    {
+                        // 第一次分型的初始化(1,0)
+                        befFenxin.CurPen = PenStatus.UpPen;
+                        befFenxin.NextPen = PenStatus.ToPening;
+                    }
+
+                    if (befFenxin.CurPen == PenStatus.DownPen)
+                    {
+                        if (befFenxin.NextPen == PenStatus.ToPening)
+                        {
+                            // -1,0 => 1,1
+                            curFenxin.CurPen = PenStatus.UpPen;
+                            curFenxin.NextPen = PenStatus.UpPen;
+                        }
+                        else
+                        {
+                            // -1,-1 => -1,0
+                            curFenxin.CurPen = PenStatus.DownPen;
+                            curFenxin.NextPen = PenStatus.ToPening;
+                        }
+                    }
+                    else
+                    {
+                        if (befFenxin.NextPen == PenStatus.ToPening)
+                        {
+                            // 1,0 => 1,1
+                            curFenxin.CurPen = PenStatus.UpPen;
+                            curFenxin.NextPen = PenStatus.UpPen;
+                        }
+                        else
+                        {
+                            // 1,1 => 1,1
+                            curFenxin.CurPen = PenStatus.UpPen;
+                            curFenxin.NextPen = PenStatus.UpPen;
+                        }
+                    }
+
+                    //curFenxin.DayMaxVal = stockInfo[i + 1].DayMaxVal;
+                    curFenxin.DayVal = stockInfo[i + 1].DayVal;
+                }
+                else if (fenxing[0] == Consts.BOTTOM_TYPE)
+                {
+                    if (befFenxin.CurPen == PenStatus.ToPening)
+                    {
+                        // 第一次分型的初始化(-1,0)
+                        befFenxin.CurPen = PenStatus.DownPen;
+                        befFenxin.NextPen = PenStatus.ToPening;
+                    }
+
+                    if (befFenxin.CurPen == PenStatus.UpPen)
+                    {
+                        if (befFenxin.NextPen == PenStatus.ToPening)
+                        {
+                            // 1,0 => -1,-1
+                            curFenxin.CurPen = PenStatus.DownPen;
+                            curFenxin.NextPen = PenStatus.DownPen;
+                        }
+                        else
+                        {
+                            // 1,1 => 1,0
+                            curFenxin.CurPen = PenStatus.UpPen;
+                            curFenxin.NextPen = PenStatus.ToPening;
+                        }
+                    }
+                    else
+                    {
+                        if (befFenxin.NextPen == PenStatus.ToPening)
+                        {
+                            // -1,0 => -1,-1
+                            curFenxin.CurPen = PenStatus.DownPen;
+                            curFenxin.NextPen = PenStatus.DownPen;
+                        }
+                        else
+                        {
+                            // -1,-1 => -1,-1
+                            curFenxin.CurPen = PenStatus.DownPen;
+                            curFenxin.NextPen = PenStatus.DownPen;
+                        }
+                    }
+
+                    //curFenxin.DayMinVal = stockInfo[i + 1].DayMinVal;
+                    curFenxin.DayVal = stockInfo[i + 1].DayVal;
+                }
+
+                if (i <= 2)
+                {
+                    // 将最后的分型形成中情报保存
+                    this.SetRangeFenxing(ret, stockInfo, i, 0);
+                    return ret;
+                }
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        /// 复制区间内的分型情报
+        /// </summary>
+        /// <param name="fenXing"></param>
+        /// <param name="stockInfo"></param>
+        /// <param name="idxStart"></param>
+        /// <param name="idxEnd"></param>
+        private void SetRangeFenxing(List<BaseDataInfo> fenXing, List<BaseDataInfo> stockInfo, int idxStart, int idxEnd)
+        {
+            PenStatus lastPen;
+            if (fenXing.Count == 0)
+            {
+                lastPen = PenStatus.ToPening;
+            }
+            else
+            {
+                lastPen = fenXing[fenXing.Count - 1].CurPen;
             }
             
-            if (fileInfo != null)
+            for (int i = idxStart; i >= idxEnd; i--)
             {
-                this.dataDate = Util.GetShortNameWithoutType(fileInfo.File).Substring(7);
-                this.cmbCon.Enabled = true;
-            }
-            else
-            {
-                this.dataDate = string.Empty;
-                this.btnAft.Enabled = false;
-                this.btnBef.Enabled = false;
-                this.cmbCon.Enabled = false;
+                BaseDataInfo item = new BaseDataInfo();
+                item.Day = stockInfo[i].Day;
+                item.CurPen = lastPen;
+                item.NextPen = PenStatus.ToPening;
+                item.DayVal = stockInfo[i].DayVal;
+                item.DayMinVal = item.DayVal;
+                item.DayMaxVal = item.DayVal;
+
+                fenXing.Add(item);
             }
         }
 
         /// <summary>
-        /// 根据代码取得数据
+        /// 检查当前分型
         /// </summary>
-        /// <param name="stockCd"></param>
-        /// <returns></returns>
-        private string[] GetStockFileContent(string stockCd)
+        /// <param name="stockInfo"></param>
+        /// <returns>int.max：顶分型，int.min：底分型，正常：需要向下判断</returns>
+        private int[] ChkFenxing(List<BaseDataInfo> stockInfo, int idx)
         {
-            string csvFile = CSV_FOLDER + stockCd + "_" + this.dataDate + ".csv";
-            if (File.Exists(csvFile))
+            // 第一个：分型，第二个：下一个数据位置
+            int[] fenxing = new int[2];
+
+            if (idx < 2)
             {
-                return File.ReadAllLines(csvFile, Encoding.UTF8);
+                fenxing[0] = Consts.NONE_TYPE;
+                fenxing[1] = idx;
+                return fenxing;
             }
-            else
+
+            decimal[] minMaxVal = new decimal[2];
+            decimal[] minMaxVal2 = new decimal[2];
+
+            while (idx >= 2)
             {
-                return null;
+                // 取得没有包含关系的位置
+                idx = this.GetNotIncludeInfo(stockInfo, idx, minMaxVal);
+                if (idx < 2)
+                {
+                    fenxing[0] = Consts.NONE_TYPE;
+                    fenxing[1] = idx;
+                    return fenxing;
+                }
+
+                // 取得下一个没有包含关系的位置
+                idx--;
+                idx = this.GetNotIncludeInfo(stockInfo, idx, minMaxVal2);
+                if (idx == 0)
+                {
+                    if (minMaxVal2[0] > minMaxVal[0])
+                    {
+                        fenxing[0] = Consts.TOP_TYPE;
+                    }
+                    else if (minMaxVal2[0] < minMaxVal[0])
+                    {
+                        fenxing[0] = Consts.BOTTOM_TYPE;
+                    }
+                    else
+                    {
+                        fenxing[0] = Consts.NONE_TYPE;
+                    }
+
+                    fenxing[1] = 0;
+                    return fenxing;
+                }
+
+                // 判断当前三个K线的关系
+                BaseDataInfo lastInfo = stockInfo[idx - 1];
+                if (minMaxVal[0] * Consts.LIMIT_VAL < minMaxVal2[0] && minMaxVal2[0] > lastInfo.DayVal * Consts.LIMIT_VAL)
+                {
+                    fenxing[0] = Consts.TOP_TYPE;
+                    fenxing[1] = idx - 2;
+                    return fenxing;
+                }
+                else if (minMaxVal[0] > minMaxVal2[0] * Consts.LIMIT_VAL && minMaxVal2[0] * Consts.LIMIT_VAL < lastInfo.DayVal)
+                {
+                    fenxing[0] = Consts.BOTTOM_TYPE;
+                    fenxing[1] = idx - 2;
+                    return fenxing;
+                }
+
+                /*if (idx == 0)
+                {
+                    if (minMaxVal2[1] > minMaxVal[1])
+                    {
+                        fenxing[0] = Consts.TOP_TYPE;
+                    }
+                    else if (minMaxVal2[0] < minMaxVal[0])
+                    {
+                        fenxing[0] = Consts.BOTTOM_TYPE;
+                    }
+                    else
+                    {
+                        fenxing[0] = Consts.NONE_TYPE;
+                    }
+
+                    fenxing[1] = 0;
+                    return fenxing;
+                }
+
+                // 判断当前三个K线的关系
+                BaseDataInfo lastInfo = stockInfo[idx - 1];
+                if (minMaxVal[1] < minMaxVal2[1] && minMaxVal2[1] > lastInfo.DayMaxVal)
+                {
+                    fenxing[0] = Consts.TOP_TYPE;
+                    fenxing[1] = idx - 2;
+                    return fenxing;
+                }
+                else if (minMaxVal[0] > minMaxVal2[0] && minMaxVal2[0] < lastInfo.DayMinVal)
+                {
+                    fenxing[0] = Consts.BOTTOM_TYPE;
+                    fenxing[1] = idx - 2;
+                    return fenxing;
+                }*/
+
+                idx--;
             }
+
+            fenxing[0] = Consts.NONE_TYPE;
+            fenxing[1] = idx;
+            return fenxing;
         }
+
+        /// <summary>
+        /// 取得没有包括关系的值的位置
+        /// </summary>
+        /// <param name="stockInfo"></param>
+        /// <param name="idx"></param>
+        /// <param name="minMaxVal"></param>
+        /// <returns></returns>
+        private int GetNotIncludeInfo(List<BaseDataInfo> stockInfo, int idx, decimal[] minMaxVal)
+        {
+            minMaxVal[0] = stockInfo[idx].DayVal;
+
+            while (idx >= 1)
+            {
+                BaseDataInfo nextInfo = stockInfo[idx - 1];
+
+                // 判断是否变化
+                if (Math.Abs(minMaxVal[0] - nextInfo.DayVal) < minMaxVal[0] * (Consts.LIMIT_VAL - 1))
+                {
+                    // 前后没有变化
+                    minMaxVal[0] = nextInfo.DayVal;
+                    idx--;
+                    continue;
+                }
+
+                break;
+            }
+
+            /*minMaxVal[0] = stockInfo[idx].DayMinVal;
+            minMaxVal[1] = stockInfo[idx].DayMaxVal;
+
+            while (idx >= 1)
+            {
+                BaseDataInfo nextInfo = stockInfo[idx - 1];
+
+                // 判断包含关系
+                if (minMaxVal[1] > nextInfo.DayMaxVal * Consts.LIMIT_VAL && minMaxVal[0] * Consts.LIMIT_VAL < nextInfo.DayMinVal)
+                {
+                    // 前面的包括后面的
+                    minMaxVal[1] = nextInfo.DayMaxVal;
+                    idx--;
+                    continue;
+                }
+                else if (minMaxVal[1] * Consts.LIMIT_VAL < nextInfo.DayMaxVal && minMaxVal[0] > nextInfo.DayMinVal * Consts.LIMIT_VAL)
+                {
+                    // 后面的包括前面的
+                    minMaxVal[1] = nextInfo.DayMaxVal;
+                    idx--;
+                    continue;
+                }
+                else
+                {
+                    if (minMaxVal[1] > nextInfo.DayMaxVal * Consts.LIMIT_VAL && minMaxVal[0] * Consts.LIMIT_VAL < nextInfo.DayMinVal)
+                    {
+                        // 特殊处理1
+                        minMaxVal[1] = nextInfo.DayMaxVal;
+                        idx--;
+                        continue;
+                    }
+                    else if (minMaxVal[1] * Consts.LIMIT_VAL < nextInfo.DayMaxVal && minMaxVal[0] > nextInfo.DayMinVal * Consts.LIMIT_VAL)
+                    {
+                        // 特殊处理2
+                        minMaxVal[1] = nextInfo.DayMaxVal;
+                        idx--;
+                        continue;
+                    }
+                }
+
+                break;
+            }*/
+
+            return idx;
+        }
+
+        #endregion
+
+        #region " 画面显示相关 "
 
         /// <summary>
         /// 显示当前位置的数据信息
@@ -682,11 +1302,11 @@ namespace GuPiao
             sb.Append(stockCd).Append(" ");
             sb.Append(this.curStockName).Append(" ");
 
-            if (!string.IsNullOrEmpty(this.curStockData[idx].Key))
+            if (!string.IsNullOrEmpty(this.curStockData[idx].Day))
             {
-                sb.Append(this.curStockData[idx].Key.Substring(0, 4)).Append("年");
-                sb.Append(this.curStockData[idx].Key.Substring(4, 2)).Append("月");
-                sb.Append(this.curStockData[idx].Key.Substring(6, 2)).Append("日");
+                sb.Append(this.curStockData[idx].Day.Substring(0, 4)).Append("年");
+                sb.Append(this.curStockData[idx].Day.Substring(4, 2)).Append("月");
+                sb.Append(this.curStockData[idx].Day.Substring(6, 2)).Append("日");
                 sb.Append(" ");
             }
 
@@ -710,73 +1330,6 @@ namespace GuPiao
             }
 
             this.Text = TITLE + sb.ToString();
-        }
-
-        /// <summary>
-        /// 取得当前价位和变动比率
-        /// </summary>
-        /// <param name="stockInfos"></param>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        private string GetStockValInfo(List<KeyValuePair<string, decimal>> stockInfos, int idx)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(stockInfos[idx].Value);
-            if (idx > 0)
-            {
-                sb.Append("(");
-                decimal tmp = (stockInfos[idx - 1].Value - stockInfos[idx].Value) * 100 / stockInfos[idx].Value;
-                sb.Append(tmp.ToString("0.00"));
-                sb.Append(")");
-            }
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// 检查当前趋势
-        /// </summary>
-        /// <param name="stockCdData"></param>
-        /// <returns></returns>
-        private bool ChkQushi(string stockCdData, QushiBase chkQushi)
-        {
-            // 获得数据信息
-            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
-            if (dataInfo == null)
-            {
-                return false;
-            }
-
-            return chkQushi.StartCheck((List<KeyValuePair<string, decimal>>)dataInfo["stockInfos"]);
-        }
-
-        /// <summary>
-        /// 根据StockCd取得相关数据信息
-        /// </summary>
-        /// <param name="stockCdData"></param>
-        /// <returns></returns>
-        private Dictionary<string, object> GetStockInfo(string stockCdData)
-        {
-            // 读取所有信息
-            List<KeyValuePair<string, decimal>> stockInfos = this.GetStockHistoryInfo(CSV_FOLDER + stockCdData + ".csv");
-            if (stockInfos.Count == 0)
-            {
-                return null;
-            }
-
-            // 取得最大、最小值
-            // 期间还处理了一下0，等于前一天的值
-            decimal[] minMaxInfo = this.GetMaxMinStock(stockInfos);
-            if (minMaxInfo[0] == 0 || minMaxInfo[1] == 0 || (minMaxInfo[1] - minMaxInfo[0]) == 0 || stockInfos.Count == 0)
-            {
-                return null;
-            }
-
-            Dictionary<string, object> dicRet = new Dictionary<string, object>();
-            dicRet.Add("stockInfos", stockInfos);
-            dicRet.Add("minMaxInfo", minMaxInfo);
-
-            return dicRet;
         }
 
         /// <summary>
@@ -940,7 +1493,7 @@ namespace GuPiao
             }
 
             // 基础数据信息
-            this.curStockData = (List<KeyValuePair<string, decimal>>)dataInfo["stockInfos"];
+            this.curStockData = (List<BaseDataInfo>)dataInfo["stockInfos"];
 
             // 取得5日级别信息
             this.curStockJibie5Data = this.GetJibieStockInfo(this.curStockData, 5);
@@ -950,17 +1503,208 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 设置UI的按钮可用
+        /// 设置当前的数据时间
         /// </summary>
-        /// <param name="btn"></param>
-        private void UISetBtnEnable(object btn)
-        { 
-            if (btn != null)
+        private void SetDataDate()
+        {
+            FilePosInfo fileInfo = null;
+
+            // 取得已经存在的所有数据信息
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER).Where(p => !p.IsFolder).ToList();
+            if (allCsv.Count > 0)
             {
-                ((Control)btn).Enabled = true;
+                fileInfo = allCsv[0];
+            }
+
+            if (fileInfo != null)
+            {
+                this.dataDate = Util.GetShortNameWithoutType(fileInfo.File).Substring(7);
+                this.cmbCon.Enabled = true;
+            }
+            else
+            {
+                this.dataDate = string.Empty;
+                this.btnAft.Enabled = false;
+                this.btnBef.Enabled = false;
+                this.cmbCon.Enabled = false;
             }
         }
 
+        #endregion
+
+        #region " 各种基本处理 "
+
+        /// <summary>
+        /// 根据最后一天的日期信息判断是否是合理的数据
+        /// </summary>
+        /// <param name="maxDate"></param>
+        /// <returns></returns>
+        private bool IsValidStock(string maxDate)
+        {
+            DateTime maxDt = DateTime.ParseExact(maxDate, "yyyyMMdd", System.Globalization.CultureInfo.CurrentCulture);
+            DateTime chkDt = DateTime.ParseExact(this.dataDate, "yyyyMMdd", System.Globalization.CultureInfo.CurrentCulture);
+
+            if (DateTime.Compare(chkDt, maxDt.AddDays(3)) <= 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 根据代码取得数据
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <returns></returns>
+        private string[] GetStockFileContent(string stockCd)
+        {
+            string csvFile = CSV_FOLDER + stockCd + "_" + this.dataDate + ".csv";
+            if (File.Exists(csvFile))
+            {
+                return File.ReadAllLines(csvFile, Encoding.UTF8);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 保存趋势过滤的结果
+        /// </summary>
+        private void SaveQushiResult(string fileName)
+        {
+            if (this.allStock.Count == 0 || string.IsNullOrEmpty(fileName))
+            {
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            foreach (string shortName in this.allStock)
+            {
+                string[] allLine = this.GetStockFileContent(shortName);
+                if (allLine != null && allLine.Length > 2)
+                {
+                    sb.Append(shortName).Append(" ");
+
+                    string[] lineData = allLine[1].Split(',');
+                    sb.Append(lineData[2]).Append(" ").Append(lineData[3]).Append("\r\n");
+                }
+            }
+
+            File.WriteAllText(RESULT_FOLDER + fileName + ".txt", sb.ToString(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 读取包括买点信息的数据
+        /// </summary>
+        private void LoadHasBuyPointsInfo()
+        {
+            string file = RESULT_FOLDER + "BuyPoints.txt";
+            this.hasBuyPointsStock.Clear();
+            if (File.Exists(file))
+            {
+                string[] allLine = File.ReadAllLines(file, Encoding.UTF8);
+                if (allLine != null && allLine.Length > 0)
+                {
+                    foreach (string line in allLine)
+                    {
+                        if (string.IsNullOrEmpty(line))
+                        {
+                            continue;
+                        }
+
+                        string[] lineTxt = line.Split(' ');
+                        this.hasBuyPointsStock.Add(new KeyValuePair<string, string>(lineTxt[0], lineTxt[1]));
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 保存包括买点信息的数据
+        /// </summary>
+        private void SaveHasBuyPointsInfo()
+        {
+            // 买点排序
+            this.hasBuyPointsStock.Sort(this.BuyPointCompare);
+
+            List<string> tmpList = new List<string>();
+            this.hasBuyPointsStock.ForEach(p => tmpList.Add(p.Key + " " + p.Value));
+
+            File.WriteAllLines(RESULT_FOLDER + "BuyPoints.txt", tmpList.ToArray(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 取得最大、最小值
+        /// </summary>
+        /// <param name="stockInfos"></param>
+        /// <returns></returns>
+        private decimal[] GetMaxMinStock(List<BaseDataInfo> stockInfos)
+        {
+            decimal[] minMaxInfo = new decimal[2];
+            decimal minVal = decimal.MaxValue;
+            decimal maxVal = 0;
+
+            for (int i = stockInfos.Count - 1; i >= 0; i--)
+            {
+                if (stockInfos[i].DayVal == 0)
+                {
+                    stockInfos.RemoveAt(i);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            for (int i = stockInfos.Count - 1; i >= 0; i--)
+            {
+                decimal curVal = stockInfos[i].DayVal;
+                if (curVal > maxVal)
+                {
+                    maxVal = curVal;
+                }
+
+                if (curVal > 0 && curVal < minVal)
+                {
+                    minVal = curVal;
+                }
+
+                if (curVal == 0)
+                {
+                    BaseDataInfo item = new BaseDataInfo();
+                    item.Day = stockInfos[i].Day;
+                    item.DayVal = stockInfos[i + 1].DayVal;
+                    item.DayMaxVal = stockInfos[i + 1].DayMaxVal;
+                    item.DayMinVal = stockInfos[i + 1].DayMinVal;
+
+                    stockInfos[i] = item;
+                }
+            }
+
+            minMaxInfo[0] = minVal;
+            minMaxInfo[1] = maxVal;
+
+            return minMaxInfo;
+        }
+
+        /// <summary>
+        /// 取得Y坐标的位置
+        /// </summary>
+        /// <param name="imgH"></param>
+        /// <param name="pointVal"></param>
+        /// <param name="minVal"></param>
+        /// <param name="step"></param>
+        /// <returns></returns>
+        private int GetYPos(int imgH, decimal pointVal, decimal minVal, decimal step)
+        {
+            return imgH - ((int)((pointVal - minVal) * step)) - 10;
+        }
+        
         /// <summary>
         /// 取得当前Code的数据
         /// </summary>
@@ -988,292 +1732,60 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 画趋势图
+        /// 对象比较
         /// </summary>
-        /// <param name="stockCdData"></param>
-        private void CreateQushiImg(string stockCdData)
-        {
-            // 获得数据信息
-            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
-            if (dataInfo == null)
-            {
-                return;
-            }
-
-            // 基础数据信息
-            List<KeyValuePair<string, decimal>> stockInfos = (List<KeyValuePair<string, decimal>>)dataInfo["stockInfos"];
-
-            // 最大、最小值信息
-            decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
-            decimal step = 370 / (minMaxInfo[1] - minMaxInfo[0]);
-
-            // 设定图片
-            Bitmap imgQushi = new Bitmap(600, 400);
-            Graphics grp = Graphics.FromImage(imgQushi);
-            grp.SmoothingMode = SmoothingMode.AntiAlias;
-            grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-
-            // 开始画日线
-            this.DrawStockQushi(stockInfos, step, minMaxInfo[0], imgQushi, new Pen(Color.Black, 1F), grp);
-
-            // 取得5日级别信息
-            List<KeyValuePair<string, decimal>> stockInfo5Jibie = this.GetJibieStockInfo(stockInfos, 5);
-
-            // 开始画5日线
-            if (stockInfo5Jibie.Count > 0)
-            {
-                this.DrawStockQushi(stockInfo5Jibie, step, minMaxInfo[0], imgQushi, new Pen(Color.Green, 1F), grp);
-            }
-
-            // 取得10日级别信息
-            List<KeyValuePair<string, decimal>> stockInfo10Jibie = this.GetJibieStockInfo(stockInfos, 10);
-
-            // 开始画10日线
-            if (stockInfo10Jibie.Count > 0)
-            {
-                this.DrawStockQushi(stockInfo10Jibie, step, minMaxInfo[0], imgQushi, new Pen(Color.Red, 1F), grp);
-            }
-
-            // 趋势图上画买卖点
-            string tmpDate = this.dataDate;
-            bool hasBuyPoint = this.DrawStockBuySellPoint(stockInfos, stockInfo5Jibie, step, minMaxInfo[0], imgQushi, grp);
-            if (hasBuyPoint)
-            {
-                this.hasBuyPointsStock.Add(new KeyValuePair<string, string>(stockCdData.Substring(0, 6), this.dataDate));
-                this.dataDate = tmpDate;
-            }
-
-            // 保存图片
-            imgQushi.Save(IMG_FOLDER + stockCdData.Substring(0, 6) + ".png");
-        }
-
-        /// <summary>
-        /// 取得股票历史数据
-        /// </summary>
-        /// <param name="stockFile"></param>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
         /// <returns></returns>
-        private List<KeyValuePair<string, decimal>> GetStockHistoryInfo(string stockFile)
+        private int BuyPointCompare(KeyValuePair<string, string> a, KeyValuePair<string, string> b)
         {
-            List<KeyValuePair<string, decimal>> stockInfo = new List<KeyValuePair<string, decimal>>();
-            if (string.IsNullOrEmpty(stockFile) || !File.Exists(stockFile))
-            {
-                return stockInfo;
-            }
-
-            string[] allLine = File.ReadAllLines(stockFile, Encoding.UTF8);
-            for (int i = 1; i < allLine.Length && i <= MAX_DAYS; i++)
-            {
-                if (allLine[i].IndexOf("Error") > 0)
-                {
-                    stockInfo.Clear();
-                    return stockInfo;
-                }
-
-                string[] allItems = allLine[i].Split(',');
-                if (allItems.Length > 3)
-                {
-                    stockInfo.Add(new KeyValuePair<string, decimal>(allItems[0].Replace("-", ""), decimal.Parse(allItems[3])));
-                }
-            }
-
-            return stockInfo;
+            return string.Compare(b.Value, a.Value);
         }
 
         /// <summary>
-        /// 取得当前级别的信息
+        /// 设置UI的按钮可用
+        /// </summary>
+        /// <param name="btn"></param>
+        private void UISetBtnEnable(object btn)
+        {
+            if (btn != null)
+            {
+                ((Control)btn).Enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// 是否是创业板数据
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <returns></returns>
+        private bool IsChuangyeStock(string stockCd)
+        {
+            return stockCd.StartsWith("300");
+        }
+
+        /// <summary>
+        /// 取得当前价位和变动比率
         /// </summary>
         /// <param name="stockInfos"></param>
-        /// <param name="jibie">5、10、30等级别</param>
+        /// <param name="idx"></param>
         /// <returns></returns>
-        private List<KeyValuePair<string, decimal>> GetJibieStockInfo(List<KeyValuePair<string, decimal>> stockInfos, int jibie)
+        private string GetStockValInfo(List<BaseDataInfo> stockInfos, int idx)
         {
-            List<KeyValuePair<string, decimal>> stockInfo = new List<KeyValuePair<string, decimal>>();
-
-            int index = 0;
-            int jibieCount = jibie - 1;
-            int maxCount = stockInfos.Count - jibie;
-
-            while (index <= maxCount)
+            StringBuilder sb = new StringBuilder();
+            sb.Append(stockInfos[idx].DayVal);
+            if (idx > 0)
             {
-                decimal total = 0;
-                for (int i = 0; i <= jibieCount; i++)
-                {
-                    total += stockInfos[index + i].Value;
-                }
-                stockInfo.Add(new KeyValuePair<string, decimal>(stockInfos[index].Key, total / jibie));
-
-                index++;
+                sb.Append("(");
+                decimal tmp = (stockInfos[idx - 1].DayVal - stockInfos[idx].DayVal) * 100 / stockInfos[idx].DayVal;
+                sb.Append(tmp.ToString("0.00"));
+                sb.Append(")");
             }
 
-            if (stockInfo.Count > 0)
-            {
-                while (stockInfo.Count < stockInfos.Count)
-                {
-                    stockInfo.Add(stockInfo[stockInfo.Count - 1]);
-                }
-            }
-
-            return stockInfo;
+            return sb.ToString();
         }
 
-        /// <summary>
-        /// 取得最大、最小值
-        /// </summary>
-        /// <param name="stockInfos"></param>
-        /// <returns></returns>
-        private decimal[] GetMaxMinStock(List<KeyValuePair<string, decimal>> stockInfos)
-        { 
-            decimal[] minMaxInfo = new decimal[2];
-            decimal minVal = decimal.MaxValue;
-            decimal maxVal = 0;
-
-            for (int i = stockInfos.Count - 1; i >= 0; i--)
-            {
-                if (stockInfos[i].Value == 0)
-                {
-                    stockInfos.RemoveAt(i);
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            for (int i = stockInfos.Count - 1; i >= 0; i--)
-            {
-                decimal curVal = stockInfos[i].Value;
-                if (curVal > maxVal)
-                {
-                    maxVal = curVal;
-                }
-
-                if (curVal > 0 && curVal < minVal)
-                {
-                    minVal = curVal;
-                }
-
-                if (curVal == 0)
-                {
-                    stockInfos[i] = new KeyValuePair<string,decimal>(stockInfos[i].Key, stockInfos[i + 1].Value);
-                }
-            }
-
-            minMaxInfo[0] = minVal;
-            minMaxInfo[1] = maxVal;
-
-            return minMaxInfo;
-        }
-
-        /// <summary>
-        /// 取得Y坐标的位置
-        /// </summary>
-        /// <param name="imgH"></param>
-        /// <param name="pointVal"></param>
-        /// <param name="minVal"></param>
-        /// <param name="step"></param>
-        /// <returns></returns>
-        private int GetYPos(int imgH, decimal pointVal, decimal minVal, decimal step)
-        {
-            return imgH - ((int)((pointVal - minVal) * step)) - 10;
-        }
-
-        /// <summary>
-        /// 开始画趋势图
-        /// </summary>
-        /// <param name="stockInfo"></param>
-        /// <param name="step"></param>
-        private void DrawStockQushi(List<KeyValuePair<string, decimal>> stockInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
-        {
-            int startX = img.Width - IMG_X_STEP;
-            int x1 = startX;
-            int y1 = this.GetYPos(img.Height, stockInfo[0].Value, minVal, step);
-            int x2 = 0;
-            int y2 = 0;
-            int index = 1;
-            while (index <= stockInfo.Count - 1)
-            {
-                x2 = startX - IMG_X_STEP;
-                y2 = this.GetYPos(img.Height, stockInfo[index].Value, minVal, step);
-
-                grp.DrawLine(pen, x1, y1, x2, y2);
-                x1 = x2;
-                y1 = y2;
-
-                index++;
-                startX -= IMG_X_STEP;
-            }
-        }
-
-        /// <summary>
-        /// 趋势图上画买卖点
-        /// </summary>
-        /// <param name="stockInfo"></param>
-        /// <param name="step"></param>
-        private bool DrawStockBuySellPoint(List<KeyValuePair<string, decimal>> stockInfo, List<KeyValuePair<string, decimal>> jibie5StockInfo, decimal step, decimal minVal, Bitmap img, Graphics grp)
-        {
-            if (jibie5StockInfo.Count == 0 || jibie5StockInfo.Count != stockInfo.Count)
-            {
-                return false;
-            }
-
-            int curQushi = 0; // 当前趋势，负数：下跌，0：转折，正数：上涨
-            Brush buyBush = new SolidBrush(Color.Red);
-            Brush sellBush = new SolidBrush(Color.Green);
-            Font font = new Font(new FontFamily("Microsoft YaHei"), 6, FontStyle.Bold);
-            bool hasBuyPoint = false;
-            bool buyed = false;
-
-            for (int i = stockInfo.Count - 2; i >= 0; i--)
-            {
-                // 当前上涨
-                if (stockInfo[i].Value > stockInfo[i + 1].Value * Consts.LIMIT_VAL)
-                {
-                    if (curQushi < 0)
-                    {
-                        // 原来是下跌，如果满足转折条件（连续N天，并且超过5日线）
-                        if (-curQushi > Consts.QUSHI_CONTINUE_DAYS && stockInfo[i].Value >= jibie5StockInfo[i].Value)
-                        {
-                            // 画买点
-                            grp.FillEllipse(buyBush, img.Width - IMG_X_STEP * (i + 3), this.GetYPos(img.Height, stockInfo[i + 1].Value, minVal, step), 7, 7);
-                            hasBuyPoint = true;
-                            buyed = true;
-                            this.dataDate = stockInfo[i + 1].Key;
-                        }
-
-                        // 趋势标志恢复
-                        curQushi = 0;
-                    }
-                    else
-                    {
-                        // 原来就是上涨，趋势的标志增大
-                        curQushi++;
-                    }
-                }
-                // 当前是下跌
-                else if (stockInfo[i].Value * Consts.LIMIT_VAL < stockInfo[i + 1].Value)
-                {
-                    if (curQushi > 0)
-                    {
-                        if (buyed)
-                        {
-                            // 原来是上涨,并且已经有买点时才画卖点
-                            grp.FillEllipse(sellBush, img.Width - IMG_X_STEP * (i + 3), this.GetYPos(img.Height, stockInfo[i + 1].Value, minVal, step), 7, 7);
-                            buyed = false;
-                        }
-
-                        // 趋势标志恢复
-                        curQushi = 0;
-                    }
-                    else
-                    {
-                        // 原来就是下跌，趋势的标志增大
-                        curQushi--;
-                    }
-                }
-            }
-
-            return hasBuyPoint;
-        }
+        #endregion
 
         #endregion
     }
