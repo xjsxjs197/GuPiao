@@ -6,12 +6,11 @@ using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using Hanhua.Common;
 using GuPiao.Common;
-using System.Globalization;
+using GuPiao.GetData;
+using Hanhua.Common;
 
 namespace GuPiao
 {
@@ -99,6 +98,11 @@ namespace GuPiao
         /// </summary>
         private string curStockName = string.Empty;
 
+        /// <summary>
+        /// 取数据的弹出菜单
+        /// </summary>
+        private ContextMenuStrip getDataSubMenu = new ContextMenuStrip();
+
         #endregion
 
         #region " 初始化 "
@@ -114,6 +118,9 @@ namespace GuPiao
             this.pnlBody.BackColor = Color.FromArgb(199, 237, 204);
 
             this.cmbCon.SelectedIndexChanged += new EventHandler(this.cmbCon_SelectedIndexChanged);
+
+            // 绑定子菜单事件
+            this.SetSubMenuEvent();
 
             //获取UI线程同步上下文
             this.mSyncContext = SynchronizationContext.Current;
@@ -154,12 +161,7 @@ namespace GuPiao
         /// <param name="e"></param>
         private void btnGetAllStock_Click(object sender, EventArgs e)
         {
-            this.btnGetAllStock.Enabled = false;
-
-            // 重新设置当前显示
-            this.ResetDisplay();
-
-            this.Do(this.ThreadGetAllStock);
+            this.getDataSubMenu.Show(Control.MousePosition);
         }
 
         /// <summary>
@@ -319,6 +321,39 @@ namespace GuPiao
             }
         }
 
+        /// <summary>
+        /// 子菜单点击事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void getDataSubMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            this.getDataSubMenu.Visible = false;
+            this.btnGetAllStock.Enabled = false;
+
+            // 重新设置当前显示
+            this.ResetDisplay();
+
+            switch (e.ClickedItem.Name)
+            {
+                case "get5M":
+                    this.Do(this.ThreadGetMinuteData, TimeRange.M5);
+                    break;
+
+                case "get15M":
+                    this.Do(this.ThreadGetMinuteData, TimeRange.M15);
+                    break;
+
+                case "get30M":
+                    this.Do(this.ThreadGetMinuteData, TimeRange.M30);
+                    break;
+
+                case "getDay":
+                    this.Do(this.ThreadGetAllDayData);
+                    break;
+            }
+        }
+
         #endregion
 
         #region " 公有方法 "
@@ -329,87 +364,43 @@ namespace GuPiao
         #region " 各种数据处理 "
 
         /// <summary>
-        /// 多线程取得所有数据
+        /// 多线程取得所有分钟级别的数据
         /// </summary>
-        private void ThreadGetAllStock()
+        private void ThreadGetMinuteData(params object[] param)
         {
+            TimeRange timeRange = (TimeRange)param[0];
+
             // 设定结束日期
-            string endDay = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
+            DateTime now = DateTime.Now;
+            string endDay;
+            if (DateTime.Now.Hour > 15)
+            {
+                endDay = now.ToString("yyyy-MM-dd 15:00:00");
+            }
+            else if (DateTime.Now.Hour < 9)
+            {
+                endDay = now.AddDays(-1).ToString("yyyy-MM-dd 15:00:00");
+            }
+            else
+            {
+                endDay = now.ToString("yyyy-MM-dd HH:mm:00");
+            }
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + timeRange.ToString() + "/");
 
-            // 取得所有信息的Html页面内容
-            string allInfos = Util.GetHtmlStr("http://quote.eastmoney.com/stocklist.html", "");
-
-            // 过滤数据
-            Regex reg = new Regex("<li><a target=\"_blank\" href=\"http://quote.eastmoney.com/\\S\\S(.*?).html\">");   // 定义正则表达式
-            Regex regSub = new Regex(@"[0|6|3]\d{5}");   // 定义正则表达式
-
-            string leftUrl = "http://quotes.money.163.com/service/chddata.html?fields=TCLOSE;HIGH;LOW;TOPEN;LCLOSE;CHG;PCHG;TURNOVER;VOTURNOVER;VATURNOVER;TCAP;MCAP";
-            string rightUrl = "&end=" + endDay + "&code=";
-            string result;
-            string codeType;
-            string tmpFile = CSV_FOLDER + "tmp.csv";
-            Encoding encoding = Encoding.GetEncoding("GBK");
-
-            MatchCollection mc = reg.Matches(allInfos);  // 在内容中匹配与正则表达式匹配的字符
+            // 获取所有的代码信息
+            GetDataBase getData = new GetDataFromSina(CSV_FOLDER, endDay, timeRange);
+            List<string> allStock = getData.Before();
 
             // 设置进度条
-            this.ResetProcessBar(mc.Count);
+            this.ResetProcessBar(allStock.Count);
 
-            foreach (Match m in mc)     // 循环匹配到的字符
+            // 循环取得所有的数据
+            foreach (string stockCd in allStock)
             {
-                string stockCd = regSub.Match(m.Value).Value;
-                if (!string.IsNullOrEmpty(stockCd))
-                {
-                    if (stockCd.StartsWith("6"))
-                    {
-                        codeType = "0";
-                    }
-                    else
-                    {
-                        codeType = "1";
-                    }
-
-
-                    // 取得开始时间
-                    string startDay = this.GetExitsStock(allCsv, stockCd);
-                    if (string.IsNullOrEmpty(startDay))
-                    {
-                        // 取截止今天为止的所有数据
-                        result = Util.HttpGet(leftUrl + rightUrl + codeType + stockCd, "", encoding);
-                        if (!string.IsNullOrEmpty(result))
-                        {
-                            File.WriteAllText(CSV_FOLDER + stockCd + "_" + endDay + ".csv", result, Encoding.UTF8);
-                        }
-                    }
-                    else if (string.Compare(startDay, endDay) < 0)
-                    {
-                        // 取开始时间，到结束时间的数据
-                        result = Util.HttpGet(leftUrl + rightUrl + codeType + stockCd + "&start=" + startDay, "", encoding);
-                        if (!string.IsNullOrEmpty(result))
-                        {
-                            // 生成临时文件
-                            File.WriteAllText(tmpFile, result, Encoding.UTF8);
-
-                            // 将临时文件的内容，追加到既存的文件中
-                            string oldFilePath = CSV_FOLDER + stockCd + "_" + startDay + ".csv";
-                            string[] oldFile = File.ReadAllLines(oldFilePath, Encoding.UTF8);
-                            string[] newContent = File.ReadAllLines(tmpFile, Encoding.UTF8);
-                            List<string> all = new List<string>();
-                            all.AddRange(newContent);
-                            for (int i = 2; i < oldFile.Length; i++)
-                            {
-                                all.Add(oldFile[i]);
-                            }
-
-                            // 生成新的文件，删除既存的文件
-                            File.WriteAllLines(CSV_FOLDER + stockCd + "_" + endDay + ".csv", all.ToArray(), Encoding.UTF8);
-                            File.Delete(oldFilePath);
-                        }
-                    }
-                }
+                // 取得当前Stock数据
+                getData.Start(stockCd, allCsv);
 
                 // 更新进度条
                 this.ProcessBarStep();
@@ -418,11 +409,49 @@ namespace GuPiao
             // 关闭进度条
             this.CloseProcessBar();
 
-            // 删除临时文件
-            if (File.Exists(tmpFile))
+            // 获取数据后的相关处理
+            getData.After();
+
+            // 设置按钮可用
+            this.mSyncContext.Post(this.UISetBtnEnable, this.btnGetAllStock);
+
+            // 重新设置结束时间
+            this.dataDate = endDay;
+        }
+
+        /// <summary>
+        /// 多线程取得所有整天的数据
+        /// </summary>
+        private void ThreadGetAllDayData()
+        {
+            // 设定结束日期
+            string endDay = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
+
+            // 取得已经存在的所有数据信息
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER);
+
+            // 获取所有的代码信息
+            GetDataBase getData = new GetDataFrom163(CSV_FOLDER, endDay);
+            List<string> allStock = getData.Before();
+
+            // 设置进度条
+            this.ResetProcessBar(allStock.Count);
+
+            // 循环取得所有的数据
+            foreach (string stockCd in allStock)
             {
-                File.Delete(tmpFile);
+                // 取得当前Stock数据
+                getData.Start(stockCd, allCsv);
+                
+                // 更新进度条
+                this.ProcessBarStep();
             }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+
+            // 获取数据后的相关处理
+            getData.After();
 
              // 设置按钮可用
             this.mSyncContext.Post(this.UISetBtnEnable, this.btnGetAllStock);
@@ -1535,6 +1564,36 @@ namespace GuPiao
         #region " 各种基本处理 "
 
         /// <summary>
+        /// 绑定子菜单事件
+        /// </summary>
+        private void SetSubMenuEvent()
+        {
+            this.getDataSubMenu.ItemClicked += new ToolStripItemClickedEventHandler(this.getDataSubMenu_ItemClicked);
+
+            ToolStripMenuItem item = new ToolStripMenuItem();
+            item.Name = "get5M";
+            item.Text = "5分钟";
+            this.getDataSubMenu.Items.Add(item);
+
+            item = new ToolStripMenuItem();
+            item.Name = "get15M";
+            item.Text = "15分钟";
+            this.getDataSubMenu.Items.Add(item);
+
+            item = new ToolStripMenuItem();
+            item.Name = "get30M";
+            item.Text = "30分钟";
+            this.getDataSubMenu.Items.Add(item);
+
+            this.getDataSubMenu.Items.Add(new ToolStripSeparator());
+
+            item = new ToolStripMenuItem();
+            item.Name = "getDay";
+            item.Text = "天";
+            this.getDataSubMenu.Items.Add(item);
+        }
+
+        /// <summary>
         /// 根据最后一天的日期信息判断是否是合理的数据
         /// </summary>
         /// <param name="maxDate"></param>
@@ -1705,32 +1764,6 @@ namespace GuPiao
             return imgH - ((int)((pointVal - minVal) * step)) - 10;
         }
         
-        /// <summary>
-        /// 取得当前Code的数据
-        /// </summary>
-        /// <param name="allCsv"></param>
-        /// <param name="stockCd"></param>
-        /// <returns>文件名中的日期</returns>
-        private string GetExitsStock(List<FilePosInfo> allCsv, string stockCd)
-        {
-            int pos = 0;
-            foreach (FilePosInfo fileItem in allCsv)
-            {
-                if (fileItem.IsFolder)
-                {
-                    continue;
-                }
-
-                pos = fileItem.File.IndexOf(stockCd);
-                if (pos > 0)
-                {
-                    return fileItem.File.Substring(pos + 7, 8);
-                }
-            }
-
-            return string.Empty;
-        }
-
         /// <summary>
         /// 对象比较
         /// </summary>

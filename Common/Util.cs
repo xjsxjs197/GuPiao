@@ -194,7 +194,10 @@ namespace Hanhua.Common
         public static List<FilePosInfo> GetAllFiles(string strFolder)
         {
             List<FilePosInfo> fileNameInfo = new List<FilePosInfo>();
-            Util.GetAllFilesInfo(strFolder, fileNameInfo, 0);
+            if (Directory.Exists(strFolder))
+            {
+                Util.GetAllFilesInfo(strFolder, fileNameInfo, 0);
+            }
 
             return fileNameInfo;
         }

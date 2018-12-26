@@ -77,6 +77,10 @@
     <Compile Include="Common\BuySellPoint.cs" />
     <Compile Include="Common\BuySellType.cs" />
     <Compile Include="Common\PenStatus.cs" />
+    <Compile Include="Common\TimeRange.cs" />
+    <Compile Include="GetData\GetDataFromSina.cs" />
+    <Compile Include="GetData\GetDataBase.cs" />
+    <Compile Include="GetData\GetDataFrom163.cs" />
     <Compile Include="QushiCheck\ChkUpQushi.cs" />
     <Compile Include="Common\Consts.cs" />
     <Compile Include="QushiCheck\ChkDownQushi.cs" />
