@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace Hanhua.Common
+namespace Common
 {
     /// <summary>
     /// 汉化基类

@@ -5,7 +5,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
-namespace Hanhua.Common
+namespace Common
 {
     /// <summary>
     /// 自定义RichTextBox，实现和另一个RichTextBox同步更新滚动条

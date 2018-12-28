@@ -1,4 +1,4 @@
-﻿namespace Hanhua.Common
+﻿namespace Common
 {
     partial class BaseForm
     {

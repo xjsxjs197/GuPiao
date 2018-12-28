@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Hanhua.Common;
-using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using Common;
 
-namespace GuPiao.GetData
+namespace DataProcess.GetData
 {
     /// <summary>
     /// 从网易取得数据

@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.pnlButton = new System.Windows.Forms.Panel();
+            this.btnChgDisp = new System.Windows.Forms.Button();
             this.txtCdSearch = new System.Windows.Forms.TextBox();
-            this.chkNoChuangye = new System.Windows.Forms.CheckBox();
             this.lblConSel = new System.Windows.Forms.Label();
             this.cmbCon = new System.Windows.Forms.ComboBox();
             this.lblCntInfo = new System.Windows.Forms.Label();
@@ -56,8 +56,8 @@
             // pnlButton
             // 
             this.pnlButton.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlButton.Controls.Add(this.btnChgDisp);
             this.pnlButton.Controls.Add(this.txtCdSearch);
-            this.pnlButton.Controls.Add(this.chkNoChuangye);
             this.pnlButton.Controls.Add(this.lblConSel);
             this.pnlButton.Controls.Add(this.cmbCon);
             this.pnlButton.Controls.Add(this.lblCntInfo);
@@ -71,31 +71,29 @@
             this.pnlButton.Size = new System.Drawing.Size(602, 40);
             this.pnlButton.TabIndex = 0;
             // 
+            // btnChgDisp
+            // 
+            this.btnChgDisp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnChgDisp.Location = new System.Drawing.Point(533, 6);
+            this.btnChgDisp.Name = "btnChgDisp";
+            this.btnChgDisp.Size = new System.Drawing.Size(56, 28);
+            this.btnChgDisp.TabIndex = 11;
+            this.btnChgDisp.Text = "展 开";
+            this.btnChgDisp.UseVisualStyleBackColor = true;
+            this.btnChgDisp.Click += new System.EventHandler(this.btnChgDisp_Click);
+            // 
             // txtCdSearch
             // 
             this.txtCdSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtCdSearch.Font = new System.Drawing.Font("SimSun", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.txtCdSearch.ImeMode = System.Windows.Forms.ImeMode.Disable;
-            this.txtCdSearch.Location = new System.Drawing.Point(381, 10);
+            this.txtCdSearch.Location = new System.Drawing.Point(312, 10);
             this.txtCdSearch.Margin = new System.Windows.Forms.Padding(2);
             this.txtCdSearch.MaxLength = 6;
             this.txtCdSearch.Name = "txtCdSearch";
             this.txtCdSearch.Size = new System.Drawing.Size(69, 21);
             this.txtCdSearch.TabIndex = 10;
             this.txtCdSearch.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtCdSearch_KeyPress);
-            // 
-            // chkNoChuangye
-            // 
-            this.chkNoChuangye.AutoSize = true;
-            this.chkNoChuangye.Checked = true;
-            this.chkNoChuangye.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkNoChuangye.Enabled = false;
-            this.chkNoChuangye.Location = new System.Drawing.Point(309, 12);
-            this.chkNoChuangye.Name = "chkNoChuangye";
-            this.chkNoChuangye.Size = new System.Drawing.Size(72, 16);
-            this.chkNoChuangye.TabIndex = 9;
-            this.chkNoChuangye.Text = "不要创业";
-            this.chkNoChuangye.UseVisualStyleBackColor = true;
             // 
             // lblConSel
             // 
@@ -129,7 +127,7 @@
             // lblCntInfo
             // 
             this.lblCntInfo.AutoSize = true;
-            this.lblCntInfo.Location = new System.Drawing.Point(537, 14);
+            this.lblCntInfo.Location = new System.Drawing.Point(468, 14);
             this.lblCntInfo.Name = "lblCntInfo";
             this.lblCntInfo.Size = new System.Drawing.Size(59, 12);
             this.lblCntInfo.TabIndex = 6;
@@ -137,7 +135,7 @@
             // 
             // btnAft
             // 
-            this.btnAft.Location = new System.Drawing.Point(505, 6);
+            this.btnAft.Location = new System.Drawing.Point(436, 6);
             this.btnAft.Name = "btnAft";
             this.btnAft.Size = new System.Drawing.Size(26, 28);
             this.btnAft.TabIndex = 4;
@@ -147,7 +145,7 @@
             // 
             // btnBef
             // 
-            this.btnBef.Location = new System.Drawing.Point(472, 6);
+            this.btnBef.Location = new System.Drawing.Point(403, 6);
             this.btnBef.Name = "btnBef";
             this.btnBef.Size = new System.Drawing.Size(26, 28);
             this.btnBef.TabIndex = 3;
@@ -205,7 +203,6 @@
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
             this.MaximumSize = new System.Drawing.Size(608, 495);
-            this.MinimumSize = new System.Drawing.Size(608, 495);
             this.Name = "CreateQushi";
             this.Text = "CreateQushi";
             this.pnlTopBody.ResumeLayout(false);
@@ -229,7 +226,7 @@
         private System.Windows.Forms.Label lblCntInfo;
         private System.Windows.Forms.ComboBox cmbCon;
         private System.Windows.Forms.Label lblConSel;
-        private System.Windows.Forms.CheckBox chkNoChuangye;
         private System.Windows.Forms.TextBox txtCdSearch;
+        private System.Windows.Forms.Button btnChgDisp;
     }
 }

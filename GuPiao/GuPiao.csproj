@@ -77,10 +77,6 @@
     <Compile Include="Common\BuySellPoint.cs" />
     <Compile Include="Common\BuySellType.cs" />
     <Compile Include="Common\PenStatus.cs" />
-    <Compile Include="Common\TimeRange.cs" />
-    <Compile Include="GetData\GetDataFromSina.cs" />
-    <Compile Include="GetData\GetDataBase.cs" />
-    <Compile Include="GetData\GetDataFrom163.cs" />
     <Compile Include="QushiCheck\ChkUpQushi.cs" />
     <Compile Include="Common\Consts.cs" />
     <Compile Include="QushiCheck\ChkDownQushi.cs" />
@@ -145,6 +141,10 @@
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{006DCF31-D7F3-4AD3-8037-6BC11FD1AA34}</Project>
       <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DataProcess\DataProcess.csproj">
+      <Project>{1E41D1F8-B1C0-4C65-B648-0B4ED70A6766}</Project>
+      <Name>DataProcess</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

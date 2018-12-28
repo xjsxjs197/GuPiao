@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using nQuant;
 using System.Net;
 
-namespace Hanhua.Common
+namespace Common
 {
     /// <summary>
     /// 共通方法

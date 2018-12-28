@@ -73,6 +73,7 @@
     <Compile Include="RichTextBoxEx .cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="TimeRange.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="WuQuantizer\Box.cs" />
     <Compile Include="WuQuantizer\ColorData.cs" />

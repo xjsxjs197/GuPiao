@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Hanhua.Common;
-using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
 using System.IO;
-using GuPiao.Common;
+using System.Text;
+using Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace GuPiao.GetData
+namespace DataProcess.GetData
 {
     /// <summary>
     /// 从新浪取得数据
@@ -106,13 +102,16 @@ namespace GuPiao.GetData
                         sb.Append(stockCd).Append("_").Append(this.endDayForFile).Append(".csv");
                         File.WriteAllLines(sb.ToString(), allMinuteData.ToArray(), Encoding.UTF8);
                     }
-                    else if (string.Compare(startDay, endDay) < 0)
+                    else if (string.Compare(startDay, this.endDayForFile) < 0)
                     {
                         // 读取既存文件的内容
                         sb.Length = 0;
                         sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
                         sb.Append(stockCd).Append("_").Append(startDay).Append(".csv");
                         string[] oldFile = File.ReadAllLines(sb.ToString(), Encoding.UTF8);
+
+                        // 删除旧的文件
+                        File.Delete(sb.ToString());
 
                         // 取得分钟级别数据
                         string lastDay = this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
@@ -173,7 +172,7 @@ namespace GuPiao.GetData
 
                 allMinuteData.Add(sb.ToString());
 
-                if (i == jArray.Count - 1)
+                if (i == 0)
                 {
                     lastDay = jArray[i]["day"].ToString();
                 }

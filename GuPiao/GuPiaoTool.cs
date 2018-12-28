@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using GuPiao;
-using Hanhua.Common;
+using Common;
 
 namespace GuPiaoTool
 {

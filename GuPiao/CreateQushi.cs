@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using Common;
+using DataProcess.GetData;
 using GuPiao.Common;
-using GuPiao.GetData;
-using Hanhua.Common;
 
 namespace GuPiao
 {
@@ -47,9 +47,29 @@ namespace GuPiao
         private const string RESULT_FOLDER = @"./ChkResult/";
 
         /// <summary>
+        /// 天数据的目录
+        /// </summary>
+        private const string DAY_FOLDER = @"Day/";
+
+        /// <summary>
         /// 工具的名称
         /// </summary>
         private const string TITLE = "财富数据 ";
+
+        /// <summary>
+        /// 不要创业数据
+        /// </summary>
+        private const bool NO_CHUANGYE = true;
+
+        /// <summary>
+        /// 打开状态时的按钮名称
+        /// </summary>
+        private const string OPEN_BTN_TEXT = "收 起";
+
+        /// <summary>
+        /// 收起状态时的按钮名称
+        /// </summary>
+        private const string CLOSE_BTN_TEXT = "展 开";
 
         /// <summary>
         /// UI线程的同步上下文
@@ -103,6 +123,21 @@ namespace GuPiao
         /// </summary>
         private ContextMenuStrip getDataSubMenu = new ContextMenuStrip();
 
+        /// <summary>
+        /// 趋势图的弹出菜单
+        /// </summary>
+        private ContextMenuStrip qushiSubMenu = new ContextMenuStrip();
+
+        /// <summary>
+        /// 保持隐藏项目的高度
+        /// </summary>
+        private int oldPnlBodyHeight;
+
+        /// <summary>
+        /// 子目录
+        /// </summary>
+        private string subFolder;
+
         #endregion
 
         #region " 初始化 "
@@ -114,8 +149,12 @@ namespace GuPiao
         {
             InitializeComponent();
 
+            this.subFolder = DAY_FOLDER;
             this.cmbCon.SelectedIndex = 0;
             this.pnlBody.BackColor = Color.FromArgb(199, 237, 204);
+
+            this.oldPnlBodyHeight = this.pnlBody.Height;
+            this.Height -= this.oldPnlBodyHeight;
 
             this.cmbCon.SelectedIndexChanged += new EventHandler(this.cmbCon_SelectedIndexChanged);
 
@@ -146,12 +185,7 @@ namespace GuPiao
         /// <param name="e"></param>
         private void btnCreate_Click(object sender, EventArgs e)
         {
-            this.btnCreate.Enabled = false;
-            
-            // 重新设置当前显示
-            this.ResetDisplay();
-
-            this.Do(this.ThreadDrawQushiImg);
+            this.qushiSubMenu.Show(Control.MousePosition);
         }
 
         /// <summary>
@@ -322,6 +356,25 @@ namespace GuPiao
         }
 
         /// <summary>
+        /// 展开、收起显示的区域
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnChgDisp_Click(object sender, EventArgs e)
+        {
+            if (OPEN_BTN_TEXT.Equals(this.btnChgDisp.Text))
+            {
+                this.Height -= this.oldPnlBodyHeight;
+                this.btnChgDisp.Text = CLOSE_BTN_TEXT;
+            }
+            else
+            {
+                this.Height += this.oldPnlBodyHeight;
+                this.btnChgDisp.Text = OPEN_BTN_TEXT;
+            }
+        }
+
+        /// <summary>
         /// 子菜单点击事件
         /// </summary>
         /// <param name="sender"></param>
@@ -350,6 +403,31 @@ namespace GuPiao
 
                 case "getDay":
                     this.Do(this.ThreadGetAllDayData);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 画趋势图子菜单事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void qushiSubMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            this.getDataSubMenu.Visible = false;
+            this.btnCreate.Enabled = false;
+
+             // 重新设置当前显示
+            this.ResetDisplay();
+
+            switch (e.ClickedItem.Name)
+            {
+                case "drawMinute":
+                    this.Do(this.ThreadDrawMinuteQushi);
+                    break;
+
+                case "drawDay":
+                    this.Do(this.ThreadDrawDayQushi);
                     break;
             }
         }
@@ -416,7 +494,7 @@ namespace GuPiao
             this.mSyncContext.Post(this.UISetBtnEnable, this.btnGetAllStock);
 
             // 重新设置结束时间
-            this.dataDate = endDay;
+            this.dataDate = endDay.Replace("-", "").Replace(" ", "").Replace(":", "");
         }
 
         /// <summary>
@@ -428,10 +506,10 @@ namespace GuPiao
             string endDay = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER);
 
             // 获取所有的代码信息
-            GetDataBase getData = new GetDataFrom163(CSV_FOLDER, endDay);
+            GetDataBase getData = new GetDataFrom163(CSV_FOLDER + DAY_FOLDER, endDay);
             List<string> allStock = getData.Before();
 
             // 设置进度条
@@ -461,12 +539,12 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 画趋势图
+        /// 画天级别趋势图
         /// </summary>
-        private void ThreadDrawQushiImg()
+        private void ThreadDrawDayQushi()
         {
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER);
             this.hasBuyPointsStock.Clear();
 
             // 设置进度条
@@ -481,7 +559,7 @@ namespace GuPiao
 
                 base.baseFile = fileItem.File;
 
-                this.CreateQushiImg(Util.GetShortNameWithoutType(fileItem.File));
+                this.CreateDayQushiImg(Util.GetShortNameWithoutType(fileItem.File));
 
                 // 更新进度条
                 this.ProcessBarStep();
@@ -501,6 +579,48 @@ namespace GuPiao
         }
 
         /// <summary>
+        /// 画分钟级别趋势图
+        /// </summary>
+        private void ThreadDrawMinuteQushi()
+        {
+            string minuteFolder = TimeRange.M5.ToString() + "/";
+
+            // 取得已经存在的所有数据信息
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + minuteFolder);
+            //this.hasBuyPointsStock.Clear();
+
+            // 设置进度条
+            this.ResetProcessBar(allCsv.Count);
+
+            foreach (FilePosInfo fileItem in allCsv)
+            {
+                if (fileItem.IsFolder)
+                {
+                    continue;
+                }
+
+                base.baseFile = fileItem.File;
+
+                this.CreateMinuteQushiImg(Util.GetShortNameWithoutType(fileItem.File), minuteFolder);
+
+                // 更新进度条
+                this.ProcessBarStep();
+            }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+
+            // 设置按钮可用
+            this.mSyncContext.Post(this.UISetBtnEnable, this.btnCreate);
+
+            //// 保存包括买点信息的数据
+            //this.SaveHasBuyPointsInfo();
+
+            // 显示所有信息
+            this.mSyncContext.Post(this.DisplayAllStockPng, null);
+        }
+
+        /// <summary>
         /// 过滤当前趋势
         /// </summary>
         /// <param name="param"></param>
@@ -514,7 +634,7 @@ namespace GuPiao
             QushiBase chkQushi = (QushiBase)param[0];
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER);
 
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
@@ -530,7 +650,7 @@ namespace GuPiao
 
                 base.baseFile = fileItem.File;
                 string shortName = Util.GetShortNameWithoutType(fileItem.File);
-                if (this.chkNoChuangye.Checked && this.IsChuangyeStock(shortName))
+                if (NO_CHUANGYE && this.IsChuangyeStock(shortName))
                 {
                     continue;
                 }
@@ -565,6 +685,7 @@ namespace GuPiao
         private bool ChkQushi(string stockCdData, QushiBase chkQushi)
         {
             // 获得数据信息
+            this.subFolder = DAY_FOLDER;
             Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
             if (dataInfo == null)
             {
@@ -582,7 +703,7 @@ namespace GuPiao
         private Dictionary<string, object> GetStockInfo(string stockCdData)
         {
             // 读取所有信息
-            List<BaseDataInfo> stockInfos = this.GetStockHistoryInfo(CSV_FOLDER + stockCdData + ".csv");
+            List<BaseDataInfo> stockInfos = this.GetStockHistoryInfo(CSV_FOLDER + this.subFolder + stockCdData + ".csv");
             if (stockInfos.Count == 0)
             {
                 return null;
@@ -604,12 +725,13 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 画趋势图
+        /// 画天级别趋势图
         /// </summary>
         /// <param name="stockCdData"></param>
-        private void CreateQushiImg(string stockCdData)
+        private void CreateDayQushiImg(string stockCdData)
         {
             // 获得数据信息
+            this.subFolder = DAY_FOLDER;
             Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
             if (dataInfo == null)
             {
@@ -675,6 +797,50 @@ namespace GuPiao
 
             // 保存图片
             imgQushi.Save(IMG_FOLDER + stockCdData.Substring(0, 6) + ".png");
+        }
+
+        /// <summary>
+        /// 画分钟级别趋势图
+        /// </summary>
+        /// <param name="stockCdData"></param>
+        private void CreateMinuteQushiImg(string stockCdData, string minuteFolder)
+        {
+            // 获得数据信息
+            this.subFolder = minuteFolder;
+            Dictionary<string, object> dataInfo = this.GetStockInfo(minuteFolder);
+            if (dataInfo == null)
+            {
+                return;
+            }
+
+            // 基础数据信息
+            List<BaseDataInfo> stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+
+            // 最大、最小值信息
+            decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
+            decimal step = 370 / (minMaxInfo[1] - minMaxInfo[0]);
+
+            // 设定图片
+            Bitmap imgQushi = new Bitmap(600, 400);
+            Graphics grp = Graphics.FromImage(imgQushi);
+            grp.SmoothingMode = SmoothingMode.AntiAlias;
+            grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            // 开始画分钟线
+            this.DrawStockQushi(stockInfos, step, minMaxInfo[0], imgQushi, new Pen(Color.Black, 1F), grp);
+
+            // 开始分型笔的线段
+            List<BaseDataInfo> fenXingInfo = this.GetFenxingPenInfo(stockInfos);
+            fenXingInfo.Reverse();
+            string tmpDate = this.dataDate;
+            bool hasBuyPoint = this.DrawFenxingPen(fenXingInfo, null, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp);
+            if (hasBuyPoint)
+            {
+                this.dataDate = tmpDate;
+            }
+
+            // 保存图片
+            imgQushi.Save(IMG_FOLDER + minuteFolder + stockCdData.Substring(0, 6) + ".png");
         }
 
         /// <summary>
@@ -1379,7 +1545,7 @@ namespace GuPiao
                 }
 
                 string shortName = Util.GetShortNameWithoutType(fileItem.File);
-                if (this.chkNoChuangye.Checked && this.IsChuangyeStock(shortName))
+                if (NO_CHUANGYE && this.IsChuangyeStock(shortName))
                 {
                     continue;
                 }
@@ -1400,7 +1566,7 @@ namespace GuPiao
 
             foreach (KeyValuePair<string, string> stockDate in this.hasBuyPointsStock)
             {
-                if (this.chkNoChuangye.Checked && this.IsChuangyeStock(stockDate.Key))
+                if (NO_CHUANGYE && this.IsChuangyeStock(stockDate.Key))
                 {
                     continue;
                 }
@@ -1515,6 +1681,7 @@ namespace GuPiao
         private void SetCurStockData(string stockCdData)
         {
             // 获得数据信息
+            this.subFolder = DAY_FOLDER;
             Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
             if (dataInfo == null)
             {
@@ -1539,7 +1706,7 @@ namespace GuPiao
             FilePosInfo fileInfo = null;
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER).Where(p => !p.IsFolder).ToList();
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER).Where(p => !p.IsFolder).ToList();
             if (allCsv.Count > 0)
             {
                 fileInfo = allCsv[0];
@@ -1569,7 +1736,9 @@ namespace GuPiao
         private void SetSubMenuEvent()
         {
             this.getDataSubMenu.ItemClicked += new ToolStripItemClickedEventHandler(this.getDataSubMenu_ItemClicked);
+            this.qushiSubMenu.ItemClicked += new ToolStripItemClickedEventHandler(this.qushiSubMenu_ItemClicked);
 
+            // 取数据的子菜单
             ToolStripMenuItem item = new ToolStripMenuItem();
             item.Name = "get5M";
             item.Text = "5分钟";
@@ -1591,6 +1760,19 @@ namespace GuPiao
             item.Name = "getDay";
             item.Text = "天";
             this.getDataSubMenu.Items.Add(item);
+
+            // 画趋势图的子菜单
+            item = new ToolStripMenuItem();
+            item.Name = "drawMinute";
+            item.Text = "分钟级别";
+            this.qushiSubMenu.Items.Add(item);
+
+            this.qushiSubMenu.Items.Add(new ToolStripSeparator());
+
+            item = new ToolStripMenuItem();
+            item.Name = "drawDay";
+            item.Text = "天级别";
+            this.qushiSubMenu.Items.Add(item);
         }
 
         /// <summary>
@@ -1620,7 +1802,7 @@ namespace GuPiao
         /// <returns></returns>
         private string[] GetStockFileContent(string stockCd)
         {
-            string csvFile = CSV_FOLDER + stockCd + "_" + this.dataDate + ".csv";
+            string csvFile = CSV_FOLDER + DAY_FOLDER + stockCd + "_" + this.dataDate + ".csv";
             if (File.Exists(csvFile))
             {
                 return File.ReadAllLines(csvFile, Encoding.UTF8);

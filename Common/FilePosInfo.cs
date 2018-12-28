@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Hanhua.Common
+namespace Common
 {
     /// <summary>
     /// 文件、地址信息类
