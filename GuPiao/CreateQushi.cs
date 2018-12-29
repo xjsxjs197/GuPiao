@@ -422,8 +422,16 @@ namespace GuPiao
 
             switch (e.ClickedItem.Name)
             {
-                case "drawMinute":
-                    this.Do(this.ThreadDrawMinuteQushi);
+                case "drawM5":
+                    this.Do(this.ThreadDrawMinuteQushi, TimeRange.M5);
+                    break;
+
+                case "drawM15":
+                    this.Do(this.ThreadDrawMinuteQushi, TimeRange.M15);
+                    break;
+
+                case "drawM30":
+                    this.Do(this.ThreadDrawMinuteQushi, TimeRange.M30);
                     break;
 
                 case "drawDay":
@@ -581,9 +589,10 @@ namespace GuPiao
         /// <summary>
         /// 画分钟级别趋势图
         /// </summary>
-        private void ThreadDrawMinuteQushi()
+        private void ThreadDrawMinuteQushi(params object[] param)
         {
-            string minuteFolder = TimeRange.M5.ToString() + "/";
+            TimeRange timeRange = (TimeRange)param[0];
+            string minuteFolder = timeRange.ToString() + "/";
 
             // 取得已经存在的所有数据信息
             List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + minuteFolder);
@@ -784,7 +793,9 @@ namespace GuPiao
 
             // 开始分型笔的线段
             List<BaseDataInfo> fenXingInfo = this.GetFenxingPenInfo(stockInfos);
+            this.ResetFenxingPenInfo(fenXingInfo);
             List<BaseDataInfo> fenXingInfo5 = this.GetFenxingPenInfo(stockInfo5Jibie);
+            this.ResetFenxingPenInfo(fenXingInfo5);
             fenXingInfo.Reverse();
             fenXingInfo5.Reverse();
             string tmpDate = this.dataDate;
@@ -796,7 +807,7 @@ namespace GuPiao
             }
 
             // 保存图片
-            imgQushi.Save(IMG_FOLDER + stockCdData.Substring(0, 6) + ".png");
+            imgQushi.Save(IMG_FOLDER + this.subFolder + stockCdData.Substring(0, 6) + ".png");
         }
 
         /// <summary>
@@ -807,7 +818,7 @@ namespace GuPiao
         {
             // 获得数据信息
             this.subFolder = minuteFolder;
-            Dictionary<string, object> dataInfo = this.GetStockInfo(minuteFolder);
+            Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
             if (dataInfo == null)
             {
                 return;
@@ -832,6 +843,7 @@ namespace GuPiao
             // 开始分型笔的线段
             List<BaseDataInfo> fenXingInfo = this.GetFenxingPenInfo(stockInfos);
             fenXingInfo.Reverse();
+            this.ResetFenxingPenInfo(fenXingInfo);
             string tmpDate = this.dataDate;
             bool hasBuyPoint = this.DrawFenxingPen(fenXingInfo, null, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp);
             if (hasBuyPoint)
@@ -869,7 +881,7 @@ namespace GuPiao
                 if (allItems.Length > 3)
                 {
                     BaseDataInfo dayInfo = new BaseDataInfo();
-                    dayInfo.Day = allItems[0].Replace("-", "");
+                    dayInfo.Day = allItems[0].Replace("-", "").Replace(" ", "").Replace(":", "");
                     if (i == 1 && !this.IsValidStock(dayInfo.Day))
                     {
                         stockInfo.Clear();
@@ -1046,7 +1058,7 @@ namespace GuPiao
         /// <param name="step"></param>
         private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, List<BaseDataInfo> fenXingInfo5, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
         {
-            if (fenXingInfo.Count == 0 || fenXingInfo5.Count == 0 || fenXingInfo.Count != fenXingInfo5.Count)
+            if (fenXingInfo.Count == 0)
             {
                 return false;
             }
@@ -1066,46 +1078,46 @@ namespace GuPiao
 
             for (int index = maxCnt; index >= 0; index--)
             {
-                if (fenXingInfo[index].NextPen != PenStatus.ToPening || index == 0)
+                if (fenXingInfo[index].CurPointType != PointType.Changing || index == 0)
                 {
                     x2 = img.Width - (index + 1) * IMG_X_STEP;
                     //curVal = stockInfo[index].CurPen == PenStatus.DownPen ? stockInfo[index].DayMinVal : stockInfo[index].DayMaxVal;
                     curVal = fenXingInfo[index].DayVal;
                     y2 = this.GetYPos(img.Height, curVal, minVal, step);
 
-                    if (fenXingInfo[index].CurPen == PenStatus.UpPen)
-                    {
-                        if (!buyed)
-                        {
-                            // 没有买点时画买点
-                            grp.FillEllipse(buyBush, x2, y2, 7, 7);
-                            hasBuyPoint = true;
-                            buyed = true;
-                            buyPrice = fenXingInfo[index].DayVal;
-                            this.dataDate = fenXingInfo[index].Day;
-                        }
-                    }
-                    else if (buyed)
-                    {
-                        if (fenXingInfo[index].CurPen == PenStatus.DownPen 
-                            || fenXingInfo[index].DayVal < buyPrice * Consts.SELL_VAL
-                            || fenXingInfo[index].DayVal < fenXingInfo5[index].DayVal)
-                        {
-                            // 已经有买点时才画卖点
-                            grp.FillEllipse(sellBush, x2, y2, 7, 7);
-                            buyed = false;
-                        }
-                    }
+                    //if (fenXingInfo[index].CurPen == PenStatus.UpPen)
+                    //{
+                    //    if (!buyed)
+                    //    {
+                    //        // 没有买点时画买点
+                    //        grp.FillEllipse(buyBush, x2, y2, 7, 7);
+                    //        hasBuyPoint = true;
+                    //        buyed = true;
+                    //        buyPrice = fenXingInfo[index].DayVal;
+                    //        this.dataDate = fenXingInfo[index].Day;
+                    //    }
+                    //}
+                    //else if (buyed)
+                    //{
+                    //    if (fenXingInfo[index].CurPen == PenStatus.DownPen 
+                    //        || fenXingInfo[index].DayVal < buyPrice * Consts.SELL_VAL
+                    //        || fenXingInfo[index].DayVal < fenXingInfo5[index].DayVal)
+                    //    {
+                    //        // 已经有买点时才画卖点
+                    //        grp.FillEllipse(sellBush, x2, y2, 7, 7);
+                    //        buyed = false;
+                    //    }
+                    //}
 
-                    //// 写字用做标识
-                    //if (fenXingInfo[index].CurPen == PenStatus.DownPen)
-                    //{
-                    //    grp.DrawString("T", font, sellBush, x2, y2);
-                    //}
-                    //else
-                    //{
-                    //    grp.DrawString("B", font, buyBush, x2, y2);
-                    //}
+                    // 写字用做标识
+                    if (fenXingInfo[index].CurPointType == PointType.Top)
+                    {
+                        grp.DrawString("T", font, sellBush, x2, y2);
+                    }
+                    else
+                    {
+                        grp.DrawString("B", font, buyBush, x2, y2);
+                    }
 
                     grp.DrawLine(pen, x1, y1, x2, y2);
                     x1 = x2;
@@ -1114,6 +1126,72 @@ namespace GuPiao
             }
 
             return hasBuyPoint;
+        }
+
+        /// <summary>
+        /// 重新设置分型、笔信息
+        /// </summary>
+        /// <param name="stockInfo"></param>
+        private void ResetFenxingPenInfo(List<BaseDataInfo> fenxingPenInfo)
+        {
+            // 分型的特殊处理（必须是顶、低交替显示）
+            BaseDataInfo lastData = null;
+            for (int i = fenxingPenInfo.Count - 1; i >= 0; i--)
+            {
+                if (fenxingPenInfo[i].CurPointType == PointType.Bottom)
+                {
+                    if (lastData == null || lastData.CurPointType == PointType.Top)
+                    {
+                        lastData = fenxingPenInfo[i];
+                    }
+                    else
+                    {
+                        // 连续两个底分型，取后一个底，取消前一个底
+                        lastData.CurPointType = PointType.Changing;
+                        lastData = fenxingPenInfo[i];
+                    }
+                }
+                else if (fenxingPenInfo[i].CurPointType == PointType.Top)
+                {
+                    if (lastData == null || lastData.CurPointType == PointType.Bottom)
+                    {
+                        lastData = fenxingPenInfo[i];
+                    }
+                    else
+                    {
+                        // 连续两个顶分型，取后一个顶，取消前一个顶
+                        lastData.CurPointType = PointType.Changing;
+                        lastData = fenxingPenInfo[i];
+                    }
+                }
+
+                //if (fenxingPenInfo[i].CurPointType == PointType.Bottom
+                //    && fenxingPenInfo[i].NextPointType == PointType.Bottom)
+                //{
+                //    if (lastData == null || lastData.CurPointType == PointType.Top)
+                //    {
+                //        lastData = fenxingPenInfo[i];
+                //    }
+                //    else
+                //    {
+                //        // 连续两个底分型，取后一个底，取消前一个底
+                //        lastData.NextPointType = PointType.Changing;
+                //    }
+                //}
+                //else if (fenxingPenInfo[i].CurPointType == PointType.Top
+                //    && fenxingPenInfo[i].NextPointType == PointType.Top)
+                //{
+                //    if (lastData == null || lastData.CurPointType == PointType.Bottom)
+                //    {
+                //        lastData = fenxingPenInfo[i];
+                //    }
+                //    else
+                //    {
+                //        // 连续两个顶分型，取后一个顶，取消前一个顶
+                //        lastData.NextPointType = PointType.Changing;
+                //    }
+                //}
+            }
         }
 
         /// <summary>
@@ -1129,19 +1207,23 @@ namespace GuPiao
                 return ret;
             }
 
+            PointType pointType;
+            PointType lastType;
+
             // 循环查找分型情报
             for (int i = stockInfo.Count - 1; i >= 2;)
             {
                 // 查找分型情报
                 int[] fenxing = this.ChkFenxing(stockInfo, i);
+                pointType = (PointType)fenxing[0];
 
                 // 将分型情报位置之前的分型形成中情报保存
-                this.SetRangeFenxing(ret, stockInfo, i, fenxing[1] + 2);
+                this.SetRangeFenxing(ret, stockInfo, i, fenxing[1] + 2, pointType);
 
-                if (fenxing[0] == Consts.NONE_TYPE)
+                if (pointType == PointType.Changing)
                 {
                     // 将最后的分型形成中情报保存
-                    this.SetRangeFenxing(ret, stockInfo, fenxing[1] + 1, 0);
+                    this.SetRangeFenxing(ret, stockInfo, fenxing[1] + 1, 0, pointType);
                     return ret;
                 }
 
@@ -1149,102 +1231,103 @@ namespace GuPiao
                 i = fenxing[1];
 
                 // 保存当前分型信息
-                BaseDataInfo befFenxin = ret[ret.Count - 1];
                 BaseDataInfo curFenxin = new BaseDataInfo();
                 curFenxin.Day = stockInfo[i + 1].Day;
+                curFenxin.DayVal = stockInfo[i + 1].DayVal;
+                curFenxin.CurPointType = PointType.Changing;
                 ret.Add(curFenxin);
 
-                if (fenxing[0] == Consts.TOP_TYPE)
-                {
-                    if (befFenxin.CurPen == PenStatus.ToPening)
-                    {
-                        // 第一次分型的初始化(1,0)
-                        befFenxin.CurPen = PenStatus.UpPen;
-                        befFenxin.NextPen = PenStatus.ToPening;
-                    }
+                //if (pointType == PointType.Top) // 出现了顶分型
+                //{
+                //    if (befFenxin.CurPointType == PointType.Changing)
+                //    {
+                //        // 第一次分型以前的点的初始化(-1,0)
+                //        befFenxin.CurPointType = PointType.Bottom;
+                //        befFenxin.NextPointType = PointType.Changing;
+                //    }
 
-                    if (befFenxin.CurPen == PenStatus.DownPen)
-                    {
-                        if (befFenxin.NextPen == PenStatus.ToPening)
-                        {
-                            // -1,0 => 1,1
-                            curFenxin.CurPen = PenStatus.UpPen;
-                            curFenxin.NextPen = PenStatus.UpPen;
-                        }
-                        else
-                        {
-                            // -1,-1 => -1,0
-                            curFenxin.CurPen = PenStatus.DownPen;
-                            curFenxin.NextPen = PenStatus.ToPening;
-                        }
-                    }
-                    else
-                    {
-                        if (befFenxin.NextPen == PenStatus.ToPening)
-                        {
-                            // 1,0 => 1,1
-                            curFenxin.CurPen = PenStatus.UpPen;
-                            curFenxin.NextPen = PenStatus.UpPen;
-                        }
-                        else
-                        {
-                            // 1,1 => 1,1
-                            curFenxin.CurPen = PenStatus.UpPen;
-                            curFenxin.NextPen = PenStatus.UpPen;
-                        }
-                    }
+                //    if (befFenxin.CurPointType == PointType.Top)
+                //    {
+                //        if (befFenxin.NextPointType == PointType.Changing)
+                //        {
+                //            // -1,0 => 1,1
+                //            curFenxin.CurPointType = PointType.Bottom;
+                //            curFenxin.NextPointType = PointType.Bottom;
+                //        }
+                //        else
+                //        {
+                //            // -1,-1 => -1,0
+                //            curFenxin.CurPointType = PointType.Top;
+                //            curFenxin.NextPointType = PointType.Changing;
+                //        }
+                //    }
+                //    else
+                //    {
+                //        if (befFenxin.NextPointType == PointType.Changing)
+                //        {
+                //            // 1,0 => 1,1
+                //            curFenxin.CurPointType = PointType.Bottom;
+                //            curFenxin.NextPointType = PointType.Bottom;
+                //        }
+                //        else
+                //        {
+                //            // 1,1 => 1,1
+                //            curFenxin.CurPointType = PointType.Bottom;
+                //            curFenxin.NextPointType = PointType.Bottom;
+                //        }
+                //    }
 
-                    //curFenxin.DayMaxVal = stockInfo[i + 1].DayMaxVal;
-                    curFenxin.DayVal = stockInfo[i + 1].DayVal;
-                }
-                else if (fenxing[0] == Consts.BOTTOM_TYPE)
-                {
-                    if (befFenxin.CurPen == PenStatus.ToPening)
-                    {
-                        // 第一次分型的初始化(-1,0)
-                        befFenxin.CurPen = PenStatus.DownPen;
-                        befFenxin.NextPen = PenStatus.ToPening;
-                    }
+                //    //curFenxin.DayMaxVal = stockInfo[i + 1].DayMaxVal;
+                //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
+                //}
+                //else if (pointType == PointType.Bottom) // 出现了底分型
+                //{
+                //    if (befFenxin.CurPointType == PointType.Changing)
+                //    {
+                //        // 第一次分型的初始化(-1,0)
+                //        befFenxin.CurPointType = PointType.Top;
+                //        befFenxin.NextPointType = PointType.Changing;
+                //    }
 
-                    if (befFenxin.CurPen == PenStatus.UpPen)
-                    {
-                        if (befFenxin.NextPen == PenStatus.ToPening)
-                        {
-                            // 1,0 => -1,-1
-                            curFenxin.CurPen = PenStatus.DownPen;
-                            curFenxin.NextPen = PenStatus.DownPen;
-                        }
-                        else
-                        {
-                            // 1,1 => 1,0
-                            curFenxin.CurPen = PenStatus.UpPen;
-                            curFenxin.NextPen = PenStatus.ToPening;
-                        }
-                    }
-                    else
-                    {
-                        if (befFenxin.NextPen == PenStatus.ToPening)
-                        {
-                            // -1,0 => -1,-1
-                            curFenxin.CurPen = PenStatus.DownPen;
-                            curFenxin.NextPen = PenStatus.DownPen;
-                        }
-                        else
-                        {
-                            // -1,-1 => -1,-1
-                            curFenxin.CurPen = PenStatus.DownPen;
-                            curFenxin.NextPen = PenStatus.DownPen;
-                        }
-                    }
+                //    if (befFenxin.CurPointType == PointType.Bottom)
+                //    {
+                //        if (befFenxin.NextPointType == PointType.Changing)
+                //        {
+                //            // 1,0 => -1,-1
+                //            curFenxin.CurPointType = PointType.Top;
+                //            curFenxin.NextPointType = PointType.Top;
+                //        }
+                //        else
+                //        {
+                //            // 1,1 => 1,0
+                //            curFenxin.CurPointType = PointType.Bottom;
+                //            curFenxin.NextPointType = PointType.Changing;
+                //        }
+                //    }
+                //    else
+                //    {
+                //        if (befFenxin.NextPointType == PointType.Changing)
+                //        {
+                //            // -1,0 => -1,-1
+                //            curFenxin.CurPointType = PointType.Top;
+                //            curFenxin.NextPointType = PointType.Top;
+                //        }
+                //        else
+                //        {
+                //            // -1,-1 => -1,-1
+                //            curFenxin.CurPointType = PointType.Top;
+                //            curFenxin.NextPointType = PointType.Top;
+                //        }
+                //    }
 
-                    //curFenxin.DayMinVal = stockInfo[i + 1].DayMinVal;
-                    curFenxin.DayVal = stockInfo[i + 1].DayVal;
-                }
+                //    //curFenxin.DayMinVal = stockInfo[i + 1].DayMinVal;
+                //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
+                //}
 
                 if (i <= 2)
                 {
                     // 将最后的分型形成中情报保存
-                    this.SetRangeFenxing(ret, stockInfo, i, 0);
+                    this.SetRangeFenxing(ret, stockInfo, i, 0, PointType.Changing);
                     return ret;
                 }
             }
@@ -1259,24 +1342,14 @@ namespace GuPiao
         /// <param name="stockInfo"></param>
         /// <param name="idxStart"></param>
         /// <param name="idxEnd"></param>
-        private void SetRangeFenxing(List<BaseDataInfo> fenXing, List<BaseDataInfo> stockInfo, int idxStart, int idxEnd)
+        private void SetRangeFenxing(List<BaseDataInfo> fenXing, List<BaseDataInfo> stockInfo, int idxStart, int idxEnd, PointType pointType)
         {
-            PenStatus lastPen;
-            if (fenXing.Count == 0)
-            {
-                lastPen = PenStatus.ToPening;
-            }
-            else
-            {
-                lastPen = fenXing[fenXing.Count - 1].CurPen;
-            }
-            
             for (int i = idxStart; i >= idxEnd; i--)
             {
                 BaseDataInfo item = new BaseDataInfo();
                 item.Day = stockInfo[i].Day;
-                item.CurPen = lastPen;
-                item.NextPen = PenStatus.ToPening;
+                item.CurPointType = (i > idxEnd ? PointType.Changing : pointType);
+                //item.NextPointType = (i > idxEnd ? PointType.Changing : pointType);
                 item.DayVal = stockInfo[i].DayVal;
                 item.DayMinVal = item.DayVal;
                 item.DayMaxVal = item.DayVal;
@@ -1297,7 +1370,7 @@ namespace GuPiao
 
             if (idx < 2)
             {
-                fenxing[0] = Consts.NONE_TYPE;
+                fenxing[0] = (int)PointType.Changing;
                 fenxing[1] = idx;
                 return fenxing;
             }
@@ -1311,7 +1384,7 @@ namespace GuPiao
                 idx = this.GetNotIncludeInfo(stockInfo, idx, minMaxVal);
                 if (idx < 2)
                 {
-                    fenxing[0] = Consts.NONE_TYPE;
+                    fenxing[0] = (int)PointType.Changing;
                     fenxing[1] = idx;
                     return fenxing;
                 }
@@ -1323,32 +1396,32 @@ namespace GuPiao
                 {
                     if (minMaxVal2[0] > minMaxVal[0])
                     {
-                        fenxing[0] = Consts.TOP_TYPE;
+                        fenxing[0] = (int)PointType.Top;
                     }
                     else if (minMaxVal2[0] < minMaxVal[0])
                     {
-                        fenxing[0] = Consts.BOTTOM_TYPE;
+                        fenxing[0] = (int)PointType.Bottom;
                     }
                     else
                     {
-                        fenxing[0] = Consts.NONE_TYPE;
+                        fenxing[0] = (int)PointType.Changing;
                     }
 
                     fenxing[1] = 0;
                     return fenxing;
                 }
 
-                // 判断当前三个K线的关系
+                // 判断当前三个点的关系
                 BaseDataInfo lastInfo = stockInfo[idx - 1];
                 if (minMaxVal[0] * Consts.LIMIT_VAL < minMaxVal2[0] && minMaxVal2[0] > lastInfo.DayVal * Consts.LIMIT_VAL)
                 {
-                    fenxing[0] = Consts.TOP_TYPE;
+                    fenxing[0] = (int)PointType.Top;
                     fenxing[1] = idx - 2;
                     return fenxing;
                 }
                 else if (minMaxVal[0] > minMaxVal2[0] * Consts.LIMIT_VAL && minMaxVal2[0] * Consts.LIMIT_VAL < lastInfo.DayVal)
                 {
-                    fenxing[0] = Consts.BOTTOM_TYPE;
+                    fenxing[0] = (int)PointType.Bottom;
                     fenxing[1] = idx - 2;
                     return fenxing;
                 }
@@ -1390,7 +1463,7 @@ namespace GuPiao
                 idx--;
             }
 
-            fenxing[0] = Consts.NONE_TYPE;
+            fenxing[0] = (int)PointType.Changing;
             fenxing[1] = idx;
             return fenxing;
         }
@@ -1763,8 +1836,18 @@ namespace GuPiao
 
             // 画趋势图的子菜单
             item = new ToolStripMenuItem();
-            item.Name = "drawMinute";
-            item.Text = "分钟级别";
+            item.Name = "drawM5";
+            item.Text = "5分钟级别";
+            this.qushiSubMenu.Items.Add(item);
+
+            item = new ToolStripMenuItem();
+            item.Name = "drawM15";
+            item.Text = "15分钟级别";
+            this.qushiSubMenu.Items.Add(item);
+
+            item = new ToolStripMenuItem();
+            item.Name = "drawM30";
+            item.Text = "30分钟级别";
             this.qushiSubMenu.Items.Add(item);
 
             this.qushiSubMenu.Items.Add(new ToolStripSeparator());
@@ -1782,8 +1865,8 @@ namespace GuPiao
         /// <returns></returns>
         private bool IsValidStock(string maxDate)
         {
-            DateTime maxDt = DateTime.ParseExact(maxDate, "yyyyMMdd", System.Globalization.CultureInfo.CurrentCulture);
-            DateTime chkDt = DateTime.ParseExact(this.dataDate, "yyyyMMdd", System.Globalization.CultureInfo.CurrentCulture);
+            DateTime maxDt = this.GetDateFromString(maxDate);
+            DateTime chkDt = this.GetDateFromString(this.dataDate);
 
             if (DateTime.Compare(chkDt, maxDt.AddDays(3)) <= 0)
             {
@@ -1793,6 +1876,22 @@ namespace GuPiao
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 日期类型转换
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        private DateTime GetDateFromString(string date)
+        {
+            string dateFormat = "yyyyMMdd";
+            if (date.Length > 8)
+            {
+                dateFormat = "yyyyMMddHHmmss";
+            }
+
+            return DateTime.ParseExact(date, dateFormat, System.Globalization.CultureInfo.CurrentCulture);
         }
 
         /// <summary>

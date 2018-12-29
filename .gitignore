@@ -77,3 +77,7 @@ DayBatch/obj/Debug/DayBatch.csproj.FileListAbsolute.txt
 DayBatch/obj/Debug/DayBatch.exe
 DayBatch/obj/Debug/DayBatch.pdb
 DayBatch/obj/Debug/ResolveAssemblyReference.cache
+Bin/DayBatch.vshost.exe
+Bin/DayBatch.vshost.exe.manifest
+Bin/Log/GetDataBatLog.txt
+DayBatch/DayBatch.csproj.user

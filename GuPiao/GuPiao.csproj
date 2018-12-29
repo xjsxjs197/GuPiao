@@ -76,7 +76,7 @@
     <Compile Include="Common\BaseDataInfo.cs" />
     <Compile Include="Common\BuySellPoint.cs" />
     <Compile Include="Common\BuySellType.cs" />
-    <Compile Include="Common\PenStatus.cs" />
+    <Compile Include="Common\PointType.cs" />
     <Compile Include="QushiCheck\ChkUpQushi.cs" />
     <Compile Include="Common\Consts.cs" />
     <Compile Include="QushiCheck\ChkDownQushi.cs" />

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
 using Common;
 using DataProcess.GetData;
-using System.IO;
 
 namespace DayBatch
 {
@@ -28,17 +27,17 @@ namespace DayBatch
         /// <summary>
         /// 数据路径信息
         /// </summary>
-        private const string CSV_FOLDER = @"./Data/";
+        private const string CSV_FOLDER = @"Data/";
 
         /// <summary>
         /// 图片路径信息
         /// </summary>
-        private const string IMG_FOLDER = @"./PngImg/";
+        private const string IMG_FOLDER = @"PngImg/";
 
         /// <summary>
         /// 趋势过滤结果路径信息
         /// </summary>
-        private const string RESULT_FOLDER = @"./ChkResult/";
+        private const string RESULT_FOLDER = @"ChkResult/";
 
         /// <summary>
         /// 天数据的目录
@@ -59,45 +58,88 @@ namespace DayBatch
         static void Main(string[] args)
         {
             // 取数据
-            GetData();
+            GetData(args);
         }
 
         /// <summary>
         /// 取数据
         /// </summary>
-        private static void GetData()
+        private static void GetData(string[] args)
         {
-            List<string> logTxt = new List<string>();
+            string logFile = System.AppDomain.CurrentDomain.BaseDirectory + @"\Log\GetDataBatLog.txt";
+            bool hasM5 = false;
+            bool hasM15 = false;
+            bool hasM30 = false;
+            bool hasDay = false;
+            if (args == null || args.Length == 0)
+            {
+                hasM5 = true;
+                hasM15 = true;
+                hasM30 = true;
+                hasDay = true;
+            }
+            else
+            { 
+                foreach (string param in args)
+                {
+                    if ("M5".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasM5 = true;
+                    }
+                    else if ("M15".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasM15 = true;
+                    }
+                    else if ("M30".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasM30 = true;
+                    }
+                    else if ("DAY".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasDay = true;
+                    }
+                }
+            }
 
             try
             {
                 // 获取5分钟数据
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取5分钟数据 开始");
-                GetMinuteData(TimeRange.M5);
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取5分钟数据 结束");
+                if (hasM5)
+                {
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取5分钟数据 开始\r\n", Encoding.UTF8);
+                    GetMinuteData(TimeRange.M5);
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取5分钟数据 结束\r\n", Encoding.UTF8);
+                }
 
                 // 获取15分钟数据
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取15分钟数据 开始");
-                GetMinuteData(TimeRange.M15);
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取15分钟数据 结束");
+                if (hasM15)
+                {
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取15分钟数据 开始\r\n", Encoding.UTF8);
+                    GetMinuteData(TimeRange.M15);
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取15分钟数据 结束\r\n", Encoding.UTF8);
+                }
 
                 // 获取30分钟数据
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取30分钟数据 开始");
-                GetMinuteData(TimeRange.M30);
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取30分钟数据 结束");
+                if (hasM30)
+                {
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取30分钟数据 开始\r\n", Encoding.UTF8);
+                    GetMinuteData(TimeRange.M30);
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取30分钟数据 结束\r\n", Encoding.UTF8);
+                }
 
                 // 获取整天的数据
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取天数据 开始");
-                GetAllDayData();
-                logTxt.Add(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取天数据 结束");
+                if (hasDay)
+                {
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取天数据 开始\r\n", Encoding.UTF8);
+                    GetAllDayData();
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取天数据 结束\r\n", Encoding.UTF8);
+                }
             }
             catch (Exception e)
             {
-                logTxt.Add(e.Message);
-                logTxt.Add(e.StackTrace);
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
             }
-
-            File.WriteAllLines(@"./Log/GetDataBatLog.txt", logTxt.ToArray(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -122,10 +164,11 @@ namespace DayBatch
             }
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + timeRange.ToString() + "/");
+            string basePath = System.AppDomain.CurrentDomain.BaseDirectory;
+            List<FilePosInfo> allCsv = Util.GetAllFiles(basePath + CSV_FOLDER + timeRange.ToString() + "/");
 
             // 获取所有的代码信息
-            GetDataBase getData = new GetDataFromSina(CSV_FOLDER, endDay, timeRange);
+            GetDataBase getData = new GetDataFromSina(basePath + CSV_FOLDER, endDay, timeRange);
             List<string> allStock = getData.Before();
 
             // 循环取得所有的数据
@@ -148,10 +191,11 @@ namespace DayBatch
             string endDay = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER);
+            string basePath = System.AppDomain.CurrentDomain.BaseDirectory;
+            List<FilePosInfo> allCsv = Util.GetAllFiles(basePath + CSV_FOLDER + DAY_FOLDER);
 
             // 获取所有的代码信息
-            GetDataBase getData = new GetDataFrom163(CSV_FOLDER, endDay);
+            GetDataBase getData = new GetDataFrom163(basePath + CSV_FOLDER + DAY_FOLDER, endDay);
             List<string> allStock = getData.Before();
 
             // 循环取得所有的数据

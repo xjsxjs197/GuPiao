@@ -31,13 +31,13 @@ namespace GuPiao.Common
         public decimal DayMaxVal { get; set; }
 
         /// <summary>
-        /// 当前的笔的状态
+        /// 当前点的分型
         /// </summary>
-        public PenStatus CurPen { get; set; }
+        public PointType CurPointType { get; set; }
 
         /// <summary>
-        /// 下一个笔的状态
+        /// 下一个点的分型
         /// </summary>
-        public PenStatus NextPen { get; set; }
+        public PointType NextPointType { get; set; }
     }
 }

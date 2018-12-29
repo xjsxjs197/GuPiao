@@ -6,12 +6,12 @@ using System.Text;
 namespace GuPiao.Common
 {
     /// <summary>
-    /// 笔的形态
+    /// 分型情报
     /// </summary>
-    public enum PenStatus
+    public enum PointType
     {
-        ToPening = 0,
-        UpPen,
-        DownPen
+        Changing = 0,
+        Bottom,
+        Top
     }
 }
