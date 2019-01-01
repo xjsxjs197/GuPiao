@@ -1606,7 +1606,8 @@ namespace GuPiao
         private void DisplayAllStockPng(object param)
         {
             // 取得已经存在的所有趋势图
-            List<FilePosInfo> allImg = Util.GetAllFiles(IMG_FOLDER);
+            this.subFolder = DAY_FOLDER;
+            List<FilePosInfo> allImg = Util.GetAllFiles(IMG_FOLDER + this.subFolder);
 
             this.allStock.Clear();
 
@@ -1692,7 +1693,7 @@ namespace GuPiao
             // 显示当前位置的走势图片
             if (this.curIdx >= 0 && this.curIdx <= this.allStock.Count - 1)
             {
-                string stockImg = IMG_FOLDER + this.allStock[this.curIdx] + ".png";
+                string stockImg = IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
                 if (File.Exists(stockImg))
                 {
                     this.imgBody.Image = Image.FromFile(stockImg);
