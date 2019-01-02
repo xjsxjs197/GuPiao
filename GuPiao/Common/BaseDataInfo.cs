@@ -11,6 +11,16 @@ namespace GuPiao.Common
     public class BaseDataInfo
     {
         /// <summary>
+        /// 编号
+        /// </summary>
+        public string Code { get; set; }
+
+        /// <summary>
+        /// 名称
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
         /// 日期
         /// </summary>
         public string Day { get; set; }

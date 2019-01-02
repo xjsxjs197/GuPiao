@@ -80,6 +80,14 @@ namespace DataProcess.GetData
             sb.Append("&scale=").Append((int)this.timeRange);
             sb.Append("&datalen=").Append(DATA_LEN_MAX);
 
+            // 取得开始时间
+            string startDay = this.GetExitsStock(allCsv, stockCd);
+            if (this.endDayForFile.Equals(startDay))
+            {
+                // 最新文件已经存在
+                return;
+            }
+
             // 取截止今天为止的所有数据
             string result = Util.HttpGet(sb.Append(DATA_LEN_MAX).ToString(), "", encoding);
             if (!string.IsNullOrEmpty(result))
@@ -89,8 +97,6 @@ namespace DataProcess.GetData
                 {
                     List<string> allMinuteData = new List<string>();
 
-                    // 取得开始时间
-                    string startDay = this.GetExitsStock(allCsv, stockCd);
                     if (string.IsNullOrEmpty(startDay))
                     {
                         // 取得分钟级别数据

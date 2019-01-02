@@ -138,6 +138,16 @@ namespace GuPiao
         /// </summary>
         private string subFolder;
 
+        /// <summary>
+        /// 所有数据信息
+        /// </summary>
+        private List<BaseDataInfo> allStockCdName = new List<BaseDataInfo>();
+
+        /// <summary>
+        /// 所有数据时间（天，5分钟，15分钟，30分钟）
+        /// </summary>
+        private List<string> allDataDate = new List<string>();
+
         #endregion
 
         #region " 初始化 "
@@ -164,8 +174,8 @@ namespace GuPiao
             //获取UI线程同步上下文
             this.mSyncContext = SynchronizationContext.Current;
 
-            // 设置当前的数据时间
-            this.SetDataDate();
+            // 取得所有数据的基本信息（代码+名称）
+            this.GetAllStockBaseInfo();
 
             // 读取包括买点信息的数据
             this.LoadHasBuyPointsInfo();
@@ -334,8 +344,33 @@ namespace GuPiao
                     this.Do(this.ThreadChkQushi, new ChkCixin(), this.cmbCon, selectedText);
                     break;
 
+                case "显示日线":
+                    this.subFolder = DAY_FOLDER;
+                    this.DisplayAllStockPng(null);
+                    this.cmbCon.Enabled = true;
+                    break;
+
+                case "显示5分钟线":
+                    this.subFolder = TimeRange.M5.ToString() + "/";
+                    this.DisplayAllStockPng(null);
+                    this.cmbCon.Enabled = true;
+                    break;
+
+                case "显示15分钟线":
+                    this.subFolder = TimeRange.M15.ToString() + "/";
+                    this.DisplayAllStockPng(null);
+                    this.cmbCon.Enabled = true;
+                    break;
+
+                case "显示30分钟线":
+                    this.subFolder = TimeRange.M30.ToString() + "/";
+                    this.DisplayAllStockPng(null);
+                    this.cmbCon.Enabled = true;
+                    break;
+
                 default:
                     // 显示所有信息
+                    this.subFolder = DAY_FOLDER;
                     this.DisplayAllStockPng(null);
                     this.cmbCon.Enabled = true;
                     break;
@@ -475,18 +510,17 @@ namespace GuPiao
             // 取得已经存在的所有数据信息
             List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + timeRange.ToString() + "/");
 
-            // 获取所有的代码信息
+            // 从Sina取得数据
             GetDataBase getData = new GetDataFromSina(CSV_FOLDER, endDay, timeRange);
-            List<string> allStock = getData.Before();
 
             // 设置进度条
-            this.ResetProcessBar(allStock.Count);
+            this.ResetProcessBar(this.allStockCdName.Count);
 
             // 循环取得所有的数据
-            foreach (string stockCd in allStock)
+            foreach (BaseDataInfo baseItem in this.allStockCdName)
             {
                 // 取得当前Stock数据
-                getData.Start(stockCd, allCsv);
+                getData.Start(baseItem.Code, allCsv);
 
                 // 更新进度条
                 this.ProcessBarStep();
@@ -500,9 +534,6 @@ namespace GuPiao
 
             // 设置按钮可用
             this.mSyncContext.Post(this.UISetBtnEnable, this.btnGetAllStock);
-
-            // 重新设置结束时间
-            this.dataDate = endDay.Replace("-", "").Replace(" ", "").Replace(":", "");
         }
 
         /// <summary>
@@ -516,18 +547,17 @@ namespace GuPiao
             // 取得已经存在的所有数据信息
             List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER);
 
-            // 获取所有的代码信息
+            // 从163取得数据
             GetDataBase getData = new GetDataFrom163(CSV_FOLDER + DAY_FOLDER, endDay);
-            List<string> allStock = getData.Before();
 
             // 设置进度条
-            this.ResetProcessBar(allStock.Count);
+            this.ResetProcessBar(this.allStockCdName.Count);
 
             // 循环取得所有的数据
-            foreach (string stockCd in allStock)
+            foreach (BaseDataInfo baseItem in this.allStockCdName)
             {
                 // 取得当前Stock数据
-                getData.Start(stockCd, allCsv);
+                getData.Start(baseItem.Code, allCsv);
                 
                 // 更新进度条
                 this.ProcessBarStep();
@@ -541,9 +571,6 @@ namespace GuPiao
 
              // 设置按钮可用
             this.mSyncContext.Post(this.UISetBtnEnable, this.btnGetAllStock);
-
-            // 重新设置结束时间
-            this.dataDate = endDay;
         }
 
         /// <summary>
@@ -583,6 +610,7 @@ namespace GuPiao
             this.SaveHasBuyPointsInfo();
 
             // 显示所有信息
+            this.subFolder = DAY_FOLDER;
             this.mSyncContext.Post(this.DisplayAllStockPng, null);
         }
 
@@ -626,6 +654,7 @@ namespace GuPiao
             //this.SaveHasBuyPointsInfo();
 
             // 显示所有信息
+            this.subFolder = minuteFolder;
             this.mSyncContext.Post(this.DisplayAllStockPng, null);
         }
 
@@ -1632,11 +1661,17 @@ namespace GuPiao
             sb.Append(stockCd).Append(" ");
             sb.Append(this.curStockName).Append(" ");
 
-            if (!string.IsNullOrEmpty(this.curStockData[idx].Day))
+            if (this.curStockData.Count > 0 && !string.IsNullOrEmpty(this.curStockData[idx].Day))
             {
-                sb.Append(this.curStockData[idx].Day.Substring(0, 4)).Append("年");
-                sb.Append(this.curStockData[idx].Day.Substring(4, 2)).Append("月");
-                sb.Append(this.curStockData[idx].Day.Substring(6, 2)).Append("日");
+                DateTime dt = this.GetDateFromString(this.curStockData[idx].Day);
+                if (this.curStockData[idx].Day.Length == 8)
+                {
+                    sb.Append(dt.ToString("yy年MM月dd日"));
+                }
+                else
+                {
+                    sb.Append(dt.ToString("yy年MM月dd日 HH:mm"));
+                }
                 sb.Append(" ");
             }
 
@@ -1667,8 +1702,10 @@ namespace GuPiao
         /// </summary>
         private void DisplayAllStockPng(object param)
         {
+            // 设置当前的数据时间
+            this.dataDate = this.GetDataDate(this.subFolder);
+
             // 取得已经存在的所有趋势图
-            this.subFolder = DAY_FOLDER;
             List<FilePosInfo> allImg = Util.GetAllFiles(IMG_FOLDER + this.subFolder);
 
             this.allStock.Clear();
@@ -1801,12 +1838,10 @@ namespace GuPiao
         private void SetCurStockName(string stockCd)
         {
             this.curStockName = string.Empty;
-
-            string[] allLine = this.GetStockFileContent(stockCd);
-            if (allLine != null && allLine.Length > 2)
+            BaseDataInfo findItem = this.allStockCdName.FirstOrDefault(p => p.Code.Equals(stockCd));
+            if (findItem != null && findItem.Code.Equals(stockCd))
             {
-                string[] lineData = allLine[1].Split(',');
-                this.curStockName = lineData[2];
+                this.curStockName = findItem.Name;
             }
         }
 
@@ -1817,7 +1852,6 @@ namespace GuPiao
         private void SetCurStockData(string stockCdData)
         {
             // 获得数据信息
-            this.subFolder = DAY_FOLDER;
             Dictionary<string, object> dataInfo = this.GetStockInfo(stockCdData);
             if (dataInfo == null)
             {
@@ -1827,22 +1861,36 @@ namespace GuPiao
             // 基础数据信息
             this.curStockData = (List<BaseDataInfo>)dataInfo["stockInfos"];
 
-            // 取得5日级别信息
-            this.curStockJibie5Data = this.GetJibieStockInfo(this.curStockData, 5);
+            if (this.subFolder == DAY_FOLDER)
+            {
+                // 取得5日级别信息
+                this.curStockJibie5Data = this.GetJibieStockInfo(this.curStockData, 5);
 
-            // 取得10日级别信息
-            this.curStockJibie10Data = this.GetJibieStockInfo(this.curStockData, 10);
+                // 取得10日级别信息
+                this.curStockJibie10Data = this.GetJibieStockInfo(this.curStockData, 10);
+            }
+            else
+            {
+                this.curStockJibie5Data.Clear();
+                this.curStockJibie10Data.Clear();
+            }
         }
 
+        #endregion
+
+        #region " 各种基本处理 "
+
         /// <summary>
-        /// 设置当前的数据时间
+        /// 取得当前数据的最新时间
         /// </summary>
-        private void SetDataDate()
+        /// <param name="subFolder"></param>
+        /// <returns></returns>
+        private string GetDataDate(string subFolder)
         {
             FilePosInfo fileInfo = null;
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER).Where(p => !p.IsFolder).ToList();
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + subFolder).Where(p => !p.IsFolder).ToList();
             if (allCsv.Count > 0)
             {
                 fileInfo = allCsv[0];
@@ -1850,21 +1898,13 @@ namespace GuPiao
 
             if (fileInfo != null)
             {
-                this.dataDate = Util.GetShortNameWithoutType(fileInfo.File).Substring(7);
-                this.cmbCon.Enabled = true;
+                return Util.GetShortNameWithoutType(fileInfo.File).Substring(7);
             }
             else
             {
-                this.dataDate = string.Empty;
-                this.btnAft.Enabled = false;
-                this.btnBef.Enabled = false;
-                this.cmbCon.Enabled = false;
+                return string.Empty;
             }
         }
-
-        #endregion
-
-        #region " 各种基本处理 "
 
         /// <summary>
         /// 绑定子菜单事件
@@ -1931,7 +1971,7 @@ namespace GuPiao
             DateTime maxDt = this.GetDateFromString(maxDate);
             DateTime chkDt = this.GetDateFromString(this.dataDate);
 
-            if (DateTime.Compare(chkDt, maxDt.AddDays(3)) <= 0)
+            if (DateTime.Compare(chkDt, maxDt.AddDays(30)) <= 0)
             {
                 return true;
             }
@@ -2151,15 +2191,40 @@ namespace GuPiao
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(stockInfos[idx].DayVal);
-            if (idx > 0)
+            if (idx >= 0 && idx < stockInfos.Count - 1)
             {
                 sb.Append("(");
-                decimal tmp = (stockInfos[idx - 1].DayVal - stockInfos[idx].DayVal) * 100 / stockInfos[idx].DayVal;
+                decimal tmp = (stockInfos[idx].DayVal - stockInfos[idx + 1].DayVal) * 100 / stockInfos[idx + 1].DayVal;
                 sb.Append(tmp.ToString("0.00"));
                 sb.Append(")");
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// 取得所有数据的基本信息（代码+名称）
+        /// </summary>
+        private void GetAllStockBaseInfo()
+        {
+            this.allStockCdName.Clear();
+
+            string[] allLine = File.ReadAllLines(CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
+            if (allLine != null && allLine.Length > 0)
+            {
+                foreach (string codeName in allLine)
+                {
+                    if (string.IsNullOrEmpty(codeName))
+                    {
+                        continue;
+                    }
+
+                    BaseDataInfo item = new BaseDataInfo();
+                    item.Code = codeName.Substring(0, 6);
+                    item.Name = codeName.Substring(7);
+                    this.allStockCdName.Add(item);
+                }
+            }
         }
 
         #endregion

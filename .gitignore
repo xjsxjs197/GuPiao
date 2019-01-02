@@ -81,3 +81,4 @@ Bin/DayBatch.vshost.exe
 Bin/DayBatch.vshost.exe.manifest
 Bin/Log/GetDataBatLog.txt
 DayBatch/DayBatch.csproj.user
+Bin/ChkResult/BuyPoints.txt

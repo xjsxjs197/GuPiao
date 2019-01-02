@@ -49,6 +49,11 @@ namespace DayBatch
         /// </summary>
         private const bool NO_CHUANGYE = true;
 
+        /// <summary>
+        /// 所有数据信息
+        /// </summary>
+        private static List<string> allStockCd = new List<string>();
+
         #endregion
 
         /// <summary>
@@ -103,6 +108,9 @@ namespace DayBatch
 
             try
             {
+                // 取得所有数据的基本信息（代码）
+                GetAllStockBaseInfo();
+
                 // 获取5分钟数据
                 if (hasM5)
                 {
@@ -150,7 +158,7 @@ namespace DayBatch
             // 设定结束日期
             DateTime now = DateTime.Now;
             string endDay;
-            if (DateTime.Now.Hour > 15)
+            if (DateTime.Now.Hour >= 15)
             {
                 endDay = now.ToString("yyyy-MM-dd 15:00:00");
             }
@@ -169,10 +177,9 @@ namespace DayBatch
 
             // 获取所有的代码信息
             GetDataBase getData = new GetDataFromSina(basePath + CSV_FOLDER, endDay, timeRange);
-            List<string> allStock = getData.Before();
 
             // 循环取得所有的数据
-            foreach (string stockCd in allStock)
+            foreach (string stockCd in allStockCd)
             {
                 // 取得当前Stock数据
                 getData.Start(stockCd, allCsv);
@@ -196,10 +203,9 @@ namespace DayBatch
 
             // 获取所有的代码信息
             GetDataBase getData = new GetDataFrom163(basePath + CSV_FOLDER + DAY_FOLDER, endDay);
-            List<string> allStock = getData.Before();
 
             // 循环取得所有的数据
-            foreach (string stockCd in allStock)
+            foreach (string stockCd in allStockCd)
             {
                 // 取得当前Stock数据
                 getData.Start(stockCd, allCsv);
@@ -207,6 +213,29 @@ namespace DayBatch
 
             // 获取数据后的相关处理
             getData.After();
+        }
+
+        /// <summary>
+        /// 取得所有数据的基本信息（代码）
+        /// </summary>
+        private static void GetAllStockBaseInfo()
+        {
+            allStockCd.Clear();
+
+            string basePath = System.AppDomain.CurrentDomain.BaseDirectory;
+            string[] allLine = File.ReadAllLines(basePath + CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
+            if (allLine != null && allLine.Length > 0)
+            {
+                foreach (string codeName in allLine)
+                {
+                    if (string.IsNullOrEmpty(codeName))
+                    {
+                        continue;
+                    }
+
+                    allStockCd.Add(codeName.Substring(0, 6));
+                }
+            }
         }
     }
 }

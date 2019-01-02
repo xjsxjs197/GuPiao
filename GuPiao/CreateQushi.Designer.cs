@@ -109,7 +109,12 @@
             this.cmbCon.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbCon.FormattingEnabled = true;
             this.cmbCon.Items.AddRange(new object[] {
-            "显示所有",
+            "显示日线",
+            "显示5分钟线",
+            "显示15分钟线",
+            "显示30分钟线",
+            "显示日线",
+            "显示日线",
             "查看买点",
             "查看次新",
             "下跌递减",
