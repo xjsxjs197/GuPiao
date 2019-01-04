@@ -484,6 +484,55 @@ namespace GuPiao
             }
         }
 
+        /// <summary>
+        /// 切换时间级别
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnChgTime_Click(object sender, EventArgs e)
+        {
+            if (this.subFolder.EndsWith("/"))
+            {
+                // 切换时间级别
+                TimeRange timeRange = (TimeRange)Enum.Parse(typeof(TimeRange), this.subFolder.Substring(0, this.subFolder.Length - 1));
+                switch (timeRange)
+                {
+                    case TimeRange.Day:
+                        timeRange = TimeRange.M30;
+                        break;
+
+                    case TimeRange.M30:
+                        timeRange = TimeRange.M15;
+                        break;
+
+                    case TimeRange.M15:
+                        timeRange = TimeRange.M5;
+                        break;
+
+                    case TimeRange.M5:
+                        timeRange = TimeRange.Day;
+                        break;
+                }
+
+                this.btnChgTime.Text = timeRange.ToString();
+
+                // 切换趋势图级别
+                if (this.imgBody.Image != null)
+                {
+                    this.imgBody.Image.Dispose();
+                    this.imgBody.Image = null;
+                }
+                this.subFolder = timeRange.ToString() + "/";
+                this.imgBody.Image = Image.FromFile(IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
+
+                // 设置当前的数据时间
+                this.dataDate = this.GetDataDate(this.subFolder);
+
+                // 设置当前数据
+                this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
+            }
+        }
+
         #endregion
 
         #region " 私有方法 "
@@ -649,19 +698,14 @@ namespace GuPiao
                 DateTime dt = this.GetDateFromString(this.curStockData[idx].Day);
                 if (this.curStockData[idx].Day.Length == 8)
                 {
-                    sb.Append(dt.ToString("yy年MM月dd日"));
+                    sb.Append(dt.ToString("yy年MM月dd日  "));
+                    sb.Append("1:").Append(this.GetStockValInfo(this.curStockData, idx));
                 }
                 else
                 {
-                    sb.Append(dt.ToString("yy年MM月dd日 HH:mm"));
+                    sb.Append(dt.ToString("yy年MM月dd日 HH:mm  "));
+                    sb.Append(this.GetStockValInfo(this.curStockData, idx));
                 }
-                sb.Append(" ");
-            }
-
-            if (this.curStockData.Count > 0)
-            {
-                sb.Append(" ");
-                sb.Append("1:").Append(this.GetStockValInfo(this.curStockData, idx));
                 sb.Append("   ");
             }
 
@@ -851,13 +895,16 @@ namespace GuPiao
         /// <summary>
         /// 设置当前数据
         /// </summary>
-        /// <param name="stockCdData"></param>
-        private void SetCurStockData(string stockCdData)
+        /// <param name="stockCdDate"></param>
+        private void SetCurStockData(string stockCdDate)
         {
             // 获得数据信息
-            Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdData, this.subFolder, "./");
+            Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdDate, this.subFolder, "./");
             if (dataInfo == null)
             {
+                this.curStockData.Clear();
+                this.curStockJibie5Data.Clear();
+                this.curStockJibie10Data.Clear();
                 return;
             }
 
@@ -1166,5 +1213,6 @@ namespace GuPiao
         #endregion
 
         #endregion
+        
     }
 }

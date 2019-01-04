@@ -836,7 +836,7 @@ namespace DayBatch
                     {
                         grp.DrawString("T", font, sellBush, x2, y2);
                     }
-                    else
+                    else if (fenXingInfo[index].CurPointType == PointType.Bottom)
                     {
                         grp.DrawString("B", font, buyBush, x2, y2);
                     }

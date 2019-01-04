@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             this.pnlButton = new System.Windows.Forms.Panel();
+            this.btnChgTime = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
             this.btnChgDisp = new System.Windows.Forms.Button();
             this.txtCdSearch = new System.Windows.Forms.TextBox();
             this.lblConSel = new System.Windows.Forms.Label();
@@ -51,11 +53,13 @@
             this.pnlTopBody.Controls.Add(this.pnlBody);
             this.pnlTopBody.Controls.Add(this.pnlButton);
             this.pnlTopBody.Margin = new System.Windows.Forms.Padding(4);
-            this.pnlTopBody.Size = new System.Drawing.Size(602, 442);
+            this.pnlTopBody.Size = new System.Drawing.Size(602, 477);
             // 
             // pnlButton
             // 
             this.pnlButton.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlButton.Controls.Add(this.btnChgTime);
+            this.pnlButton.Controls.Add(this.label1);
             this.pnlButton.Controls.Add(this.btnChgDisp);
             this.pnlButton.Controls.Add(this.txtCdSearch);
             this.pnlButton.Controls.Add(this.lblConSel);
@@ -68,13 +72,32 @@
             this.pnlButton.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlButton.Location = new System.Drawing.Point(0, 402);
             this.pnlButton.Name = "pnlButton";
-            this.pnlButton.Size = new System.Drawing.Size(602, 40);
+            this.pnlButton.Size = new System.Drawing.Size(602, 75);
             this.pnlButton.TabIndex = 0;
+            // 
+            // btnChgTime
+            // 
+            this.btnChgTime.Location = new System.Drawing.Point(300, 6);
+            this.btnChgTime.Name = "btnChgTime";
+            this.btnChgTime.Size = new System.Drawing.Size(37, 62);
+            this.btnChgTime.TabIndex = 13;
+            this.btnChgTime.Text = "Day";
+            this.btnChgTime.UseVisualStyleBackColor = true;
+            this.btnChgTime.Click += new System.EventHandler(this.btnChgTime_Click);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(99, 48);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(53, 12);
+            this.label1.TabIndex = 12;
+            this.label1.Text = "单个过滤";
             // 
             // btnChgDisp
             // 
             this.btnChgDisp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnChgDisp.Location = new System.Drawing.Point(533, 6);
+            this.btnChgDisp.Location = new System.Drawing.Point(533, 41);
             this.btnChgDisp.Name = "btnChgDisp";
             this.btnChgDisp.Size = new System.Drawing.Size(56, 28);
             this.btnChgDisp.TabIndex = 11;
@@ -87,18 +110,18 @@
             this.txtCdSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtCdSearch.Font = new System.Drawing.Font("SimSun", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.txtCdSearch.ImeMode = System.Windows.Forms.ImeMode.Disable;
-            this.txtCdSearch.Location = new System.Drawing.Point(312, 10);
+            this.txtCdSearch.Location = new System.Drawing.Point(154, 42);
             this.txtCdSearch.Margin = new System.Windows.Forms.Padding(2);
             this.txtCdSearch.MaxLength = 6;
             this.txtCdSearch.Name = "txtCdSearch";
-            this.txtCdSearch.Size = new System.Drawing.Size(69, 21);
+            this.txtCdSearch.Size = new System.Drawing.Size(80, 21);
             this.txtCdSearch.TabIndex = 10;
             this.txtCdSearch.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtCdSearch_KeyPress);
             // 
             // lblConSel
             // 
             this.lblConSel.AutoSize = true;
-            this.lblConSel.Location = new System.Drawing.Point(153, 14);
+            this.lblConSel.Location = new System.Drawing.Point(99, 15);
             this.lblConSel.Name = "lblConSel";
             this.lblConSel.Size = new System.Drawing.Size(53, 12);
             this.lblConSel.TabIndex = 8;
@@ -122,7 +145,7 @@
             "上涨转折",
             "一路下跌",
             "一路上涨"});
-            this.cmbCon.Location = new System.Drawing.Point(208, 10);
+            this.cmbCon.Location = new System.Drawing.Point(154, 11);
             this.cmbCon.Name = "cmbCon";
             this.cmbCon.Size = new System.Drawing.Size(95, 20);
             this.cmbCon.TabIndex = 7;
@@ -130,7 +153,7 @@
             // lblCntInfo
             // 
             this.lblCntInfo.AutoSize = true;
-            this.lblCntInfo.Location = new System.Drawing.Point(468, 14);
+            this.lblCntInfo.Location = new System.Drawing.Point(375, 32);
             this.lblCntInfo.Name = "lblCntInfo";
             this.lblCntInfo.Size = new System.Drawing.Size(59, 12);
             this.lblCntInfo.TabIndex = 6;
@@ -138,7 +161,7 @@
             // 
             // btnAft
             // 
-            this.btnAft.Location = new System.Drawing.Point(436, 6);
+            this.btnAft.Location = new System.Drawing.Point(343, 24);
             this.btnAft.Name = "btnAft";
             this.btnAft.Size = new System.Drawing.Size(26, 28);
             this.btnAft.TabIndex = 4;
@@ -148,7 +171,7 @@
             // 
             // btnBef
             // 
-            this.btnBef.Location = new System.Drawing.Point(403, 6);
+            this.btnBef.Location = new System.Drawing.Point(268, 24);
             this.btnBef.Name = "btnBef";
             this.btnBef.Size = new System.Drawing.Size(26, 28);
             this.btnBef.TabIndex = 3;
@@ -168,7 +191,7 @@
             // 
             // btnCreate
             // 
-            this.btnCreate.Location = new System.Drawing.Point(82, 6);
+            this.btnCreate.Location = new System.Drawing.Point(10, 40);
             this.btnCreate.Name = "btnCreate";
             this.btnCreate.Size = new System.Drawing.Size(64, 28);
             this.btnCreate.TabIndex = 0;
@@ -202,10 +225,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(602, 467);
+            this.ClientSize = new System.Drawing.Size(602, 502);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(608, 495);
+            this.MaximumSize = new System.Drawing.Size(608, 530);
             this.Name = "CreateQushi";
             this.Text = "CreateQushi";
             this.pnlTopBody.ResumeLayout(false);
@@ -231,5 +254,7 @@
         private System.Windows.Forms.Label lblConSel;
         private System.Windows.Forms.TextBox txtCdSearch;
         private System.Windows.Forms.Button btnChgDisp;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button btnChgTime;
     }
 }
