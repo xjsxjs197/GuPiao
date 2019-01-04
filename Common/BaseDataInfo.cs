@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GuPiao.Common
+namespace Common
 {
     /// <summary>
     /// 基础数据情报

@@ -76,9 +76,10 @@ namespace DataProcess.GetData
             }
 
             // 参数设置
+            int maxLen = DATA_LEN_MAX;
             sb.Append(DATA_URL).Append(codeType).Append(stockCd);
             sb.Append("&scale=").Append((int)this.timeRange);
-            sb.Append("&datalen=").Append(DATA_LEN_MAX);
+            sb.Append("&datalen=");
 
             // 取得开始时间
             string startDay = this.GetExitsStock(allCsv, stockCd);
@@ -87,9 +88,30 @@ namespace DataProcess.GetData
                 // 最新文件已经存在
                 return;
             }
+            else if (!string.IsNullOrEmpty(startDay))
+            {
+                // 设置取得数据的最大长度
+                if (this.timeRange == TimeRange.M5)
+                {
+                    maxLen = DATA_LEN_MAX / 2;
+                }
+                else if (this.timeRange == TimeRange.M15)
+                {
+                    maxLen = DATA_LEN_MAX / 5;
+                }
+                else if (this.timeRange == TimeRange.M30)
+                {
+                    maxLen = DATA_LEN_MAX / 10;
+                }
+                else if (this.timeRange == TimeRange.Day)
+                {
+                    maxLen = DATA_LEN_MAX / 20;
+                }
+            }
+
 
             // 取截止今天为止的所有数据
-            string result = Util.HttpGet(sb.Append(DATA_LEN_MAX).ToString(), "", encoding);
+            string result = Util.HttpGet(sb.Append(maxLen).ToString(), "", encoding);
             if (!string.IsNullOrEmpty(result))
             {
                 JArray jArray = (JArray)JsonConvert.DeserializeObject(result);
@@ -120,21 +142,37 @@ namespace DataProcess.GetData
                         File.Delete(sb.ToString());
 
                         // 取得分钟级别数据
-                        string lastDay = this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
+                        this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
 
                         // 最新数据和旧数据结合
-                        bool canMerge = false;
-                        for (int i = 1; i < oldFile.Length; i++)
+                        List<string> newMinuteData = new List<string>();
+                        newMinuteData.AddRange(oldFile);
+                        if (newMinuteData.Count <= 1)
                         {
-                            if (!canMerge && oldFile[i].IndexOf(lastDay) >= 0)
+                            newMinuteData.Clear();
+                            newMinuteData.AddRange(allMinuteData.ToArray());
+                        }
+                        else
+                        {
+                            string lastDay = newMinuteData[1];
+                            lastDay = lastDay.Substring(0, lastDay.IndexOf(","));
+                            int mergeIdx = -1;
+                            for (int i = 1; i < allMinuteData.Count; i++)
                             {
-                                canMerge = true;
-                                continue;
+                                if (allMinuteData[i].IndexOf(lastDay) >= 0)
+                                {
+                                    mergeIdx = i;
+                                    break;
+                                }
                             }
-
-                            if (canMerge)
+                            if (mergeIdx > 0)
                             {
-                                allMinuteData.Add(oldFile[i]);
+                                mergeIdx--;
+                                while (mergeIdx > 0)
+                                {
+                                    newMinuteData.Insert(1, allMinuteData[mergeIdx]);
+                                    mergeIdx--;
+                                }
                             }
                         }
 
@@ -142,7 +180,7 @@ namespace DataProcess.GetData
                         sb.Length = 0;
                         sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
                         sb.Append(stockCd).Append("_").Append(this.endDayForFile).Append(".csv");
-                        File.WriteAllLines(sb.ToString(), allMinuteData.ToArray(), Encoding.UTF8);
+                        File.WriteAllLines(sb.ToString(), newMinuteData.ToArray(), Encoding.UTF8);
                     }
                 }
             }
@@ -162,7 +200,7 @@ namespace DataProcess.GetData
             string lastDay = string.Empty;
 
             allMinuteData.Clear();
-            allMinuteData.Add(",,,,,,");
+            allMinuteData.Add("日期,代码,名称,收盘价,最高价,最低价,开盘价");
 
             for (int i = jArray.Count - 1; i >= 0; i--)
             {

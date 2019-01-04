@@ -73,10 +73,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\BaseDataInfo.cs" />
     <Compile Include="Common\BuySellPoint.cs" />
     <Compile Include="Common\BuySellType.cs" />
-    <Compile Include="Common\PointType.cs" />
     <Compile Include="QushiCheck\ChkUpQushi.cs" />
     <Compile Include="Common\Consts.cs" />
     <Compile Include="QushiCheck\ChkDownQushi.cs" />
@@ -145,6 +143,10 @@
     <ProjectReference Include="..\DataProcess\DataProcess.csproj">
       <Project>{1E41D1F8-B1C0-4C65-B648-0B4ED70A6766}</Project>
       <Name>DataProcess</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DayBatch\DayBatch.csproj">
+      <Project>{04B4390C-8D5A-4840-AE32-BB0770B0F585}</Project>
+      <Name>DayBatch</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

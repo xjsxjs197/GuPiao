@@ -23,6 +23,11 @@ namespace Common
         /// <summary>
         /// 30分钟
         /// </summary>
-        M30 = 30
+        M30 = 30,
+
+        /// <summary>
+        /// 天（240分钟）
+        /// </summary>
+        Day = 240
     }
 }
