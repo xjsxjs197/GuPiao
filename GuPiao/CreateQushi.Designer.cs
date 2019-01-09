@@ -220,6 +220,8 @@
             this.imgBody.TabStop = false;
             this.imgBody.MouseLeave += new System.EventHandler(this.imgBody_MouseLeave);
             this.imgBody.MouseMove += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseMove);
+            this.imgBody.MouseDown += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseDown);
+            this.imgBody.MouseUp += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseUp);
             // 
             // CreateQushi
             // 

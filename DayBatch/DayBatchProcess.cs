@@ -18,9 +18,9 @@ namespace DayBatch
         #region " 全局变量 "
 
         /// <summary>
-        /// 取最多多少天数据
+        /// 取最大多少个点的数据
         /// </summary>
-        private const int MAX_DAYS = 110;
+        private const int MAX_POINTS = 118;
 
         /// <summary>
         /// 趋势图X轴间隔的像素
@@ -314,7 +314,21 @@ namespace DayBatch
             }
 
             string[] allLine = File.ReadAllLines(stockFile, Encoding.UTF8);
-            for (int i = 1; i < allLine.Length && i <= MAX_DAYS; i++)
+            int maxPoints = MAX_POINTS;
+            if (stockFile.IndexOf(TimeRange.M30.ToString()) > 0)
+            {
+                maxPoints *= 4;
+            }
+            else if (stockFile.IndexOf(TimeRange.M15.ToString()) > 0)
+            {
+                maxPoints *= 8;
+            }
+            else if (stockFile.IndexOf(TimeRange.M5.ToString()) > 0)
+            {
+                maxPoints *= 12;
+            }
+
+            for (int i = 1; i < allLine.Length && i <= maxPoints; i++)
             {
                 if (allLine[i].IndexOf("Error") > 0)
                 {
@@ -644,13 +658,17 @@ namespace DayBatch
 
             // 基础数据信息
             List<BaseDataInfo> stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+            if (stockInfos.Count == 0)
+            {
+                return;
+            }
 
             // 最大、最小值信息
             decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
             decimal step = 370 / (minMaxInfo[1] - minMaxInfo[0]);
 
             // 设定图片
-            Bitmap imgQushi = new Bitmap(600, 400);
+            Bitmap imgQushi = new Bitmap((stockInfos.Count + 2) * IMG_X_STEP, 400);
             Graphics grp = Graphics.FromImage(imgQushi);
             grp.SmoothingMode = SmoothingMode.AntiAlias;
             grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;

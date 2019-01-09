@@ -31,6 +31,11 @@ namespace GuPiao
         private const int IMG_X_STEP = 5;
 
         /// <summary>
+        /// 图片的高度
+        /// </summary>
+        private const int IMG_H = 400;
+
+        /// <summary>
         /// 数据路径信息
         /// </summary>
         private const string CSV_FOLDER = @"./Data/";
@@ -152,6 +157,27 @@ namespace GuPiao
         /// </summary>
         private bool needRaiseEvent = true;
 
+        /// <summary>
+        /// 是否正在拖拽图片
+        /// </summary>
+        private bool dragImg = false;
+
+        /// <summary>
+        /// 当前显示图片的位置信息
+        /// （向右移动了多少，IMG_X_STEP的整倍数）
+        /// </summary>
+        private int posFromRight = 0;
+
+        /// <summary>
+        /// 记录鼠标点击时X的坐标
+        /// </summary>
+        private int oldImgX;
+
+        /// <summary>
+        /// 记录趋势图原始的宽度
+        /// </summary>
+        private int oldImgWidth;
+
         #endregion
 
         #region " 初始化 "
@@ -166,6 +192,9 @@ namespace GuPiao
             this.subFolder = DAY_FOLDER;
             this.cmbCon.SelectedIndex = 0;
             this.pnlBody.BackColor = Color.FromArgb(199, 237, 204);
+
+            // 重新设置页面高度
+            this.ResetPageHeight();
 
             this.oldPnlBodyHeight = this.pnlBody.Height;
             this.Height -= this.oldPnlBodyHeight;
@@ -265,7 +294,13 @@ namespace GuPiao
             p.Dispose();
 
             // 显示当前位置的数据信息
-            this.DisplayCurDayInfo(e.X, imgBk.Width);
+            this.DisplayCurDayInfo(e.X);
+
+            // 拖动图片处理
+            if (this.dragImg)
+            {
+                this.DragImg(e.X);
+            }
         }
 
         /// <summary>
@@ -523,7 +558,8 @@ namespace GuPiao
                     this.imgBody.Image = null;
                 }
                 this.subFolder = timeRange.ToString() + "/";
-                this.imgBody.Image = Image.FromFile(IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
+                this.posFromRight = 0;
+                this.RedrawQushiImg(IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
 
                 // 设置当前的数据时间
                 this.dataDate = this.GetDataDate(this.subFolder);
@@ -531,6 +567,31 @@ namespace GuPiao
                 // 设置当前数据
                 this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
             }
+        }
+
+        /// <summary>
+        /// 处理图片拖拽开始
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void imgBody_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                this.dragImg = true;
+                this.oldImgX = e.X;
+            }
+        }
+
+        /// <summary>
+        /// 处理图片拖拽结束
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void imgBody_MouseUp(object sender, MouseEventArgs e)
+        {
+            this.dragImg = false;
+            this.Cursor = Cursors.Default;
         }
 
         #endregion
@@ -672,11 +733,10 @@ namespace GuPiao
         /// 显示当前位置的数据信息
         /// </summary>
         /// <param name="x"></param>
-        /// <param name="imgWidth"></param>
-        private void DisplayCurDayInfo(int x, int imgWidth)
+        private void DisplayCurDayInfo(int x)
         {
             x -= x % IMG_X_STEP;
-            int pos = (int)((imgWidth - x - IMG_X_STEP) / IMG_X_STEP);
+            int pos = (int)((this.oldImgWidth - this.posFromRight - x - IMG_X_STEP) / IMG_X_STEP);
             if (pos >= 0 && pos <= this.curStockData.Count - 1)
             {
                 this.SetTitle(this.allStock[this.curIdx], pos);
@@ -840,10 +900,8 @@ namespace GuPiao
             if (this.curIdx >= 0 && this.curIdx <= this.allStock.Count - 1)
             {
                 string stockImg = IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
-                if (File.Exists(stockImg))
-                {
-                    this.imgBody.Image = Image.FromFile(stockImg);
-                }
+                this.posFromRight = 0;
+                this.RedrawQushiImg(stockImg);
 
                 // 设置按钮可用与否
                 if (this.curIdx == 0)
@@ -923,6 +981,94 @@ namespace GuPiao
             {
                 this.curStockJibie5Data.Clear();
                 this.curStockJibie10Data.Clear();
+            }
+        }
+
+        /// <summary>
+        /// 重新设置页面高度
+        /// </summary>
+        private void ResetPageHeight()
+        { 
+            if (this.imgBody.Height != IMG_H)
+            {
+                int diff = this.imgBody.Height - IMG_H;
+                this.Height -= diff;
+            }
+        }
+
+        /// <summary>
+        /// 重新设置显示的趋势图
+        /// </summary>
+        /// <param name="imgFile"></param>
+        private void RedrawQushiImg(string imgFile)
+        {
+            if (!File.Exists(imgFile))
+            {
+                return;
+            }
+
+            Image imgFrom = Image.FromFile(imgFile);
+            Bitmap imgTo = new Bitmap(this.imgBody.Width, IMG_H);
+            Graphics grp = Graphics.FromImage(imgTo);
+            this.oldImgWidth = imgFrom.Width;
+            int srcImgX = imgFrom.Width - this.posFromRight;
+            int toImgX = 0;
+            Rectangle srcRect;
+            if (srcImgX <= imgTo.Width)
+            {
+                srcImgX = 0;
+                srcRect = new Rectangle(srcImgX, 0, imgFrom.Width, imgFrom.Height);
+                toImgX = imgTo.Width - srcImgX;
+            }
+            else
+            {
+                srcImgX -= imgTo.Width;
+                srcRect = new Rectangle(srcImgX, 0, imgTo.Width, imgFrom.Height);
+                toImgX = 0;
+            }
+            grp.DrawImage(imgFrom, toImgX, 0, srcRect, GraphicsUnit.Pixel);
+
+            if (this.imgBody.Image != null)
+            {
+                this.imgBody.Image.Dispose();
+                this.imgBody.Image = null;
+            }
+            this.imgBody.Image = imgTo;
+        }
+
+        /// <summary>
+        /// 拖动图片处理
+        /// </summary>
+        private void DragImg(int newX)
+        {
+            if (this.oldImgWidth <= this.imgBody.Image.Width)
+            {
+                // 无法移动时，直接返回
+                this.Cursor = Cursors.No;
+                return;
+            }
+
+            if (newX < this.oldImgX && this.posFromRight == 0)
+            {
+                // 向左移动，但是已经到最右端了，直接返回
+                this.Cursor = Cursors.No;
+                return;
+            }
+
+            if (newX > this.oldImgX && (this.oldImgWidth - this.posFromRight) <= this.imgBody.Image.Width)
+            {
+                // 向右移动，但是已经到最左端了，直接返回
+                this.Cursor = Cursors.No;
+                return;
+            }
+
+            this.Cursor = Cursors.Hand;
+            this.posFromRight += newX - this.oldImgX;
+            this.oldImgX = newX;
+
+            if (this.posFromRight % IMG_X_STEP == 0)
+            {
+                this.RedrawQushiImg(IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
             }
         }
 
