@@ -42,6 +42,7 @@
             this.btnCreate = new System.Windows.Forms.Button();
             this.pnlBody = new System.Windows.Forms.Panel();
             this.imgBody = new System.Windows.Forms.PictureBox();
+            this.btnTestRun = new System.Windows.Forms.Button();
             this.pnlTopBody.SuspendLayout();
             this.pnlButton.SuspendLayout();
             this.pnlBody.SuspendLayout();
@@ -58,6 +59,7 @@
             // pnlButton
             // 
             this.pnlButton.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlButton.Controls.Add(this.btnTestRun);
             this.pnlButton.Controls.Add(this.btnChgTime);
             this.pnlButton.Controls.Add(this.label1);
             this.pnlButton.Controls.Add(this.btnChgDisp);
@@ -223,6 +225,17 @@
             this.imgBody.MouseDown += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseDown);
             this.imgBody.MouseUp += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseUp);
             // 
+            // btnTestRun
+            // 
+            this.btnTestRun.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnTestRun.Location = new System.Drawing.Point(461, 41);
+            this.btnTestRun.Name = "btnTestRun";
+            this.btnTestRun.Size = new System.Drawing.Size(56, 28);
+            this.btnTestRun.TabIndex = 14;
+            this.btnTestRun.Text = "测 试";
+            this.btnTestRun.UseVisualStyleBackColor = true;
+            this.btnTestRun.Click += new System.EventHandler(this.btnTestRun_Click);
+            // 
             // CreateQushi
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -258,5 +271,6 @@
         private System.Windows.Forms.Button btnChgDisp;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnChgTime;
+        private System.Windows.Forms.Button btnTestRun;
     }
 }

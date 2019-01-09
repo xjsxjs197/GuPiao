@@ -299,7 +299,7 @@ namespace GuPiao
             // 拖动图片处理
             if (this.dragImg)
             {
-                this.DragImg(e.X);
+                this.DragImg(e.X - e.X % IMG_X_STEP);
             }
         }
 
@@ -579,7 +579,7 @@ namespace GuPiao
             if (e.Button == MouseButtons.Left)
             {
                 this.dragImg = true;
-                this.oldImgX = e.X;
+                this.oldImgX = e.X - e.X % IMG_X_STEP;
             }
         }
 
@@ -592,6 +592,16 @@ namespace GuPiao
         {
             this.dragImg = false;
             this.Cursor = Cursors.Default;
+        }
+
+        /// <summary>
+        /// 试运行
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnTestRun_Click(object sender, EventArgs e)
+        {
+            this.Do(this.StartTestRun);
         }
 
         #endregion
@@ -736,7 +746,7 @@ namespace GuPiao
         private void DisplayCurDayInfo(int x)
         {
             x -= x % IMG_X_STEP;
-            int pos = (int)((this.oldImgWidth - this.posFromRight - x - IMG_X_STEP) / IMG_X_STEP);
+            int pos = (int)((this.posFromRight + (this.imgBody.Image.Width - x - IMG_X_STEP)) / IMG_X_STEP);
             if (pos >= 0 && pos <= this.curStockData.Count - 1)
             {
                 this.SetTitle(this.allStock[this.curIdx], pos);
@@ -1018,7 +1028,7 @@ namespace GuPiao
             {
                 srcImgX = 0;
                 srcRect = new Rectangle(srcImgX, 0, imgFrom.Width, imgFrom.Height);
-                toImgX = imgTo.Width - srcImgX;
+                toImgX = imgTo.Width - imgFrom.Width;
             }
             else
             {
@@ -1048,7 +1058,7 @@ namespace GuPiao
                 return;
             }
 
-            if (newX < this.oldImgX && this.posFromRight == 0)
+            if (newX < this.oldImgX && this.posFromRight <= 0)
             {
                 // 向左移动，但是已经到最右端了，直接返回
                 this.Cursor = Cursors.No;
@@ -1358,7 +1368,47 @@ namespace GuPiao
 
         #endregion
 
+        #region " 测试模块 "
+
+        /// <summary>
+        /// 试运行
+        /// </summary>
+        private void StartTestRun()
+        {
+            DateTime startDate = DateTime.Now.AddDays(-60);
+
+            // 设置进度条
+            this.ResetProcessBar(this.allStockCdName.Count);
+
+            foreach (BaseDataInfo baseInfo in this.allStockCdName)
+            {
+
+                // 测试买卖点的逻辑
+                this.CheckBuySellPoint(baseInfo.Code, startDate);
+
+                // 更新进度条
+                this.ProcessBarStep();
+            }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+        }
+
+        /// <summary>
+        /// 测试买卖点的逻辑
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <param name="startDate"></param>
+        private void CheckBuySellPoint(string stockCd, DateTime startDate)
+        {
+            string startDateTime = startDate.ToString("yyyy-MM-dd 09:30:00");
+
+
+        }
+
         #endregion
-        
+
+        #endregion
+
     }
 }
