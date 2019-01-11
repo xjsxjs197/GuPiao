@@ -838,7 +838,7 @@ namespace DayBatch
                 return false;
             }
 
-            int x1 = img.Width - (fenXingInfo.Count * imgXStep);
+            int x1 = img.Width - ((fenXingInfo.Count - 1) * imgXStep + IMG_X_STEP);
             int y1 = this.GetYPos(img.Height, fenXingInfo[fenXingInfo.Count - 1].DayVal, minVal, step);
             int x2 = 0;
             int y2 = 0;
@@ -855,7 +855,7 @@ namespace DayBatch
             {
                 if (fenXingInfo[index].CurPointType != PointType.Changing || index == 0)
                 {
-                    x2 = img.Width - (index + 1) * imgXStep;
+                    x2 = img.Width - (index * imgXStep + IMG_X_STEP);
                     //curVal = stockInfo[index].CurPen == PenStatus.DownPen ? stockInfo[index].DayMinVal : stockInfo[index].DayMaxVal;
                     curVal = fenXingInfo[index].DayVal;
                     y2 = this.GetYPos(img.Height, curVal, minVal, step);
