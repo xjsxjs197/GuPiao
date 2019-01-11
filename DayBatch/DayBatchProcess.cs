@@ -510,8 +510,17 @@ namespace DayBatch
             // 循环取得所有的数据
             foreach (string stockCd in this.allStockCd)
             {
-                // 取得当前Stock数据
-                getData.Start(stockCd, allCsv);
+                try
+                {
+                    // 取得当前Stock数据
+                    getData.Start(stockCd, allCsv);
+                }
+                catch (Exception e)
+                {
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取 " + stockCd + " 数据是发生异常\r\n", Encoding.UTF8);
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
+                }
 
                 // 更新进度条
                 if (this.callRowEnd != null)
@@ -617,7 +626,16 @@ namespace DayBatch
 
                     this.currentFile = fileItem.File;
 
-                    this.CreateQushiImg(Util.GetShortNameWithoutType(fileItem.File), timeRange);
+                    try
+                    {
+                        this.CreateQushiImg(Util.GetShortNameWithoutType(fileItem.File), timeRange);
+                    }
+                    catch (Exception e)
+                    {
+                        File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + this.currentFile + "\r\n", Encoding.UTF8);
+                        File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
+                        File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
+                    }
 
                     // 更新进度条
                     if (this.callRowEnd != null)
@@ -699,9 +717,26 @@ namespace DayBatch
                 }*/
             }
 
-            // 开始分型笔的线段
+            // 开始画分型、笔的线段
             List<BaseDataInfo> fenXingInfo = this.GetFenxingPenInfo(stockInfos);
-            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp);
+            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
+
+            // 再30分钟的分型图上画天的分型信息
+            if (timeRange == TimeRange.M30)
+            {
+                dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
+                if (dataInfo != null)
+                {
+                    // 基础数据信息
+                    stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+                    if (stockInfos.Count > 0)
+                    {
+                        // 开始画分型、笔的线段
+                        fenXingInfo = this.GetFenxingPenInfo(stockInfos);
+                        this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkGreen, 1F), grp, IMG_X_STEP * 8);
+                    }
+                }
+            }
 
             // 保存图片
             imgQushi.Save(this.basePath + IMG_FOLDER + this.subFolder + stockCdData.Substring(0, 6) + ".png");
@@ -796,14 +831,14 @@ namespace DayBatch
         /// </summary>
         /// <param name="stockInfo"></param>
         /// <param name="step"></param>
-        private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
+        private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp, int imgXStep)
         {
             if (fenXingInfo.Count == 0)
             {
                 return false;
             }
 
-            int x1 = img.Width - (fenXingInfo.Count * IMG_X_STEP);
+            int x1 = img.Width - (fenXingInfo.Count * imgXStep);
             int y1 = this.GetYPos(img.Height, fenXingInfo[fenXingInfo.Count - 1].DayVal, minVal, step);
             int x2 = 0;
             int y2 = 0;
@@ -820,7 +855,7 @@ namespace DayBatch
             {
                 if (fenXingInfo[index].CurPointType != PointType.Changing || index == 0)
                 {
-                    x2 = img.Width - (index + 1) * IMG_X_STEP;
+                    x2 = img.Width - (index + 1) * imgXStep;
                     //curVal = stockInfo[index].CurPen == PenStatus.DownPen ? stockInfo[index].DayMinVal : stockInfo[index].DayMaxVal;
                     curVal = fenXingInfo[index].DayVal;
                     y2 = this.GetYPos(img.Height, curVal, minVal, step);
