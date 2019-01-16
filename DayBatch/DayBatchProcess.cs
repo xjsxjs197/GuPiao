@@ -721,25 +721,29 @@ namespace DayBatch
             List<BaseDataInfo> fenXingInfo = this.GetFenxingPenInfo(stockInfos);
             this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
 
-            // 再30分钟的分型图上画天的分型信息
-            if (timeRange == TimeRange.M30)
-            {
-                dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
-                if (dataInfo != null)
-                {
-                    // 基础数据信息
-                    stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
-                    if (stockInfos.Count > 0)
-                    {
-                        // 开始画分型、笔的线段
-                        fenXingInfo = this.GetFenxingPenInfo(stockInfos);
-                        this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkGreen, 1F), grp, IMG_X_STEP * 8);
-                    }
-                }
-            }
+            //// 再30分钟的分型图上画天的分型信息
+            //if (timeRange == TimeRange.M30)
+            //{
+            //    dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
+            //    if (dataInfo != null)
+            //    {
+            //        // 基础数据信息
+            //        stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+            //        if (stockInfos.Count > 0)
+            //        {
+            //            // 开始画分型、笔的线段
+            //            fenXingInfo = this.GetFenxingPenInfo(stockInfos);
+            //            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkGreen, 1F), grp, IMG_X_STEP * 8);
+            //        }
+            //    }
+            //}
 
             // 保存图片
             imgQushi.Save(this.basePath + IMG_FOLDER + this.subFolder + stockCdData.Substring(0, 6) + ".png");
+
+            // 释放Graphics和图片资源
+            grp.Dispose();
+            imgQushi.Dispose();
         }
 
         #endregion
@@ -771,6 +775,9 @@ namespace DayBatch
                 index++;
                 startX -= IMG_X_STEP;
             }
+
+            // 释放资源
+            pen.Dispose();
         }
 
         /// <summary>
@@ -887,11 +894,22 @@ namespace DayBatch
                     // 写字用做标识
                     if (fenXingInfo[index].CurPointType == PointType.Top)
                     {
-                        grp.DrawString("T", font, sellBush, x2, y2);
+                        //decimal befTopVal = this.GeBefTopVal(fenXingInfo, index, maxCnt);
+                        //if (buyed && befTopVal != 0 && fenXingInfo[index].DayVal < befTopVal)
+                        if (buyed)
+                        {
+                            grp.DrawString("T", font, sellBush, x2, y2);
+                            buyed = false;
+                        }
                     }
                     else if (fenXingInfo[index].CurPointType == PointType.Bottom)
                     {
-                        grp.DrawString("B", font, buyBush, x2, y2);
+                        decimal befBottomVal = this.GeBefBottomVal(fenXingInfo, index, maxCnt);
+                        if (!buyed && befBottomVal != 0 && fenXingInfo[index].DayVal > befBottomVal)
+                        {
+                            grp.DrawString("B", font, buyBush, x2, y2);
+                            buyed = true;
+                        }
                     }
 
                     grp.DrawLine(pen, x1, y1, x2, y2);
@@ -900,7 +918,50 @@ namespace DayBatch
                 }
             }
 
+            // 释放资源
+            pen.Dispose();
+
             return hasBuyPoint;
+        }
+
+        /// <summary>
+        /// 取得前一个顶分型的值
+        /// </summary>
+        /// <param name="fenXingInfo"></param>
+        /// <param name="idx"></param>
+        /// <param name="maxCnt"></param>
+        /// <returns></returns>
+        private decimal GeBefTopVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
+        {
+            for (int i = idx + 1; i < maxCnt; i++)
+            {
+                if (fenXingInfo[i].CurPointType == PointType.Top)
+                {
+                    return fenXingInfo[i].DayVal;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// 取得前一个底分型的值
+        /// </summary>
+        /// <param name="fenXingInfo"></param>
+        /// <param name="idx"></param>
+        /// <param name="maxCnt"></param>
+        /// <returns></returns>
+        private decimal GeBefBottomVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
+        {
+            for (int i = idx + 1; i < maxCnt; i++)
+            {
+                if (fenXingInfo[i].CurPointType == PointType.Bottom)
+                {
+                    return fenXingInfo[i].DayVal;
+                }
+            }
+
+            return 0;
         }
 
         /// <summary>

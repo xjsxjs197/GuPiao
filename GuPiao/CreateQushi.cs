@@ -1044,6 +1044,10 @@ namespace GuPiao
                 this.imgBody.Image = null;
             }
             this.imgBody.Image = imgTo;
+
+            // 释放Graphics和图片资源
+            grp.Dispose();
+            imgFrom.Dispose();
         }
 
         /// <summary>
