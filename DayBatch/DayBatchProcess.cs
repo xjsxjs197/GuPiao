@@ -404,6 +404,245 @@ namespace DayBatch
             return stockInfo;
         }
 
+        /// <summary>
+        /// 设置分型情报
+        /// </summary>
+        /// <param name="stockInfo"></param>
+        public static List<BaseDataInfo> SetFenxingInfo(List<BaseDataInfo> stockInfo)
+        {
+            if (stockInfo.Count < 3)
+            {
+                return stockInfo;
+            }
+
+            // 取得没有包含关系的第一个的点位置
+            int nextIdx = GetNotIncludeInfo(stockInfo, stockInfo.Count - 1);
+            BaseDataInfo point1 = stockInfo[nextIdx];
+            BaseDataInfo point2;
+
+            for (int i = nextIdx - 1; i >= 0; )
+            {
+                // 取得没有包含关系的第二个的点位置
+                nextIdx = GetNotIncludeInfo(stockInfo, i);
+                point2 = stockInfo[nextIdx];
+
+                // 重置位置
+                i = nextIdx - 1;
+
+                // 判断两个点的关系
+                if (point1.DayVal > point2.DayVal)
+                {
+                    // 继续向后查找更小的点，直到出现上升的点
+                    while (i >= 0)
+                    {
+                        if (stockInfo[i].DayVal > stockInfo[i + 1].DayVal * LIMIT_VAL)
+                        {
+                            // 设置前一个点为最低点
+                            stockInfo[i + 1].CurPointType = PointType.Bottom;
+
+                            break;
+                        }
+
+                        i--;
+                    }
+                }
+                else
+                {
+                    // 继续向后查找更大的点，直到出现下降的点
+                    while (i >= 0)
+                    {
+                        if (stockInfo[i].DayVal * LIMIT_VAL < stockInfo[i + 1].DayVal)
+                        {
+                            // 设置前一个点为最高点
+                            stockInfo[i + 1].CurPointType = PointType.Top;
+
+                            break;
+                        }
+
+                        i--;
+                    }
+                }
+
+                point1 = stockInfo[i + 1];
+            }
+
+            return stockInfo;
+
+            //List<BaseDataInfo> ret = new List<BaseDataInfo>();
+            //if (stockInfo.Count < 6)
+            //{
+            //    return ret;
+            //}
+
+            //PointType pointType;
+            //PointType lastType;
+
+            //// 循环查找分型情报
+            //for (int i = stockInfo.Count - 1; i >= 2;)
+            //{
+            //    // 查找分型情报
+            //    int[] fenxing = this.ChkFenxing(stockInfo, i);
+            //    pointType = (PointType)fenxing[0];
+
+            //    // 将分型情报位置之前的分型形成中情报保存
+            //    this.SetRangeFenxing(ret, stockInfo, i, fenxing[1] + 2, pointType);
+
+            //    if (pointType == PointType.Changing)
+            //    {
+            //        // 将最后的分型形成中情报保存
+            //        this.SetRangeFenxing(ret, stockInfo, fenxing[1] + 1, 0, pointType);
+            //        return ret;
+            //    }
+
+            //    // 重置位置信息
+            //    i = fenxing[1];
+
+            //    // 保存当前分型信息
+            //    BaseDataInfo curFenxin = new BaseDataInfo();
+            //    curFenxin.Day = stockInfo[i + 1].Day;
+            //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
+            //    curFenxin.CurPointType = PointType.Changing;
+            //    ret.Add(curFenxin);
+
+            //    //if (pointType == PointType.Top) // 出现了顶分型
+            //    //{
+            //    //    if (befFenxin.CurPointType == PointType.Changing)
+            //    //    {
+            //    //        // 第一次分型以前的点的初始化(-1,0)
+            //    //        befFenxin.CurPointType = PointType.Bottom;
+            //    //        befFenxin.NextPointType = PointType.Changing;
+            //    //    }
+
+            //    //    if (befFenxin.CurPointType == PointType.Top)
+            //    //    {
+            //    //        if (befFenxin.NextPointType == PointType.Changing)
+            //    //        {
+            //    //            // -1,0 => 1,1
+            //    //            curFenxin.CurPointType = PointType.Bottom;
+            //    //            curFenxin.NextPointType = PointType.Bottom;
+            //    //        }
+            //    //        else
+            //    //        {
+            //    //            // -1,-1 => -1,0
+            //    //            curFenxin.CurPointType = PointType.Top;
+            //    //            curFenxin.NextPointType = PointType.Changing;
+            //    //        }
+            //    //    }
+            //    //    else
+            //    //    {
+            //    //        if (befFenxin.NextPointType == PointType.Changing)
+            //    //        {
+            //    //            // 1,0 => 1,1
+            //    //            curFenxin.CurPointType = PointType.Bottom;
+            //    //            curFenxin.NextPointType = PointType.Bottom;
+            //    //        }
+            //    //        else
+            //    //        {
+            //    //            // 1,1 => 1,1
+            //    //            curFenxin.CurPointType = PointType.Bottom;
+            //    //            curFenxin.NextPointType = PointType.Bottom;
+            //    //        }
+            //    //    }
+
+            //    //    //curFenxin.DayMaxVal = stockInfo[i + 1].DayMaxVal;
+            //    //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
+            //    //}
+            //    //else if (pointType == PointType.Bottom) // 出现了底分型
+            //    //{
+            //    //    if (befFenxin.CurPointType == PointType.Changing)
+            //    //    {
+            //    //        // 第一次分型的初始化(-1,0)
+            //    //        befFenxin.CurPointType = PointType.Top;
+            //    //        befFenxin.NextPointType = PointType.Changing;
+            //    //    }
+
+            //    //    if (befFenxin.CurPointType == PointType.Bottom)
+            //    //    {
+            //    //        if (befFenxin.NextPointType == PointType.Changing)
+            //    //        {
+            //    //            // 1,0 => -1,-1
+            //    //            curFenxin.CurPointType = PointType.Top;
+            //    //            curFenxin.NextPointType = PointType.Top;
+            //    //        }
+            //    //        else
+            //    //        {
+            //    //            // 1,1 => 1,0
+            //    //            curFenxin.CurPointType = PointType.Bottom;
+            //    //            curFenxin.NextPointType = PointType.Changing;
+            //    //        }
+            //    //    }
+            //    //    else
+            //    //    {
+            //    //        if (befFenxin.NextPointType == PointType.Changing)
+            //    //        {
+            //    //            // -1,0 => -1,-1
+            //    //            curFenxin.CurPointType = PointType.Top;
+            //    //            curFenxin.NextPointType = PointType.Top;
+            //    //        }
+            //    //        else
+            //    //        {
+            //    //            // -1,-1 => -1,-1
+            //    //            curFenxin.CurPointType = PointType.Top;
+            //    //            curFenxin.NextPointType = PointType.Top;
+            //    //        }
+            //    //    }
+
+            //    //    //curFenxin.DayMinVal = stockInfo[i + 1].DayMinVal;
+            //    //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
+            //    //}
+
+            //    if (i <= 2)
+            //    {
+            //        // 将最后的分型形成中情报保存
+            //        this.SetRangeFenxing(ret, stockInfo, i, 0, PointType.Changing);
+            //        return ret;
+            //    }
+            //}
+
+            //return ret;
+        }
+
+        /// <summary>
+        /// 取得前一个顶分型的值
+        /// </summary>
+        /// <param name="fenXingInfo"></param>
+        /// <param name="idx"></param>
+        /// <param name="maxCnt"></param>
+        /// <returns></returns>
+        public static decimal GeBefTopVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
+        {
+            for (int i = idx + 1; i < maxCnt; i++)
+            {
+                if (fenXingInfo[i].CurPointType == PointType.Top)
+                {
+                    return fenXingInfo[i].DayVal;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// 取得前一个底分型的值
+        /// </summary>
+        /// <param name="fenXingInfo"></param>
+        /// <param name="idx"></param>
+        /// <param name="maxCnt"></param>
+        /// <returns></returns>
+        public static decimal GeBefBottomVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
+        {
+            for (int i = idx + 1; i < maxCnt; i++)
+            {
+                if (fenXingInfo[i].CurPointType == PointType.Bottom)
+                {
+                    return fenXingInfo[i].DayVal;
+                }
+            }
+
+            return 0;
+        }
+
+
         #endregion
 
         #region " 主要处理 "
@@ -718,7 +957,7 @@ namespace DayBatch
             }
 
             // 开始画分型、笔的线段
-            List<BaseDataInfo> fenXingInfo = this.GetFenxingPenInfo(stockInfos);
+            List<BaseDataInfo> fenXingInfo = SetFenxingInfo(stockInfos);
             this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
 
             //// 再30分钟的分型图上画天的分型信息
@@ -867,34 +1106,10 @@ namespace DayBatch
                     curVal = fenXingInfo[index].DayVal;
                     y2 = this.GetYPos(img.Height, curVal, minVal, step);
 
-                    //if (fenXingInfo[index].CurPen == PenStatus.UpPen)
-                    //{
-                    //    if (!buyed)
-                    //    {
-                    //        // 没有买点时画买点
-                    //        grp.FillEllipse(buyBush, x2, y2, 7, 7);
-                    //        hasBuyPoint = true;
-                    //        buyed = true;
-                    //        buyPrice = fenXingInfo[index].DayVal;
-                    //        this.dataDate = fenXingInfo[index].Day;
-                    //    }
-                    //}
-                    //else if (buyed)
-                    //{
-                    //    if (fenXingInfo[index].CurPen == PenStatus.DownPen 
-                    //        || fenXingInfo[index].DayVal < buyPrice * Consts.SELL_VAL
-                    //        || fenXingInfo[index].DayVal < fenXingInfo5[index].DayVal)
-                    //    {
-                    //        // 已经有买点时才画卖点
-                    //        grp.FillEllipse(sellBush, x2, y2, 7, 7);
-                    //        buyed = false;
-                    //    }
-                    //}
-
                     // 写字用做标识
                     if (fenXingInfo[index].CurPointType == PointType.Top)
                     {
-                        //decimal befTopVal = this.GeBefTopVal(fenXingInfo, index, maxCnt);
+                        //decimal befTopVal = GeBefTopVal(fenXingInfo, index, maxCnt);
                         //if (buyed && befTopVal != 0 && fenXingInfo[index].DayVal < befTopVal)
                         if (buyed)
                         {
@@ -904,8 +1119,8 @@ namespace DayBatch
                     }
                     else if (fenXingInfo[index].CurPointType == PointType.Bottom)
                     {
-                        decimal befBottomVal = this.GeBefBottomVal(fenXingInfo, index, maxCnt);
-                        if (!buyed && befBottomVal != 0 && fenXingInfo[index].DayVal > befBottomVal)
+                        decimal befBottomVal = GeBefBottomVal(fenXingInfo, index, maxCnt);
+                        if (!buyed && befBottomVal != 0 && fenXingInfo[index].DayVal > befBottomVal * LIMIT_VAL)
                         {
                             grp.DrawString("B", font, buyBush, x2, y2);
                             buyed = true;
@@ -922,46 +1137,6 @@ namespace DayBatch
             pen.Dispose();
 
             return hasBuyPoint;
-        }
-
-        /// <summary>
-        /// 取得前一个顶分型的值
-        /// </summary>
-        /// <param name="fenXingInfo"></param>
-        /// <param name="idx"></param>
-        /// <param name="maxCnt"></param>
-        /// <returns></returns>
-        private decimal GeBefTopVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
-        {
-            for (int i = idx + 1; i < maxCnt; i++)
-            {
-                if (fenXingInfo[i].CurPointType == PointType.Top)
-                {
-                    return fenXingInfo[i].DayVal;
-                }
-            }
-
-            return 0;
-        }
-
-        /// <summary>
-        /// 取得前一个底分型的值
-        /// </summary>
-        /// <param name="fenXingInfo"></param>
-        /// <param name="idx"></param>
-        /// <param name="maxCnt"></param>
-        /// <returns></returns>
-        private decimal GeBefBottomVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
-        {
-            for (int i = idx + 1; i < maxCnt; i++)
-            {
-                if (fenXingInfo[i].CurPointType == PointType.Bottom)
-                {
-                    return fenXingInfo[i].DayVal;
-                }
-            }
-
-            return 0;
         }
 
         /// <summary>
@@ -1031,211 +1206,12 @@ namespace DayBatch
         }
 
         /// <summary>
-        /// 取得分型、笔信息
-        /// </summary>
-        /// <param name="stockInfo"></param>
-        /// <returns></returns>
-        private List<BaseDataInfo> GetFenxingPenInfo(List<BaseDataInfo> stockInfo)
-        {
-            if (stockInfo.Count < 3)
-            {
-                return stockInfo;
-            }
-
-            // 取得没有包含关系的第一个的点位置
-            int nextIdx = this.GetNotIncludeInfo(stockInfo, stockInfo.Count - 1);
-            BaseDataInfo point1 = stockInfo[nextIdx];
-            BaseDataInfo point2;
-
-            for (int i = nextIdx - 1; i >= 0; )
-            {
-                // 取得没有包含关系的第二个的点位置
-                nextIdx = this.GetNotIncludeInfo(stockInfo, i);
-                point2 = stockInfo[nextIdx];
-
-                // 重置位置
-                i = nextIdx - 1;
-
-                // 判断两个点的关系
-                if (point1.DayVal > point2.DayVal)
-                {
-                    // 继续向后查找更小的点，直到出现上升的点
-                    while (i >= 0)
-                    {
-                        if (stockInfo[i].DayVal > stockInfo[i + 1].DayVal * LIMIT_VAL)
-                        {
-                            // 设置前一个点为最低点
-                            stockInfo[i + 1].CurPointType = PointType.Bottom;
-
-                            break;
-                        }
-
-                        i--;
-                    }
-                }
-                else
-                {
-                    // 继续向后查找更大的点，直到出现下降的点
-                    while (i >= 0)
-                    {
-                        if (stockInfo[i].DayVal * LIMIT_VAL < stockInfo[i + 1].DayVal)
-                        {
-                            // 设置前一个点为最高点
-                            stockInfo[i + 1].CurPointType = PointType.Top;
-
-                            break;
-                        }
-
-                        i--;
-                    }
-                }
-
-                point1 = stockInfo[i + 1];
-            }
-
-            return stockInfo;
-
-            //List<BaseDataInfo> ret = new List<BaseDataInfo>();
-            //if (stockInfo.Count < 6)
-            //{
-            //    return ret;
-            //}
-
-            //PointType pointType;
-            //PointType lastType;
-
-            //// 循环查找分型情报
-            //for (int i = stockInfo.Count - 1; i >= 2;)
-            //{
-            //    // 查找分型情报
-            //    int[] fenxing = this.ChkFenxing(stockInfo, i);
-            //    pointType = (PointType)fenxing[0];
-
-            //    // 将分型情报位置之前的分型形成中情报保存
-            //    this.SetRangeFenxing(ret, stockInfo, i, fenxing[1] + 2, pointType);
-
-            //    if (pointType == PointType.Changing)
-            //    {
-            //        // 将最后的分型形成中情报保存
-            //        this.SetRangeFenxing(ret, stockInfo, fenxing[1] + 1, 0, pointType);
-            //        return ret;
-            //    }
-
-            //    // 重置位置信息
-            //    i = fenxing[1];
-
-            //    // 保存当前分型信息
-            //    BaseDataInfo curFenxin = new BaseDataInfo();
-            //    curFenxin.Day = stockInfo[i + 1].Day;
-            //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
-            //    curFenxin.CurPointType = PointType.Changing;
-            //    ret.Add(curFenxin);
-
-            //    //if (pointType == PointType.Top) // 出现了顶分型
-            //    //{
-            //    //    if (befFenxin.CurPointType == PointType.Changing)
-            //    //    {
-            //    //        // 第一次分型以前的点的初始化(-1,0)
-            //    //        befFenxin.CurPointType = PointType.Bottom;
-            //    //        befFenxin.NextPointType = PointType.Changing;
-            //    //    }
-
-            //    //    if (befFenxin.CurPointType == PointType.Top)
-            //    //    {
-            //    //        if (befFenxin.NextPointType == PointType.Changing)
-            //    //        {
-            //    //            // -1,0 => 1,1
-            //    //            curFenxin.CurPointType = PointType.Bottom;
-            //    //            curFenxin.NextPointType = PointType.Bottom;
-            //    //        }
-            //    //        else
-            //    //        {
-            //    //            // -1,-1 => -1,0
-            //    //            curFenxin.CurPointType = PointType.Top;
-            //    //            curFenxin.NextPointType = PointType.Changing;
-            //    //        }
-            //    //    }
-            //    //    else
-            //    //    {
-            //    //        if (befFenxin.NextPointType == PointType.Changing)
-            //    //        {
-            //    //            // 1,0 => 1,1
-            //    //            curFenxin.CurPointType = PointType.Bottom;
-            //    //            curFenxin.NextPointType = PointType.Bottom;
-            //    //        }
-            //    //        else
-            //    //        {
-            //    //            // 1,1 => 1,1
-            //    //            curFenxin.CurPointType = PointType.Bottom;
-            //    //            curFenxin.NextPointType = PointType.Bottom;
-            //    //        }
-            //    //    }
-
-            //    //    //curFenxin.DayMaxVal = stockInfo[i + 1].DayMaxVal;
-            //    //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
-            //    //}
-            //    //else if (pointType == PointType.Bottom) // 出现了底分型
-            //    //{
-            //    //    if (befFenxin.CurPointType == PointType.Changing)
-            //    //    {
-            //    //        // 第一次分型的初始化(-1,0)
-            //    //        befFenxin.CurPointType = PointType.Top;
-            //    //        befFenxin.NextPointType = PointType.Changing;
-            //    //    }
-
-            //    //    if (befFenxin.CurPointType == PointType.Bottom)
-            //    //    {
-            //    //        if (befFenxin.NextPointType == PointType.Changing)
-            //    //        {
-            //    //            // 1,0 => -1,-1
-            //    //            curFenxin.CurPointType = PointType.Top;
-            //    //            curFenxin.NextPointType = PointType.Top;
-            //    //        }
-            //    //        else
-            //    //        {
-            //    //            // 1,1 => 1,0
-            //    //            curFenxin.CurPointType = PointType.Bottom;
-            //    //            curFenxin.NextPointType = PointType.Changing;
-            //    //        }
-            //    //    }
-            //    //    else
-            //    //    {
-            //    //        if (befFenxin.NextPointType == PointType.Changing)
-            //    //        {
-            //    //            // -1,0 => -1,-1
-            //    //            curFenxin.CurPointType = PointType.Top;
-            //    //            curFenxin.NextPointType = PointType.Top;
-            //    //        }
-            //    //        else
-            //    //        {
-            //    //            // -1,-1 => -1,-1
-            //    //            curFenxin.CurPointType = PointType.Top;
-            //    //            curFenxin.NextPointType = PointType.Top;
-            //    //        }
-            //    //    }
-
-            //    //    //curFenxin.DayMinVal = stockInfo[i + 1].DayMinVal;
-            //    //    curFenxin.DayVal = stockInfo[i + 1].DayVal;
-            //    //}
-
-            //    if (i <= 2)
-            //    {
-            //        // 将最后的分型形成中情报保存
-            //        this.SetRangeFenxing(ret, stockInfo, i, 0, PointType.Changing);
-            //        return ret;
-            //    }
-            //}
-
-            //return ret;
-        }
-
-        /// <summary>
         /// 取得没有包括关系的值的位置
         /// </summary>
         /// <param name="stockInfo"></param>
         /// <param name="idx"></param>
         /// <returns></returns>
-        private int GetNotIncludeInfo(List<BaseDataInfo> stockInfo, int idx)
+        private static int GetNotIncludeInfo(List<BaseDataInfo> stockInfo, int idx)
         {
             BaseDataInfo curItem = stockInfo[idx];
 

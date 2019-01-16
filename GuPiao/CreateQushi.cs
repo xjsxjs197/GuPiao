@@ -51,6 +51,11 @@ namespace GuPiao
         private const string RESULT_FOLDER = @"./ChkResult/";
 
         /// <summary>
+        /// 买卖点目录
+        /// </summary>
+        private const string BUY_SELL_POINT = @"./BuySellPoint/";
+
+        /// <summary>
         /// 天数据的目录
         /// </summary>
         private const string DAY_FOLDER = @"Day/";
@@ -1379,35 +1384,185 @@ namespace GuPiao
         /// </summary>
         private void StartTestRun()
         {
-            DateTime startDate = DateTime.Now.AddDays(-60);
+            // 取得已经存在的所有数据信息
+            this.baseFolder = DAY_FOLDER;
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.baseFolder);
+            Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
 
             // 设置进度条
-            this.ResetProcessBar(this.allStockCdName.Count);
+            this.ResetProcessBar(allCsv.Count);
 
-            foreach (BaseDataInfo baseInfo in this.allStockCdName)
+            foreach (FilePosInfo fileItem in allCsv)
             {
+                if (fileItem.IsFolder)
+                {
+                    continue;
+                }
 
-                // 测试买卖点的逻辑
-                this.CheckBuySellPoint(baseInfo.Code, startDate);
+                base.baseFile = fileItem.File;
+                string stockCdDate = Util.GetShortNameWithoutType(fileItem.File);
+                if (NO_CHUANGYE && this.IsChuangyeStock(stockCdDate))
+                {
+                    continue;
+                }
+
+                // 测试BuySell的逻辑
+                this.CheckBuySellPoint(stockCdDate, buySellInfo);
 
                 // 更新进度条
                 this.ProcessBarStep();
             }
-
+            
             // 关闭进度条
             this.CloseProcessBar();
+
+            this.SaveTotalBuySellInfo(buySellInfo);
         }
 
         /// <summary>
         /// 测试买卖点的逻辑
         /// </summary>
-        /// <param name="stockCd"></param>
-        /// <param name="startDate"></param>
-        private void CheckBuySellPoint(string stockCd, DateTime startDate)
+        /// <param name="stockCdDate"></param>
+        private void CheckBuySellPoint(string stockCdDate, Dictionary<string, List<string>[]> buySellInfo)
         {
-            string startDateTime = startDate.ToString("yyyy-MM-dd 09:30:00");
+            // 获得数据信息
+            Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdDate, this.subFolder, "./");
+            if (dataInfo == null)
+            {
+                return;
+            }
 
+            List<BaseDataInfo> stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+            if (stockInfos.Count == 0)
+            {
+                return;
+            }
 
+            string startDate;
+            int startIdx = 0;
+            if (this.subFolder.Equals(DAY_FOLDER))
+            {
+                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd");
+            }
+            else
+            {
+                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd090000");
+            }
+            for (int i = stockInfos.Count - 1; i >= 0; i--)
+            {
+                if (string.Compare(stockInfos[i].Day, startDate) > 0)
+                {
+                    startIdx = i;
+                    break;
+                }
+            }
+
+            if (startIdx == 0)
+            {
+                return;
+            }
+
+            List<BaseDataInfo> fenxingInfo = DayBatchProcess.SetFenxingInfo(stockInfos);
+
+            StringBuilder sb = new StringBuilder();
+            string stockCd = stockCdDate.Substring(0, 6);
+            decimal buyPrice = 0;
+            bool buyed = false;
+            List<string> buyInfo;
+            List<string> sellInfo;
+            for (int i = startIdx; i >= 0; i--)
+            {
+                if (fenxingInfo[i].CurPointType == PointType.Top)
+                {
+                    if (buyed)
+                    {
+                        buyed = false;
+                        sb.Append(fenxingInfo[i].Day).Append(" ");
+                        sb.Append(fenxingInfo[i].DayVal.ToString().PadLeft(8, ' ')).Append(" ");
+                        decimal diff = (fenxingInfo[i].DayVal / buyPrice - 1) * 100;
+                        sb.Append(diff.ToString("0.00").PadLeft(7, ' ')).Append("%\r\n");
+
+                        if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
+                        {
+                            buyInfo = new List<string>();
+                            sellInfo = new List<string>();
+                            List<string>[] listBuySell = new List<string>[2];
+                            listBuySell[0] = buyInfo;
+                            listBuySell[1] = sellInfo;
+                            buySellInfo.Add(fenxingInfo[i].Day, listBuySell);
+                        }
+                        else
+                        {
+                            List<string>[] listBuySell = buySellInfo[fenxingInfo[i].Day];
+                            buyInfo = listBuySell[0];
+                            sellInfo = listBuySell[1];
+                        }
+                        sellInfo.Add(stockCd + "(" + fenxingInfo[i].DayVal + "(" + diff.ToString("0.00") + "%))");
+                    }
+                }
+                else if (fenxingInfo[i].CurPointType == PointType.Bottom)
+                {
+                    decimal befBottomVal = DayBatchProcess.GeBefBottomVal(fenxingInfo, i, startIdx);
+                    if (!buyed && befBottomVal != 0 && fenxingInfo[i].DayVal > befBottomVal * Consts.LIMIT_VAL)
+                    {
+                        buyed = true;
+                        buyPrice = fenxingInfo[i].DayVal;
+                        sb.Append(stockCd).Append(" ");
+                        sb.Append(fenxingInfo[i].Day).Append(" ");
+                        sb.Append(buyPrice.ToString().PadLeft(8, ' ')).Append(" ");
+
+                        if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
+                        {
+                            buyInfo = new List<string>();
+                            sellInfo = new List<string>();
+                            List<string>[] listBuySell = new List<string>[2];
+                            listBuySell[0] = buyInfo;
+                            listBuySell[1] = sellInfo;
+                            buySellInfo.Add(fenxingInfo[i].Day, listBuySell);
+                        }
+                        else
+                        {
+                            List<string>[] listBuySell = buySellInfo[fenxingInfo[i].Day];
+                            buyInfo = listBuySell[0];
+                            sellInfo = listBuySell[1];
+                        }
+                        buyInfo.Add(stockCd + "(" + buyPrice + ")");
+                    }
+                }
+            }
+
+            if (buyed)
+            {
+                sb.Append("\r\n");
+            }
+
+            if (sb.Length > 0)
+            {
+                File.WriteAllText(BUY_SELL_POINT + stockCd + ".txt", sb.ToString(), Encoding.UTF8);
+            }
+        }
+
+        /// <summary>
+        /// 保存买卖信息
+        /// </summary>
+        /// <param name="buySellInfo"></param>
+        private void SaveTotalBuySellInfo(Dictionary<string, List<string>[]> buySellInfo)
+        {
+            StringBuilder sb = new StringBuilder();
+            List<string> dayList = new List<string>(buySellInfo.Keys);
+            dayList.Sort();
+ 
+            foreach (string day in dayList)
+            {
+                List<string> buyInfo = buySellInfo[day][0];
+                List<string> sellInfo = buySellInfo[day][1];
+                sb.Append(day).Append(" B ");
+                sb.Append(string.Join(" ", buyInfo.ToArray())).Append("\r\n");
+                sb.Append(day).Append(" S ");
+                sb.Append(string.Join(" ", sellInfo.ToArray())).Append("\r\n");
+            }
+
+            File.WriteAllText(BUY_SELL_POINT + "TotalBuySellInfo.txt", sb.ToString(), Encoding.UTF8);
         }
 
         #endregion
