@@ -1385,8 +1385,8 @@ namespace GuPiao
         private void StartTestRun()
         {
             // 取得已经存在的所有数据信息
-            this.baseFolder = DAY_FOLDER;
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.baseFolder);
+            this.subFolder = TimeRange.M30.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
             Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
 
             // 设置进度条

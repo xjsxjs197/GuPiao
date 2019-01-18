@@ -83,3 +83,5 @@ Bin/Log/GetDataBatLog.txt
 DayBatch/DayBatch.csproj.user
 Bin/ChkResult/BuyPoints.txt
 DayBatch/obj/Debug/Refactor/DayBatch.exe
+
+Bin/BuySellPoint/*.txt
