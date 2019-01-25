@@ -1500,10 +1500,10 @@ namespace GuPiao
                         sellInfo.Add(stockCd + "(" + fenxingInfo[i].DayVal + "(" + diff.ToString("0.00") + "%))");
                     }
                 }
-                else if (fenxingInfo[i].CurPointType == PointType.Bottom)
+                else if (fenxingInfo[i].BuyFlg > 0 && !buyed)
                 {
-                    decimal befBottomVal = DayBatchProcess.GeBefBottomVal(fenxingInfo, i, startIdx);
-                    if (!buyed && befBottomVal != 0 && fenxingInfo[i].DayVal > befBottomVal * Consts.LIMIT_VAL)
+                    //decimal befBottomVal = DayBatchProcess.GeBefBottomVal(fenxingInfo, i, startIdx);
+                    //if (!buyed && befBottomVal != 0 && fenxingInfo[i].DayVal > befBottomVal * Consts.LIMIT_VAL)
                     {
                         buyed = true;
                         buyPrice = fenxingInfo[i].DayVal;

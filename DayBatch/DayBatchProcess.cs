@@ -152,6 +152,7 @@ namespace DayBatch
             bool hasM30 = false;
             bool hasDay = false;
             bool needGetData = true;
+            bool needDrawImg = true;
             if (args == null || args.Length == 0)
             {
                 hasM5 = true;
@@ -183,6 +184,10 @@ namespace DayBatch
                     {
                         needGetData = false;
                     }
+                    else if ("NoImg".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        needDrawImg = false;
+                    }
                 }
             }
 
@@ -195,8 +200,11 @@ namespace DayBatch
                 this.GetData(hasM5, hasM15, hasM30, hasDay);
             }
 
-            // 画趋势图
-            this.DrawQushiImg(hasM5, hasM15, hasM30, hasDay);
+            if (needDrawImg)
+            {
+                // 画趋势图
+                this.DrawQushiImg(hasM5, hasM15, hasM30, hasDay);
+            }
         }
 
         /// <summary>
@@ -430,8 +438,11 @@ namespace DayBatch
             tmpPoint.DayMinVal = lastPoint.DayMinVal;
             int chkVal = 0;
             int lastChkVal = 0;
+            
+            int maxCnt = stockInfo.Count - 2;
+            int lastIdx = maxCnt + 1;
 
-            for (int i = stockInfo.Count - 2; i >= 0; i--)
+            for (int i = maxCnt; i >= 0; i--)
             {
                 // 判断两个点的大小关系
                 chkVal = ChkPointsVal(stockInfo[i], tmpPoint);
@@ -440,6 +451,14 @@ namespace DayBatch
                 {
                     // 当前上升，前面是下降，说明前一个点是低点
                     lastPoint.CurPointType = PointType.Bottom;
+
+                    // 取得前一个低点
+                    decimal lastBottomVal = GeBefBottomVal(stockInfo, lastIdx, maxCnt);
+                    if (lastBottomVal > 0 && lastPoint.DayMinVal > lastBottomVal * LIMIT_VAL)
+                    {
+                        // 当前低点高于上一个低点，设置第三类买点
+                        stockInfo[i].BuyFlg = 3;
+                    }
                 }
                 else if (chkVal < 0 && lastChkVal > 0)
                 {
@@ -452,6 +471,7 @@ namespace DayBatch
                 {
                     lastChkVal = chkVal;
                     lastPoint = stockInfo[i];
+                    lastIdx = i;
                     tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
                     tmpPoint.DayMinVal = lastPoint.DayMinVal;
                 }
@@ -509,7 +529,8 @@ namespace DayBatch
             {
                 if (fenXingInfo[i].CurPointType == PointType.Top)
                 {
-                    return fenXingInfo[i].DayVal;
+                    //return fenXingInfo[i].DayVal;
+                    return fenXingInfo[i].DayMaxVal;
                 }
             }
 
@@ -529,13 +550,13 @@ namespace DayBatch
             {
                 if (fenXingInfo[i].CurPointType == PointType.Bottom)
                 {
-                    return fenXingInfo[i].DayVal;
+                    //return fenXingInfo[i].DayVal;
+                    return fenXingInfo[i].DayMinVal;
                 }
             }
 
             return 0;
         }
-
 
         #endregion
 
@@ -855,21 +876,21 @@ namespace DayBatch
             this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
 
             // 在5,15分钟的分型图上画天的分型信息
-            if (timeRange == TimeRange.M5 || timeRange == TimeRange.M15)
-            {
-                dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
-                if (dataInfo != null)
-                {
-                    // 基础数据信息
-                    stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
-                    if (stockInfos.Count > 0)
-                    {
-                        // 开始画分型、笔的线段
-                        fenXingInfo = SetFenxingInfo(stockInfos);
-                        this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkGreen, 1F), grp, timeRange == TimeRange.M5 ? IMG_X_STEP * 48 : IMG_X_STEP * 16);
-                    }
-                }
-            }
+            //if (timeRange == TimeRange.M5 || timeRange == TimeRange.M15)
+            //{
+            //    dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
+            //    if (dataInfo != null)
+            //    {
+            //        // 基础数据信息
+            //        stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+            //        if (stockInfos.Count > 0)
+            //        {
+            //            // 开始画分型、笔的线段
+            //            fenXingInfo = SetFenxingInfo(stockInfos);
+            //            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkGreen, 1F), grp, timeRange == TimeRange.M5 ? IMG_X_STEP * 48 : IMG_X_STEP * 16);
+            //        }
+            //    }
+            //}
 
             // 保存图片
             imgQushi.Save(this.basePath + IMG_FOLDER + this.subFolder + stockCdData.Substring(0, 6) + ".png");
@@ -1006,26 +1027,26 @@ namespace DayBatch
                     }
                     y2 = this.GetYPos(img.Height, curVal, minVal, step);
 
-                    // 写字用做标识
-                    if (fenXingInfo[index].CurPointType == PointType.Top)
-                    {
-                        grp.DrawString("T", font, sellBush, x2, y2);
-                    }
-                    else if (fenXingInfo[index].CurPointType == PointType.Bottom)
-                    {
-                        grp.DrawString("B", font, buyBush, x2, y2);
-                    }
-
+                    //// 写字用做标识
                     //if (fenXingInfo[index].CurPointType == PointType.Top)
                     //{
-                    //    //decimal befTopVal = GeBefTopVal(fenXingInfo, index, maxCnt);
-                    //    //if (buyed && befTopVal != 0 && fenXingInfo[index].DayVal < befTopVal)
-                    //    if (buyed)
-                    //    {
-                    //        grp.DrawString("T", font, sellBush, x2, y2);
-                    //        buyed = false;
-                    //    }
+                    //    grp.DrawString("T", font, sellBush, x2, y2);
                     //}
+                    //else if (fenXingInfo[index].CurPointType == PointType.Bottom)
+                    //{
+                    //    grp.DrawString("B", font, buyBush, x2, y2);
+                    //}
+
+                    if (fenXingInfo[index].CurPointType == PointType.Top)
+                    {
+                        //decimal befTopVal = GeBefTopVal(fenXingInfo, index, maxCnt);
+                        //if (buyed && befTopVal != 0 && fenXingInfo[index].DayVal < befTopVal)
+                        if (buyed)
+                        {
+                            grp.DrawString("T", font, sellBush, x2, y2);
+                            buyed = false;
+                        }
+                    }
                     //else if (fenXingInfo[index].CurPointType == PointType.Bottom)
                     //{
                     //    decimal befBottomVal = GeBefBottomVal(fenXingInfo, index, maxCnt);
@@ -1039,6 +1060,22 @@ namespace DayBatch
                     grp.DrawLine(pen, x1, y1, x2, y2);
                     x1 = x2;
                     y1 = y2;
+                }
+                else if (fenXingInfo[index].BuyFlg > 0 && !buyed)
+                {
+                    x2 = img.Width - (index * imgXStep + IMG_X_STEP);
+                    if (index >= 0)
+                    {
+                        curVal = fenXingInfo[index].CurPointType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
+                    }
+                    else
+                    {
+                        curVal = fenXingInfo[index].DayVal;
+                    }
+                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+
+                    grp.DrawString("B", font, buyBush, x2, y2);
+                    buyed = true;
                 }
             }
 
