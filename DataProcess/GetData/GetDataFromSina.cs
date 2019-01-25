@@ -112,7 +112,7 @@ namespace DataProcess.GetData
 
             // 取截止今天为止的所有数据
             string result = Util.HttpGet(sb.Append(maxLen).ToString(), "", encoding);
-            if (!string.IsNullOrEmpty(result))
+            if (!string.IsNullOrEmpty(result) && !"null".Equals(result, System.StringComparison.OrdinalIgnoreCase))
             {
                 JArray jArray = (JArray)JsonConvert.DeserializeObject(result);
                 if (jArray != null)
