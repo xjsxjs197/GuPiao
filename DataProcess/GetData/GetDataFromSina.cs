@@ -4,6 +4,7 @@ using System.Text;
 using Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 
 namespace DataProcess.GetData
 {
@@ -59,7 +60,7 @@ namespace DataProcess.GetData
         /// </summary>
         /// <param name="stockCd"></param>
         /// <param name="allCsv"></param>
-        protected override void StartGetData(string stockCd, List<FilePosInfo> allCsv)
+        protected override string StartGetData(string stockCd, List<FilePosInfo> allCsv)
         {
             Encoding encoding = Encoding.GetEncoding("GBK");
             string codeType;
@@ -86,7 +87,7 @@ namespace DataProcess.GetData
             if (this.endDayForFile.Equals(startDay))
             {
                 // 最新文件已经存在
-                return;
+                return string.Empty;
             }
             else if (!string.IsNullOrEmpty(startDay))
             {
@@ -114,7 +115,16 @@ namespace DataProcess.GetData
             string result = Util.HttpGet(sb.Append(maxLen).ToString(), "", encoding);
             if (!string.IsNullOrEmpty(result) && !"null".Equals(result, System.StringComparison.OrdinalIgnoreCase))
             {
-                JArray jArray = (JArray)JsonConvert.DeserializeObject(result);
+                JArray jArray = null;
+                try
+                {
+                    jArray = (JArray)JsonConvert.DeserializeObject(result);
+                }
+                catch (Exception e)
+                {
+                    return "处理Json数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
+                }
+
                 if (jArray != null)
                 {
                     List<string> allMinuteData = new List<string>();
@@ -184,6 +194,8 @@ namespace DataProcess.GetData
                     }
                 }
             }
+
+            return string.Empty;
         }
 
         #endregion

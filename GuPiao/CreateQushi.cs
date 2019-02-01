@@ -1385,7 +1385,7 @@ namespace GuPiao
         private void StartTestRun()
         {
             // 取得已经存在的所有数据信息
-            this.subFolder = TimeRange.M30.ToString() + "/";
+            this.subFolder = TimeRange.Day.ToString() + "/";
             List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
             Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
 
@@ -1472,35 +1472,33 @@ namespace GuPiao
             List<string> sellInfo;
             for (int i = startIdx; i >= 0; i--)
             {
-                if (fenxingInfo[i].CurPointType == PointType.Top)
+                if (fenxingInfo[i].BuySellFlg < 0 && buyed)
                 {
-                    if (buyed)
-                    {
-                        buyed = false;
-                        sb.Append(fenxingInfo[i].Day).Append(" ");
-                        sb.Append(fenxingInfo[i].DayVal.ToString().PadLeft(8, ' ')).Append(" ");
-                        decimal diff = (fenxingInfo[i].DayVal / buyPrice - 1) * 100;
-                        sb.Append(diff.ToString("0.00").PadLeft(7, ' ')).Append("%\r\n");
+                    buyed = false;
+                    sb.Append(fenxingInfo[i].Day).Append(" ");
+                    sb.Append(fenxingInfo[i].DayVal.ToString().PadLeft(8, ' ')).Append(" ");
+                    decimal diff = ((fenxingInfo[i].DayVal / buyPrice + 5) - 1) * 100;
+                    sb.Append(diff.ToString("0.00").PadLeft(7, ' ')).Append("%\r\n");
 
-                        if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
-                        {
-                            buyInfo = new List<string>();
-                            sellInfo = new List<string>();
-                            List<string>[] listBuySell = new List<string>[2];
-                            listBuySell[0] = buyInfo;
-                            listBuySell[1] = sellInfo;
-                            buySellInfo.Add(fenxingInfo[i].Day, listBuySell);
-                        }
-                        else
-                        {
-                            List<string>[] listBuySell = buySellInfo[fenxingInfo[i].Day];
-                            buyInfo = listBuySell[0];
-                            sellInfo = listBuySell[1];
-                        }
-                        sellInfo.Add(stockCd + "(" + fenxingInfo[i].DayVal + "(" + diff.ToString("0.00") + "%))");
+                    if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
+                    {
+                        buyInfo = new List<string>();
+                        sellInfo = new List<string>();
+                        List<string>[] listBuySell = new List<string>[2];
+                        listBuySell[0] = buyInfo;
+                        listBuySell[1] = sellInfo;
+                        buySellInfo.Add(fenxingInfo[i].Day, listBuySell);
                     }
+                    else
+                    {
+                        List<string>[] listBuySell = buySellInfo[fenxingInfo[i].Day];
+                        buyInfo = listBuySell[0];
+                        sellInfo = listBuySell[1];
+                    }
+                    //sellInfo.Add(stockCd + "(" + fenxingInfo[i].DayVal + "(" + diff.ToString("0.00") + "%))");
+                    sellInfo.Add(stockCd + " " + fenxingInfo[i].DayVal);
                 }
-                else if (fenxingInfo[i].BuyFlg > 0 && !buyed)
+                else if (fenxingInfo[i].BuySellFlg > 0 && !buyed)
                 {
                     //decimal befBottomVal = DayBatchProcess.GeBefBottomVal(fenxingInfo, i, startIdx);
                     //if (!buyed && befBottomVal != 0 && fenxingInfo[i].DayVal > befBottomVal * Consts.LIMIT_VAL)
@@ -1526,7 +1524,8 @@ namespace GuPiao
                             buyInfo = listBuySell[0];
                             sellInfo = listBuySell[1];
                         }
-                        buyInfo.Add(stockCd + "(" + buyPrice + ")");
+                        //buyInfo.Add(stockCd + "(" + buyPrice + ")");
+                        buyInfo.Add(stockCd + " " + buyPrice);
                     }
                 }
             }
@@ -1551,16 +1550,70 @@ namespace GuPiao
             StringBuilder sb = new StringBuilder();
             List<string> dayList = new List<string>(buySellInfo.Keys);
             dayList.Sort();
+            bool buyed = false;
+            int buyCnt = 0;
+            string stockCd = string.Empty;
+            decimal myMoney = 1000;
+            decimal oldMyMoney = myMoney;
+            decimal buyMoney = 0;
+
+            sb.Append("Start Total: " + myMoney).Append("\r\n");
  
             foreach (string day in dayList)
             {
                 List<string> buyInfo = buySellInfo[day][0];
                 List<string> sellInfo = buySellInfo[day][1];
-                sb.Append(day).Append(" B ");
-                sb.Append(string.Join(" ", buyInfo.ToArray())).Append("\r\n");
-                sb.Append(day).Append(" S ");
-                sb.Append(string.Join(" ", sellInfo.ToArray())).Append("\r\n");
+                //sb.Append(day).Append(" B ");
+                //sb.Append(string.Join(" ", buyInfo.ToArray())).Append("\r\n");
+                //sb.Append(day).Append(" S ");
+                //sb.Append(string.Join(" ", sellInfo.ToArray())).Append("\r\n");
+
+                if (!buyed && buyInfo.Count > 0)
+                {
+                    for (int i = 0; i < buyInfo.Count; i++)
+                    //for (int i = buyInfo.Count - 1; i >= 0; i--)
+                    {
+                        string[] tmp = buyInfo[i].Split(' ');
+                        decimal price = decimal.Parse(tmp[1]);
+                        if (myMoney > (price * 100 + 5))
+                        {
+                            stockCd = tmp[0];
+                            buyCnt = (int)((myMoney - 5) / (100 * price)) * 100;
+                            buyMoney = buyCnt * price + 5;
+                            myMoney = myMoney - buyMoney;
+                            sb.Append(day).Append(" B ").Append(stockCd).Append(" ");
+                            sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
+                            sb.Append(buyCnt.ToString().PadLeft(4, ' ')).Append("\r\n");
+                            buyed = true;
+                            break;
+                        }
+                    }
+                }
+                else if (buyed && sellInfo.Count > 0)
+                {
+                    for (int i = 0; i < sellInfo.Count; i++)
+                    {
+                        if (sellInfo[i].StartsWith(stockCd, StringComparison.OrdinalIgnoreCase))
+                        {
+                            string[] tmp = sellInfo[i].Split(' ');
+                            decimal price = decimal.Parse(tmp[1]);
+                            myMoney = myMoney + buyCnt * price;
+                            decimal diff = ((buyCnt * price / buyMoney) - 1) * 100;
+                            sb.Append(day).Append(" S ").Append(stockCd).Append(" ");
+                            sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
+                            sb.Append(buyCnt.ToString().PadLeft(4, ' ')).Append(" ");
+                            sb.Append(diff.ToString("0.00")).Append(" ").Append(myMoney).Append("(");
+                            diff = (myMoney / oldMyMoney - 1) * 100;
+                            sb.Append(diff.ToString("0.00")).Append(")");
+                            sb.Append("\r\n");
+                            buyed = false;
+                            break;
+                        }
+                    }
+                }
             }
+
+            sb.Append("End Total: " + myMoney);
 
             File.WriteAllText(BUY_SELL_POINT + "TotalBuySellInfo.txt", sb.ToString(), Encoding.UTF8);
         }

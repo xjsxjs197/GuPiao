@@ -78,9 +78,9 @@ namespace DataProcess.GetData
         /// </summary>
         /// <param name="stockCd"></param>
         /// <param name="allCsv"></param>
-        public void Start(string stockCd, List<FilePosInfo> allCsv)
+        public string Start(string stockCd, List<FilePosInfo> allCsv)
         {
-            this.StartGetData(stockCd, allCsv);
+            return this.StartGetData(stockCd, allCsv);
         }
 
         /// <summary>
@@ -100,8 +100,9 @@ namespace DataProcess.GetData
         /// </summary>
         /// <param name="stockCd"></param>
         /// <param name="allCsv"></param>
-        protected virtual void StartGetData(string stockCd, List<FilePosInfo> allCsv)
+        protected virtual string StartGetData(string stockCd, List<FilePosInfo> allCsv)
         {
+            return string.Empty;
         }
 
         /// <summary>

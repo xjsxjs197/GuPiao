@@ -46,8 +46,8 @@ namespace Common
         public PointType CurPointType { get; set; }
 
         /// <summary>
-        /// 买点标示
+        /// 买卖点标识(-3,-2,-1,0,1,2,3)
         /// </summary>
-        public int BuyFlg { get; set; }
+        public int BuySellFlg { get; set; }
     }
 }

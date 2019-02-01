@@ -27,7 +27,7 @@ namespace DataProcess.GetData
         /// </summary>
         /// <param name="stockCd"></param>
         /// <param name="allCsv"></param>
-        protected override void StartGetData(string stockCd, List<FilePosInfo> allCsv)
+        protected override string StartGetData(string stockCd, List<FilePosInfo> allCsv)
         {
             // 定义正则表达式过滤数据
             Regex regSub = new Regex(@"[0|6|3]\d{5}");
@@ -85,6 +85,8 @@ namespace DataProcess.GetData
                     File.Delete(oldFilePath);
                 }
             }
+
+            return string.Empty;
         }
 
         /// <summary>
