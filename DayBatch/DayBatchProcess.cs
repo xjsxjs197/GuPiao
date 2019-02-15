@@ -530,6 +530,80 @@ namespace DayBatch
         }
 
         /// <summary>
+        /// 设置分型情报（在30分钟中设置天的）
+        /// </summary>
+        /// <param name="stockInfo"></param>
+        public static List<BaseDataInfo> SetFenxingInfoDay(List<BaseDataInfo> stockInfo)
+        {
+            int lastIdx = stockInfo.Count - 1;
+            // 设置第一个点
+            BaseDataInfo lastPoint;
+            do
+            {
+                lastPoint = stockInfo[lastIdx--];
+                if (lastPoint.Day.Substring(8).Equals("100000"))
+                {
+                    break;
+                }
+            }
+            while (lastIdx >= 0);
+
+            if (lastIdx <= 8)
+            {
+                return stockInfo;
+            }
+
+            BaseDataInfo tmpPoint = new BaseDataInfo();
+            tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
+            tmpPoint.DayMinVal = lastPoint.DayMinVal;
+            int chkVal = 0;
+            int lastChkVal = 0;
+            int lastTopPos = -1;
+            int lastBottomPos = -1;
+            int maxCnt = lastIdx - 1;
+
+            for (int i = maxCnt; i >= 0; i--)
+            {
+                // 判断两个点的大小关系
+                chkVal = ChkPointsVal(stockInfo[i], tmpPoint);
+
+                if (chkVal > 0 && lastChkVal < 0)
+                {
+                    // 当前上升，前面是下降，说明前一个点是低点
+                    lastPoint.CurPointType = PointType.Bottom;
+
+                    // 判断是否是第三类买点
+                    lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
+                    if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
+                    {
+                        // 当前低点高于上一个低点，设置第三类买点
+                        stockInfo[i].BuySellFlg = 3;
+                    }
+                }
+                else if (chkVal < 0 && lastChkVal > 0)
+                {
+                    // 当前下降，前面是上升，说明前一个点是高点
+                    lastPoint.CurPointType = PointType.Top;
+
+                    // 设置第一类卖点
+                    stockInfo[i].BuySellFlg = -1;
+                }
+
+                // 更新当前的点
+                if (chkVal != 0)
+                {
+                    lastChkVal = chkVal;
+                    lastPoint = stockInfo[i];
+                    lastIdx = i;
+                    tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
+                    tmpPoint.DayMinVal = lastPoint.DayMinVal;
+                }
+            }
+
+            return stockInfo;
+        }
+
+        /// <summary>
         /// 取得前一个顶分型的位置
         /// </summary>
         /// <param name="fenXingInfo"></param>

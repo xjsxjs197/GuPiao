@@ -1385,7 +1385,7 @@ namespace GuPiao
         private void StartTestRun()
         {
             // 取得已经存在的所有数据信息
-            this.subFolder = TimeRange.Day.ToString() + "/";
+            this.subFolder = TimeRange.M30.ToString() + "/";
             List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
             Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
 
@@ -1477,7 +1477,7 @@ namespace GuPiao
                     buyed = false;
                     sb.Append(fenxingInfo[i].Day).Append(" ");
                     sb.Append(fenxingInfo[i].DayVal.ToString().PadLeft(8, ' ')).Append(" ");
-                    decimal diff = ((fenxingInfo[i].DayVal / buyPrice + 5) - 1) * 100;
+                    decimal diff = ((fenxingInfo[i].DayVal / buyPrice) - 1) * 100;
                     sb.Append(diff.ToString("0.00").PadLeft(7, ' ')).Append("%\r\n");
 
                     if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
