@@ -62,6 +62,9 @@ namespace DayBatch
         /// 所有数据信息
         /// </summary>
         private List<string> allStockCd = new List<string>();
+        private List<string> needGetAllCd;
+        private GetDataBase getData;
+        private List<FilePosInfo> allCsv;
 
         /// <summary>
         /// 当前程序的路径
@@ -534,26 +537,15 @@ namespace DayBatch
         /// 设置分型情报（在30分钟中设置天的）
         /// </summary>
         /// <param name="stockInfo"></param>
-        public static List<BaseDataInfo> SetFenxingInfoDay(List<BaseDataInfo> stockInfo)
+        public static List<BaseDataInfo> SetFenxingInfoDayM30(List<BaseDataInfo> stockInfo, List<BaseDataInfo> stockInfoM30)
         {
-            int lastIdx = stockInfo.Count - 1;
-            // 设置第一个点
-            BaseDataInfo lastPoint;
-            do
-            {
-                lastPoint = stockInfo[lastIdx--];
-                if (lastPoint.Day.Substring(8).Equals("100000"))
-                {
-                    break;
-                }
-            }
-            while (lastIdx >= 0);
-
-            if (lastIdx <= 8)
+            if (stockInfo.Count < 3)
             {
                 return stockInfo;
             }
 
+            // 设置第一个点
+            BaseDataInfo lastPoint = stockInfo[stockInfo.Count - 1];
             BaseDataInfo tmpPoint = new BaseDataInfo();
             tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
             tmpPoint.DayMinVal = lastPoint.DayMinVal;
@@ -561,7 +553,9 @@ namespace DayBatch
             int lastChkVal = 0;
             int lastTopPos = -1;
             int lastBottomPos = -1;
-            int maxCnt = lastIdx - 1;
+
+            int maxCnt = stockInfo.Count - 2;
+            int lastIdx = maxCnt + 1;
 
             for (int i = maxCnt; i >= 0; i--)
             {
@@ -735,10 +729,11 @@ namespace DayBatch
         private void GetMinuteDataCommon(string endDay, TimeRange timeRange)
         {
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(this.basePath + CSV_FOLDER + timeRange.ToString() + "/");
+            this.allCsv = Util.GetAllFiles(this.basePath + CSV_FOLDER + timeRange.ToString() + "/");
 
             // 获取所有的代码信息
-            GetDataBase getData = new GetDataFromSina(this.basePath + CSV_FOLDER, endDay, timeRange);
+            endDay = endDay.Replace("-", "").Replace(" ", "").Replace(":", "");
+            this.getData = new GetDataFromSina(this.basePath + CSV_FOLDER, endDay, timeRange);
 
             // 设置进度条
             if (this.callBef != null)
@@ -746,30 +741,28 @@ namespace DayBatch
                 this.callBef(this.allStockCd.Count);
             }
 
-            // 循环取得所有的数据
-            foreach (string stockCd in this.allStockCd)
+            // 取得所有必要的数据
+            this.needGetAllCd = this.getData.GetAllNeedCd(this.allStockCd, allCsv, endDay);
+            foreach (string stockCd in this.needGetAllCd)
             {
                 try
                 {
                     // 取得当前Stock数据
-                    string errMsg = getData.Start(stockCd, allCsv);
-                    if ("NO_NEED_DATA".Equals(errMsg))
-                    { 
-                    }
-                    else if (!string.IsNullOrEmpty(errMsg))
+                    string errMsg = this.getData.Start(stockCd, this.allCsv);
+                    if (!string.IsNullOrEmpty(errMsg))
                     {
                         File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " " + errMsg + "\r\n", Encoding.UTF8);
                     }
-                    else
-                    {
-                        Thread.Sleep(500);
-                    }
+
+                    Thread.Sleep(1000);
                 }
-                catch (Exception e)
+                catch (Exception exp)
                 {
                     File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取 " + stockCd + " 数据时发生异常\r\n", Encoding.UTF8);
-                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
-                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.Message + "\r\n", Encoding.UTF8);
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.StackTrace + "\r\n", Encoding.UTF8);
+
+                    Thread.Sleep(60000);
                 }
 
                 // 更新进度条
@@ -780,7 +773,7 @@ namespace DayBatch
             }
 
             // 获取数据后的相关处理
-            getData.After();
+            this.getData.After();
 
             // 关闭进度条
             if (this.callEnd != null)

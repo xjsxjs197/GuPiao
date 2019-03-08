@@ -48,7 +48,7 @@ namespace DataProcess.GetData
             : base(csvFolder, endDay)
         {
             this.timeRange = timeRange;
-            this.endDayForFile = endDay.Replace("-", "").Replace(" ", "").Replace(":", "");
+            this.endDayForFile = endDay;
         }
         
         #endregion

@@ -84,6 +84,29 @@ namespace DataProcess.GetData
         }
 
         /// <summary>
+        /// 取得所有不是最新数据的Code
+        /// </summary>
+        /// <param name="allStockCd"></param>
+        /// <param name="?"></param>
+        /// <param name="allCsv"></param>
+        /// <returns></returns>
+        public List<string> GetAllNeedCd(List<string> allStockCd, List<FilePosInfo> allCsv, string endDay)
+        {
+            List<string> needGetAllCd = new List<string>();
+
+            foreach (string stockCd in allStockCd)
+            {
+                string startDay = this.GetExitsStock(allCsv, stockCd);
+                if (!endDay.Equals(startDay))
+                {
+                    needGetAllCd.Add(stockCd);
+                }
+            }
+
+            return needGetAllCd;
+        }
+
+        /// <summary>
         /// 取得数据的后处理
         /// </summary>
         public void After()
