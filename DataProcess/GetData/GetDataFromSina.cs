@@ -87,7 +87,7 @@ namespace DataProcess.GetData
             if (this.endDayForFile.Equals(startDay))
             {
                 // 最新文件已经存在
-                return string.Empty;
+                return "NO_NEED_DATA";
             }
             else if (!string.IsNullOrEmpty(startDay))
             {
@@ -122,7 +122,7 @@ namespace DataProcess.GetData
                 }
                 catch (Exception e)
                 {
-                    return "处理Json数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
+                    return "处理Json " + stockCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
                 }
 
                 if (jArray != null)

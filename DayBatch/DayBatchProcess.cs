@@ -7,6 +7,7 @@ using DataProcess.GetData;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.Threading;
 
 namespace DayBatch
 {
@@ -656,16 +657,10 @@ namespace DayBatch
         /// </summary>
         private void GetData(bool hasM5, bool hasM15, bool hasM30, bool hasDay)
         {
-            // 获取5分钟数据
-            if (hasM5)
+            // 获取整天的数据
+            if (hasDay)
             {
-                this.GetMinuteData(TimeRange.M5);
-            }
-
-            // 获取15分钟数据
-            if (hasM15)
-            {
-                this.GetMinuteData(TimeRange.M15);
+                this.GetMinuteData(TimeRange.Day);
             }
 
             // 获取30分钟数据
@@ -674,12 +669,17 @@ namespace DayBatch
                 this.GetMinuteData(TimeRange.M30);
             }
 
-            // 获取整天的数据
-            if (hasDay)
+            // 获取15分钟数据
+            if (hasM15)
             {
-                this.GetMinuteData(TimeRange.Day);
+                this.GetMinuteData(TimeRange.M15);
             }
-            
+
+            // 获取5分钟数据
+            if (hasM5)
+            {
+                this.GetMinuteData(TimeRange.M5);
+            }
         }
 
         /// <summary>
@@ -711,13 +711,9 @@ namespace DayBatch
                     {
                         endDay = now.ToString("yyyy-MM-dd 15:00:00");
                     }
-                    else if (DateTime.Now.Hour < 9)
-                    {
-                        endDay = now.AddDays(-1).ToString("yyyy-MM-dd 15:00:00");
-                    }
                     else
                     {
-                        endDay = now.ToString("yyyy-MM-dd HH:mm:00");
+                        endDay = now.AddDays(-1).ToString("yyyy-MM-dd 15:00:00");
                     }
                 }
 
@@ -757,9 +753,16 @@ namespace DayBatch
                 {
                     // 取得当前Stock数据
                     string errMsg = getData.Start(stockCd, allCsv);
-                    if (!string.IsNullOrEmpty(errMsg))
+                    if ("NO_NEED_DATA".Equals(errMsg))
+                    { 
+                    }
+                    else if (!string.IsNullOrEmpty(errMsg))
                     {
                         File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " " + errMsg + "\r\n", Encoding.UTF8);
+                    }
+                    else
+                    {
+                        Thread.Sleep(500);
                     }
                 }
                 catch (Exception e)
