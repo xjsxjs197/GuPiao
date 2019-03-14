@@ -35,6 +35,16 @@ namespace DataProcess.GetData
         /// </summary>
         private string endDayForFile;
 
+        /// <summary>
+        /// 文件名使用的日期
+        /// </summary>
+        private string endDayForFileCopy;
+
+        /// <summary>
+        /// 检查数据时，过滤的时间
+        /// </summary>
+        private List<string> chkTime = new List<string>();
+
         #endregion
 
         #region " 初始化 "
@@ -49,6 +59,22 @@ namespace DataProcess.GetData
         {
             this.timeRange = timeRange;
             this.endDayForFile = endDay;
+            this.endDayForFileCopy = endDay;
+            switch (timeRange)
+            {
+                case TimeRange.M15:
+                    this.chkTime.AddRange(new string[] { "1500", "3000", "4500", "0000" });
+                    break;
+
+                case TimeRange.M30:
+                    this.chkTime.AddRange(new string[] { "3000", "0000" });
+                    break;
+
+                case TimeRange.Day:
+                    this.chkTime.AddRange(new string[] { "150000" });
+                    this.endDayForFileCopy += "150000";
+                    break;
+            }
         }
         
         #endregion
@@ -198,6 +224,87 @@ namespace DataProcess.GetData
             return string.Empty;
         }
 
+        /// <summary>
+        /// 开始获取数据
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <param name="allCsv"></param>
+        protected override string StartCopyData(string stockCd, List<FilePosInfo> allCsv)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // 取得开始时间
+            string startDay = this.GetExitsStock(allCsv, stockCd);
+            if (this.endDayForFile.Equals(startDay))
+            {
+                // 最新文件已经存在
+                return "NO_NEED_DATA";
+            }
+
+            // 从5分钟数据，取得当前数据
+            List<string> mCurData = this.GetCurData(this.GetM5Data(stockCd));
+
+            if (string.IsNullOrEmpty(startDay))
+            {
+                // 保存数据文件
+                sb.Length = 0;
+                sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
+                sb.Append(stockCd).Append("_").Append(this.endDayForFile).Append(".csv");
+                File.WriteAllLines(sb.ToString(), mCurData.ToArray(), Encoding.UTF8);
+            }
+            else if (string.Compare(startDay, this.endDayForFile) < 0)
+            {
+                // 读取既存文件的内容
+                sb.Length = 0;
+                sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
+                sb.Append(stockCd).Append("_").Append(startDay).Append(".csv");
+                string[] oldFile = File.ReadAllLines(sb.ToString(), Encoding.UTF8);
+
+                // 删除旧的文件
+                File.Delete(sb.ToString());
+
+                // 最新数据和旧数据结合
+                List<string> newMinuteData = new List<string>();
+                newMinuteData.AddRange(oldFile);
+                if (newMinuteData.Count <= 1)
+                {
+                    newMinuteData.Clear();
+                    newMinuteData.AddRange(mCurData.ToArray());
+                }
+                else
+                {
+                    string lastDay = newMinuteData[1];
+                    lastDay = lastDay.Substring(0, lastDay.IndexOf(","));
+                    int mergeIdx = -1;
+                    for (int i = 1; i < mCurData.Count; i++)
+                    {
+                        if (mCurData[i].IndexOf(lastDay) >= 0)
+                        {
+                            mergeIdx = i;
+                            break;
+                        }
+                    }
+                    if (mergeIdx > 0)
+                    {
+                        mergeIdx--;
+                        while (mergeIdx > 0)
+                        {
+                            newMinuteData.Insert(1, mCurData[mergeIdx]);
+                            mergeIdx--;
+                        }
+                    }
+                }
+
+                // 保存数据文件
+                sb.Length = 0;
+                sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
+                sb.Append(stockCd).Append("_").Append(this.endDayForFile).Append(".csv");
+                File.WriteAllLines(sb.ToString(), newMinuteData.ToArray(), Encoding.UTF8);
+            }
+
+            return string.Empty;
+        }
+
         #endregion
 
         #region " 私有方法 "
@@ -235,6 +342,143 @@ namespace DataProcess.GetData
             }
 
             return lastDay;
+        }
+
+        /// <summary>
+        /// 取得5分钟数据
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <returns></returns>
+        private List<string> GetM5Data(string stockCd)
+        {
+            List<string> m5Data = new List<string>();
+
+            string[] allLine = File.ReadAllLines(base.csvFolder + TimeRange.M5.ToString() + "/" + stockCd
+                + "_" + this.endDayForFileCopy + ".csv");
+
+            if (allLine.Length > 1)
+            {
+                m5Data.AddRange(allLine);
+                m5Data.RemoveAt(0);
+
+                // 最后一条数据必须是09：35的数据
+                int index = m5Data.Count - 1;
+                while (index >= 0)
+                {
+                    string[] lastLine = m5Data[index].Split(',');
+                    string lastDay = lastLine[0].Replace("-", "").Replace(" ", "").Replace(":", "");
+                    if (lastDay.EndsWith("093500"))
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        m5Data.RemoveAt(index);
+                        index = m5Data.Count - 1;
+                    }
+                }
+            }
+
+            if (m5Data.Count <= 1)
+            {
+                throw new Exception("5分钟数据不存在！");
+            }
+
+            return m5Data;
+        }
+
+        /// <summary>
+        /// 从5分钟数据中，计算出当前分钟的数据
+        /// </summary>
+        /// <param name="m5Data"></param>
+        /// <returns></returns>
+        private List<string> GetCurData(List<string> m5Data)
+        {
+            List<string> curData = new List<string>();
+            string[] curLine = m5Data[m5Data.Count - 1].Split(',');
+            string stockCd = curLine[1];
+            string openVal = curLine[6];
+            decimal topVal = decimal.Parse(curLine[4]);
+            decimal bottomVal = decimal.Parse(curLine[5]);
+            decimal tmpVal = 0;
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = m5Data.Count - 2; i >= 0; i--)
+            {
+                curLine = m5Data[i].Split(',');
+
+                // 更新最大值
+                tmpVal = decimal.Parse(curLine[4]);
+                if (tmpVal > topVal)
+                {
+                    topVal = tmpVal;
+                }
+
+                // 更新最小值
+                tmpVal = decimal.Parse(curLine[5]);
+                if (tmpVal < bottomVal)
+                {
+                    bottomVal = tmpVal;
+                }
+
+                // 判断是否到了需要保存的点
+                if (this.IsCurData(curLine[0].Replace(":", "")))
+                {
+                    sb.Length = 0;
+                    sb.Append(curLine[0]).Append(",");
+                    sb.Append(stockCd).Append(",");
+                    sb.Append("").Append(",");
+                    sb.Append(curLine[3]).Append(",");
+                    sb.Append(topVal.ToString()).Append(",");
+                    sb.Append(bottomVal.ToString()).Append(",");
+                    sb.Append(openVal);
+
+                    curData.Add(sb.ToString());
+
+                    // 取下一条数据
+                    if (i > 0)
+                    {
+                        i--;
+                        curLine = m5Data[i].Split(',');
+                        openVal = curLine[6];
+                        topVal = decimal.Parse(curLine[4]);
+                        bottomVal = decimal.Parse(curLine[5]);
+                    }
+                }
+            }
+
+            curData.Reverse();
+
+            // 天数据特殊处理（取得分秒信息）
+            if (this.timeRange == TimeRange.Day)
+            {
+                for (int i = 0; i < curData.Count; i++)
+                {
+                    curData[i] = curData[i].Replace(" 15:00:00", "");
+                }
+            }
+
+            curData.Insert(0, ",,,,,,");
+
+            return curData;
+        }
+
+        /// <summary>
+        /// 当前数据是否需要保存
+        /// </summary>
+        /// <param name="dt"></param>
+        /// <returns></returns>
+        private bool IsCurData(string dt)
+        {
+            foreach (string chkDt in this.chkTime)
+            {
+                if (dt.EndsWith(chkDt))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion

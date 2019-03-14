@@ -3253,6 +3253,59 @@ namespace Common
             return retString;
         }
 
+        /// <summary>
+        /// 取得非节假日的日期
+        /// </summary>
+        /// <returns></returns>
+        public static DateTime GetAvailableDt()
+        {
+            DateTime dt = DateTime.Now;
+
+            if (dt.Hour < 15)
+            {
+                dt = dt.AddDays(-1);
+            }
+
+            while (Util.IsHolidayByDate(dt))
+            {
+                dt = dt.AddDays(-1);
+            }
+
+            return dt;
+        }
+
+        /// <summary>
+        /// 判断是不是周末/节假日
+        /// </summary>
+        /// <param name="date">日期</param>
+        /// <returns>周末和节假日返回true，工作日返回false</returns>
+        public static bool IsHolidayByDate(DateTime date)
+        {
+            var isHoliday = false;
+            try
+            {
+                var day = date.DayOfWeek;
+
+                // 判断是否为周末
+                if (day == DayOfWeek.Sunday || day == DayOfWeek.Saturday)
+                {
+                    return true;
+                }
+
+                // 0为工作日，1为周末，2为法定节假日
+                var result = Util.HttpPost("http://tool.bitefu.net/jiari/", "d=" + date.ToString("yyyyMMdd"));
+                if (result == "1" || result == "2")
+                {
+                    isHoliday = true;
+                }
+            }
+            catch
+            {
+                isHoliday = false;
+            }
+
+            return isHoliday;
+        }
 
         #endregion
 

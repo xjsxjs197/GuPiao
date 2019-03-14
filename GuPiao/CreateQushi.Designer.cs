@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.pnlButton = new System.Windows.Forms.Panel();
+            this.btnTestRun = new System.Windows.Forms.Button();
             this.btnChgTime = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.btnChgDisp = new System.Windows.Forms.Button();
@@ -42,7 +43,6 @@
             this.btnCreate = new System.Windows.Forms.Button();
             this.pnlBody = new System.Windows.Forms.Panel();
             this.imgBody = new System.Windows.Forms.PictureBox();
-            this.btnTestRun = new System.Windows.Forms.Button();
             this.pnlTopBody.SuspendLayout();
             this.pnlButton.SuspendLayout();
             this.pnlBody.SuspendLayout();
@@ -76,6 +76,17 @@
             this.pnlButton.Name = "pnlButton";
             this.pnlButton.Size = new System.Drawing.Size(602, 75);
             this.pnlButton.TabIndex = 0;
+            // 
+            // btnTestRun
+            // 
+            this.btnTestRun.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnTestRun.Location = new System.Drawing.Point(471, 40);
+            this.btnTestRun.Name = "btnTestRun";
+            this.btnTestRun.Size = new System.Drawing.Size(56, 28);
+            this.btnTestRun.TabIndex = 14;
+            this.btnTestRun.Text = "测 试";
+            this.btnTestRun.UseVisualStyleBackColor = true;
+            this.btnTestRun.Click += new System.EventHandler(this.btnTestRun_Click);
             // 
             // btnChgTime
             // 
@@ -224,17 +235,6 @@
             this.imgBody.MouseMove += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseMove);
             this.imgBody.MouseDown += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseDown);
             this.imgBody.MouseUp += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseUp);
-            // 
-            // btnTestRun
-            // 
-            this.btnTestRun.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnTestRun.Location = new System.Drawing.Point(461, 41);
-            this.btnTestRun.Name = "btnTestRun";
-            this.btnTestRun.Size = new System.Drawing.Size(56, 28);
-            this.btnTestRun.TabIndex = 14;
-            this.btnTestRun.Text = "测 试";
-            this.btnTestRun.UseVisualStyleBackColor = true;
-            this.btnTestRun.Click += new System.EventHandler(this.btnTestRun_Click);
             // 
             // CreateQushi
             // 

@@ -221,7 +221,7 @@ namespace DayBatch
             this.GetAllStockBaseInfo();
 
             // 取数据
-            this.GetMinuteData(timeRange);
+            this.CopyDataFromM5(timeRange);
         }
 
         /// <summary>
@@ -651,28 +651,28 @@ namespace DayBatch
         /// </summary>
         private void GetData(bool hasM5, bool hasM15, bool hasM30, bool hasDay)
         {
-            // 获取整天的数据
-            if (hasDay)
+            // 获取5分钟数据
+            if (hasM5)
             {
-                this.GetMinuteData(TimeRange.Day);
-            }
-
-            // 获取30分钟数据
-            if (hasM30)
-            {
-                this.GetMinuteData(TimeRange.M30);
+                this.GetMinuteData(TimeRange.M5);
             }
 
             // 获取15分钟数据
             if (hasM15)
             {
-                //this.GetMinuteData(TimeRange.M15);
+                this.CopyDataFromM5(TimeRange.M15);
             }
 
-            // 获取5分钟数据
-            if (hasM5)
+            // 获取30分钟数据
+            if (hasM30)
             {
-                this.GetMinuteData(TimeRange.M5);
+                this.CopyDataFromM5(TimeRange.M30);
+            }
+
+            // 获取整天的数据
+            if (hasDay)
+            {
+                this.CopyDataFromM5(TimeRange.Day);
             }
         }
 
@@ -765,6 +765,87 @@ namespace DayBatch
             if (this.callEnd != null)
             {
                 this.callEnd();
+            }
+        }
+
+        /// <summary>
+        /// 从5分钟数据中复制数据
+        /// </summary>
+        /// <param name="timeRange"></param>
+        private void CopyDataFromM5(TimeRange timeRange)
+        {
+            try
+            {
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算" + timeRange.ToString() + "数据 开始\r\n", Encoding.UTF8);
+
+                // 设定结束日期
+                DateTime now = this.GetNotWeeklyDayDate();
+                string endDay;
+                if (timeRange == TimeRange.Day)
+                {
+                    endDay = now.ToString("yyyy-MM-dd");
+                }
+                else
+                {
+                    endDay = now.ToString("yyyy-MM-dd 15:00:00");
+                }
+
+                // 取得分钟级别数据
+                // 取得已经存在的所有数据信息
+                this.allCsv = Util.GetAllFiles(this.basePath + CSV_FOLDER + timeRange.ToString() + "/");
+
+                // 获取所有的代码信息
+                endDay = endDay.Replace("-", "").Replace(" ", "").Replace(":", "");
+                this.getData = new GetDataFromSina(this.basePath + CSV_FOLDER, endDay, timeRange);
+
+                // 设置进度条
+                if (this.callBef != null)
+                {
+                    this.callBef(this.allStockCd.Count);
+                }
+
+                // 取得所有必要的数据
+                this.needGetAllCd = this.getData.GetAllNeedCd(this.allStockCd, allCsv, endDay);
+                foreach (string stockCd in this.needGetAllCd)
+                {
+                    try
+                    {
+                        // 取得当前Stock数据
+                        string errMsg = this.getData.CopyM5(stockCd, this.allCsv);
+                        if (!string.IsNullOrEmpty(errMsg))
+                        {
+                            File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " " + errMsg + "\r\n", Encoding.UTF8);
+                        }
+                    }
+                    catch (Exception exp)
+                    {
+                        File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算 " + stockCd + " 数据时发生异常\r\n", Encoding.UTF8);
+                        File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.Message + "\r\n", Encoding.UTF8);
+                        File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.StackTrace + "\r\n", Encoding.UTF8);
+                    }
+
+                    // 更新进度条
+                    if (this.callRowEnd != null)
+                    {
+                        this.callRowEnd();
+                    }
+                }
+
+                // 获取数据后的相关处理
+                this.getData.After();
+
+                // 关闭进度条
+                if (this.callEnd != null)
+                {
+                    this.callEnd();
+                }
+
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算" + timeRange.ToString() + "数据 结束\r\n", Encoding.UTF8);
+            }
+            catch (Exception e)
+            {
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
             }
         }
 
@@ -1073,52 +1154,12 @@ namespace DayBatch
                 dt = dt.AddDays(-1);
             }
 
-            while (this.IsHolidayByDate(dt))
+            while (Util.IsHolidayByDate(dt))
             {
                 dt = dt.AddDays(-1);
             }
 
             return dt;
-        }
-
-        /// <summary>
-        /// 判断是不是周末/节假日
-        /// </summary>
-        /// <param name="date">日期</param>
-        /// <returns>周末和节假日返回true，工作日返回false</returns>
-        private bool IsHolidayByDate(DateTime date)
-        {
-            var isHoliday = false;
-            var webClient = new System.Net.WebClient();
-            var PostVars = new System.Collections.Specialized.NameValueCollection
-            {
-                { "d", date.ToString("yyyyMMdd") }//参数
-            };
-            try
-            {
-                var day = date.DayOfWeek;
-
-                // 判断是否为周末
-                if (day == DayOfWeek.Sunday || day == DayOfWeek.Saturday)
-                {
-                    return true;
-                }
-
-                // 0为工作日，1为周末，2为法定节假日
-                var result = Util.HttpPost("http://tool.bitefu.net/jiari/", "d=" + date.ToString("yyyyMMdd"));
-                //var byteResult = webClient.UploadData("http://tool.bitefu.net/jiari/", "POST", PostVars); // 请求地址, 传参方式,参数集合
-                //var result = Encoding.UTF8.GetString(byteResult);//获取返回值
-                if (result == "1" || result == "2") 
-                {
-                    isHoliday = true;
-                }
-            }
-            catch
-            {
-                isHoliday = false;
-            }
-
-            return isHoliday;
         }
 
         #region " 分型处理相关 "

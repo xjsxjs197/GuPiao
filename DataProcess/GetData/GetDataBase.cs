@@ -84,6 +84,16 @@ namespace DataProcess.GetData
         }
 
         /// <summary>
+        /// 开始获取数据
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <param name="allCsv"></param>
+        public string CopyM5(string stockCd, List<FilePosInfo> allCsv)
+        {
+            return this.StartCopyData(stockCd, allCsv);
+        }
+
+        /// <summary>
         /// 取得所有不是最新数据的Code
         /// </summary>
         /// <param name="allStockCd"></param>
@@ -124,6 +134,16 @@ namespace DataProcess.GetData
         /// <param name="stockCd"></param>
         /// <param name="allCsv"></param>
         protected virtual string StartGetData(string stockCd, List<FilePosInfo> allCsv)
+        {
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// 开始获取数据
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <param name="allCsv"></param>
+        protected virtual string StartCopyData(string stockCd, List<FilePosInfo> allCsv)
         {
             return string.Empty;
         }

@@ -10,6 +10,8 @@ using System.Threading;
 using System.Windows.Forms;
 using Common;
 using DayBatch;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace GuPiao
 {
@@ -606,7 +608,11 @@ namespace GuPiao
         /// <param name="e"></param>
         private void btnTestRun_Click(object sender, EventArgs e)
         {
-            this.Do(this.StartTestRun);
+            //this.Do(this.StartTestRun);
+            //this.Do(this.CheckData);
+            //this.Do(this.CheckAllCd);
+            //this.Do(this.CheckRightCd);
+            //this.Do(this.ReplaceDayData);
         }
 
         #endregion
@@ -1353,8 +1359,9 @@ namespace GuPiao
         /// <summary>
         /// 取得所有数据的基本信息（代码+名称）
         /// </summary>
-        private void GetAllStockBaseInfo()
+        private List<string> GetAllStockBaseInfo()
         {
+            List<string> allCd = new List<string>();
             this.allStockCdName.Clear();
 
             string[] allLine = File.ReadAllLines(CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
@@ -1371,13 +1378,310 @@ namespace GuPiao
                     item.Code = codeName.Substring(0, 6);
                     item.Name = codeName.Substring(7);
                     this.allStockCdName.Add(item);
+
+                    allCd.Add(item.Code);
                 }
             }
+
+            return allCd;
         }
 
         #endregion
 
         #region " 测试模块 "
+
+        /// <summary>
+        /// 修正天的数据
+        /// </summary>
+        private void ReplaceDayData()
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = TimeRange.Day.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+
+            // 设置进度条
+            this.ResetProcessBar(allCsv.Count);
+
+            foreach (FilePosInfo fileItem in allCsv)
+            {
+                if (fileItem.IsFolder)
+                {
+                    continue;
+                }
+
+                base.baseFile = fileItem.File;
+                string[] allLine = File.ReadAllLines(fileItem.File);
+                for (int i = 1; i < allLine.Length; i++)
+                {
+                    allLine[i] = allLine[i].Replace(" 15:00:00", "");
+                }
+
+                File.WriteAllLines(fileItem.File, allLine, Encoding.UTF8);
+
+                // 更新进度条
+                this.ProcessBarStep();
+            }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+        }
+
+        /// <summary>
+        /// 检查数据的正确性
+        /// </summary>
+        private void CheckRightCd()
+        {
+            List<string> errorInfo = new List<string>();
+            this.CheckRightCd(TimeRange.M5, errorInfo);
+
+            this.CheckRightCd(TimeRange.M15, errorInfo);
+
+            this.CheckRightCd(TimeRange.M30, errorInfo);
+
+            this.CheckRightCd(TimeRange.Day, errorInfo);
+
+            File.WriteAllLines(CSV_FOLDER + "ErrorCdFile.txt", errorInfo.ToArray(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 检查数据的正确性
+        /// </summary>
+        private void CheckRightCd(TimeRange timeRange, List<string> errorInfo)
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = timeRange.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+
+            // 设置进度条
+            this.ResetProcessBar(allCsv.Count);
+
+            foreach (FilePosInfo fileItem in allCsv)
+            {
+                if (fileItem.IsFolder)
+                {
+                    continue;
+                }
+
+                base.baseFile = fileItem.File;
+                string stockCd = Util.GetShortNameWithoutType(fileItem.File).Substring(0, 6);
+                string[] allLine = File.ReadAllLines(fileItem.File);
+                for (int i = 1; i < allLine.Length; i++)
+                {
+                    if (allLine[i].IndexOf(stockCd) < 0)
+                    {
+                        errorInfo.Add(fileItem.File);
+                        errorInfo.Add(allLine[i]);
+                        break;
+                    }
+                }
+
+                // 更新进度条
+                this.ProcessBarStep();
+            }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+        }
+
+        /// <summary>
+        /// 检查所有可用的代码
+        /// </summary>
+        private void CheckAllCd()
+        {
+            List<string> allAvailableCd = new List<string>();
+            DateTime dt = Util.GetAvailableDt();
+            string endDay = dt.AddDays(-1).ToString("yyyyMMdd");
+
+            for (int i = 1; i <= 3000; i++)
+            {
+                //this.CheckAvailableCdSina(i, allAvailableCd, endDay);
+                this.CheckAvailableCd163(i, allAvailableCd, endDay);
+            }
+
+            for (int i = 300001; i <= 300999; i++)
+            {
+                //this.CheckAvailableCdSina(i, allAvailableCd, endDay);
+                this.CheckAvailableCd163(i, allAvailableCd, endDay);
+            }
+
+            for (int i = 600000; i <= 603999; i++)
+            {
+                //this.CheckAvailableCdSina(i, allAvailableCd, endDay);
+                this.CheckAvailableCd163(i, allAvailableCd, endDay);
+            }
+
+            File.WriteAllLines(CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 检查可用的代码
+        /// </summary>
+        /// <param name="stockCd"></param>
+        private string CheckAvailableCd163(int stockCd, List<string> allAvailableCd, string endDay)
+        {
+            string strCd = stockCd.ToString().PadLeft(6, '0');
+            // 判断类型
+            if (strCd.StartsWith("6"))
+            {
+                strCd = "0" + strCd;
+            }
+            else
+            {
+                strCd = "1" + strCd;
+            }
+
+            Encoding encoding = Encoding.GetEncoding("GBK");
+            string result = string.Empty;
+
+            try
+            {
+                result = Util.HttpGet(@"http://quotes.money.163.com/service/chddata.html?fields=TCLOSE;HIGH;LOW;TOPEN;LCLOSE;&end=" + endDay + "&code="
+                    + strCd + "&start=20190101", "", encoding);
+            }
+            catch (Exception e)
+            {
+                return "取得 " + strCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
+            }
+
+            if (!string.IsNullOrEmpty(result) && !"null".Equals(result, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string[] lines = null;
+                string[] lastRow = null;
+                try
+                {
+                    lines = result.Split('\n');
+                    if (lines.Length > 2)
+                    {
+                        lastRow = lines[1].Split(',');
+                    }
+                }
+                catch (Exception e)
+                {
+                    return "处理Json " + strCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
+                }
+
+                if (lastRow != null && lastRow.Length > 2)
+                {
+                    // 取得最新的一条数据
+                    string lastDay = lastRow[0].Replace("-", "").Replace("/", "");
+
+                    if (endDay.Equals(lastDay))
+                    {
+                        allAvailableCd.Add(stockCd.ToString().PadLeft(6, '0') + " " + lastRow[2]);
+                    }
+                }
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// 检查可用的代码
+        /// </summary>
+        /// <param name="stockCd"></param>
+        private string CheckAvailableCdSina(int stockCd, List<string> allAvailableCd, string endDay)
+        {
+            string strCd = stockCd.ToString().PadLeft(6, '0');
+            // 判断类型
+            if (strCd.StartsWith("6"))
+            {
+                strCd = "sh" + strCd;
+            }
+            else
+            {
+                strCd = "sz" + strCd;
+            }
+
+            Encoding encoding = Encoding.GetEncoding("GBK");
+            string result = string.Empty;
+
+            try
+            {
+                result = Util.HttpGet(@"http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol="
+                    + strCd + "&scale=240", "", encoding);
+            }
+            catch (Exception e)
+            {
+                return "取得 " + strCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
+            }
+
+            if (!string.IsNullOrEmpty(result) && !"null".Equals(result, System.StringComparison.OrdinalIgnoreCase))
+            {
+                JArray jArray = null;
+                try
+                {
+                    jArray = (JArray)JsonConvert.DeserializeObject(result);
+                }
+                catch (Exception e)
+                {
+                    return "处理Json " + strCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
+                }
+
+                if (jArray != null && jArray.Count > 0)
+                {
+                    // 取得最新的一条数据
+                    string lastDay = jArray[jArray.Count - 1]["day"].ToString().Replace("-", "").Replace(" ", "").Replace(":", "");
+                    if (endDay.Equals(lastDay))
+                    {
+                        allAvailableCd.Add(stockCd.ToString().PadLeft(6, '0'));
+                    }
+                }
+            }
+
+            Thread.Sleep(1000);
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// 检查数据的正确性
+        /// </summary>
+        private void CheckData()
+        {
+            DateTime dt = Util.GetAvailableDt();
+            List<string> allCd = GetAllStockBaseInfo();
+
+            //this.CheckCsvData(TimeRange.M15, dt.ToString("yyyyMMdd150000"), allCd);
+
+            this.CheckCsvData(TimeRange.Day, dt.ToString("yyyyMMdd"), allCd);
+            this.CheckCsvData(TimeRange.M30, dt.ToString("yyyyMMdd150000"), allCd);
+            this.CheckCsvData(TimeRange.M5, dt.ToString("yyyyMMdd150000"), allCd);
+        }
+
+        /// <summary>
+        /// 检查数据
+        /// </summary>
+        /// <param name="timeRange"></param>
+        private void CheckCsvData(TimeRange timeRange, string dt, List<string> allCd)
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = timeRange.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+
+            // 设置进度条
+            this.ResetProcessBar(allCsv.Count);
+
+            foreach (FilePosInfo fileItem in allCsv)
+            {
+                if (fileItem.IsFolder)
+                {
+                    continue;
+                }
+
+                base.baseFile = fileItem.File;
+                string stockCd = Util.GetShortNameWithoutType(fileItem.File).Substring(0, 6);
+                if (!allCd.Contains(stockCd))
+                {
+                    File.Delete(fileItem.File);
+                }
+
+                // 更新进度条
+                this.ProcessBarStep();
+            }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+        }
 
         /// <summary>
         /// 试运行
