@@ -608,7 +608,7 @@ namespace GuPiao
         /// <param name="e"></param>
         private void btnTestRun_Click(object sender, EventArgs e)
         {
-            //this.Do(this.StartTestRun);
+            this.Do(this.StartTestRun);
             //this.Do(this.CheckData);
             //this.Do(this.CheckAllCd);
             //this.Do(this.CheckRightCd);
@@ -1766,7 +1766,7 @@ namespace GuPiao
                 return;
             }
 
-            List<BaseDataInfo> fenxingInfo = DayBatchProcess.SetFenxingInfo(stockInfos);
+            List<BaseDataInfo> fenxingInfo = DayBatchProcess.SetFenxingInfoDayM30(stockInfos);
 
             StringBuilder sb = new StringBuilder();
             string stockCd = stockCdDate.Substring(0, 6);

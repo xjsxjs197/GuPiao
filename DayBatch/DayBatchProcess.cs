@@ -537,26 +537,65 @@ namespace DayBatch
         /// 设置分型情报（在30分钟中设置天的）
         /// </summary>
         /// <param name="stockInfo"></param>
-        public static List<BaseDataInfo> SetFenxingInfoDayM30(List<BaseDataInfo> stockInfo, List<BaseDataInfo> stockInfoM30)
+        public static List<BaseDataInfo> SetFenxingInfoDayM30(List<BaseDataInfo> stockInfo)
         {
+            // 设置第一个点
+            BaseDataInfo lastPoint = new BaseDataInfo();
+            while (stockInfo.Count > 0)
+            {
+                lastPoint = stockInfo[stockInfo.Count - 1];
+                if (lastPoint.Day.IndexOf("100000") > 0)
+                {
+                    break;
+                }
+                else
+                {
+                    stockInfo.Remove(lastPoint);
+                }
+            }
+
             if (stockInfo.Count < 3)
             {
                 return stockInfo;
             }
 
-            // 设置第一个点
-            BaseDataInfo lastPoint = stockInfo[stockInfo.Count - 1];
+            // 特殊处理30分钟数据
             BaseDataInfo tmpPoint = new BaseDataInfo();
             tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
             tmpPoint.DayMinVal = lastPoint.DayMinVal;
+            int maxCnt = stockInfo.Count - 2;
+            int lastIdx = maxCnt + 1;
+            for (int i = maxCnt; i >= 0; i--)
+            {
+                if (stockInfo[i].DayMaxVal > tmpPoint.DayMaxVal)
+                {
+                    tmpPoint.DayMaxVal = stockInfo[i].DayMaxVal;
+                }
+                if (stockInfo[i].DayMinVal < tmpPoint.DayMinVal)
+                {
+                    tmpPoint.DayMinVal = stockInfo[i].DayMinVal;
+                }
+
+                if (stockInfo[i].Day.IndexOf("100000") > 0)
+                {
+                    tmpPoint.DayMaxVal = stockInfo[i].DayMaxVal;
+                    tmpPoint.DayMinVal = stockInfo[i].DayMinVal;
+                }
+                else
+                {
+                    stockInfo[i].DayMaxVal = tmpPoint.DayMaxVal;
+                    stockInfo[i].DayMinVal = tmpPoint.DayMinVal;
+                }
+            }
+
+
+            // 开始比较
             int chkVal = 0;
             int lastChkVal = 0;
             int lastTopPos = -1;
             int lastBottomPos = -1;
-
-            int maxCnt = stockInfo.Count - 2;
-            int lastIdx = maxCnt + 1;
-
+            tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
+            tmpPoint.DayMinVal = lastPoint.DayMinVal;
             for (int i = maxCnt; i >= 0; i--)
             {
                 // 判断两个点的大小关系
@@ -1028,8 +1067,16 @@ namespace DayBatch
             }
 
             // 开始画分型、笔的线段
-            List<BaseDataInfo> fenXingInfo = SetFenxingInfo(stockInfos);
-            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
+            if (timeRange == TimeRange.M30)
+            {
+                List<BaseDataInfo> fenXingInfo = SetFenxingInfoDayM30(stockInfos);
+                this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
+            }
+            else
+            {
+                List<BaseDataInfo> fenXingInfo = SetFenxingInfo(stockInfos);
+                this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
+            }
 
             // 在5,15分钟的分型图上画天的分型信息
             //if (timeRange == TimeRange.M5 || timeRange == TimeRange.M15)

@@ -172,10 +172,8 @@ namespace DataProcess.GetData
                         sb.Length = 0;
                         sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
                         sb.Append(stockCd).Append("_").Append(startDay).Append(".csv");
-                        string[] oldFile = File.ReadAllLines(sb.ToString(), Encoding.UTF8);
-
-                        // 删除旧的文件
-                        File.Delete(sb.ToString());
+                        string oldFilePath = sb.ToString();
+                        string[] oldFile = File.ReadAllLines(oldFilePath, Encoding.UTF8);
 
                         // 取得分钟级别数据
                         this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
@@ -217,6 +215,9 @@ namespace DataProcess.GetData
                         sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
                         sb.Append(stockCd).Append("_").Append(this.endDayForFile).Append(".csv");
                         File.WriteAllLines(sb.ToString(), newMinuteData.ToArray(), Encoding.UTF8);
+
+                        // 删除旧的文件
+                        File.Delete(oldFilePath);
                     }
                 }
             }
@@ -258,10 +259,8 @@ namespace DataProcess.GetData
                 sb.Length = 0;
                 sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
                 sb.Append(stockCd).Append("_").Append(startDay).Append(".csv");
-                string[] oldFile = File.ReadAllLines(sb.ToString(), Encoding.UTF8);
-
-                // 删除旧的文件
-                File.Delete(sb.ToString());
+                string oldFilePath = sb.ToString();
+                string[] oldFile = File.ReadAllLines(oldFilePath, Encoding.UTF8);
 
                 // 最新数据和旧数据结合
                 List<string> newMinuteData = new List<string>();
@@ -300,6 +299,9 @@ namespace DataProcess.GetData
                 sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
                 sb.Append(stockCd).Append("_").Append(this.endDayForFile).Append(".csv");
                 File.WriteAllLines(sb.ToString(), newMinuteData.ToArray(), Encoding.UTF8);
+
+                // 删除旧的文件
+                File.Delete(oldFilePath);
             }
 
             return string.Empty;
