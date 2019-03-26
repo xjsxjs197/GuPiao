@@ -588,12 +588,14 @@ namespace DayBatch
                 }
             }
 
-
             // 开始比较
             int chkVal = 0;
             int lastChkVal = 0;
             int lastTopPos = -1;
             int lastBottomPos = -1;
+            bool buyed = false;
+            string buyDate = string.Empty;
+            decimal buyPrice = 0;
             tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
             tmpPoint.DayMinVal = lastPoint.DayMinVal;
             for (int i = maxCnt; i >= 0; i--)
@@ -606,21 +608,46 @@ namespace DayBatch
                     // 当前上升，前面是下降，说明前一个点是低点
                     lastPoint.CurPointType = PointType.Bottom;
 
-                    // 判断是否是第三类买点
-                    lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
-                    if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
+                    if (!buyed)
                     {
-                        // 当前低点高于上一个低点，设置第三类买点
-                        stockInfo[i].BuySellFlg = 3;
+                        // 判断是否是第三类买点
+                        lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
+                        if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
+                        {
+                            // 当前低点高于上一个低点，设置第三类买点
+                            stockInfo[i].BuySellFlg = 3;
+                            buyed = true;
+                            buyPrice = stockInfo[i].DayVal;
+                            buyDate = stockInfo[i].Day.Substring(0, 8);
+                        }
                     }
                 }
-                else if (chkVal < 0 && lastChkVal > 0)
+                else if (chkVal < 0)
                 {
-                    // 当前下降，前面是上升，说明前一个点是高点
-                    lastPoint.CurPointType = PointType.Top;
+                    if (lastChkVal > 0)
+                    {
+                        // 当前下降，前面是上升，说明前一个点是高点
+                        lastPoint.CurPointType = PointType.Top;
 
-                    // 设置第一类卖点
-                    stockInfo[i].BuySellFlg = -1;
+                        if (buyed)
+                        {
+                            // 设置第一类卖点
+                            lastTopPos = GeBefTopVal(stockInfo, lastIdx, maxCnt);
+                            if (lastTopPos > 0 && stockInfo[i].DayVal * LIMIT_VAL < stockInfo[lastTopPos].DayMaxVal
+                                && !stockInfo[i].Day.StartsWith(buyDate))
+                            {
+                                stockInfo[i].BuySellFlg = -1;
+                                buyed = false;
+                            }
+                        }
+                    }
+
+                    // 只要下降到买点，就卖出
+                    if (buyed && stockInfo[i].DayVal < buyPrice * LIMIT_VAL && !stockInfo[i].Day.StartsWith(buyDate))
+                    {
+                        stockInfo[i].BuySellFlg = -1;
+                        buyed = false;
+                    }
                 }
 
                 // 更新当前的点
@@ -1238,18 +1265,12 @@ namespace DayBatch
             for (int index = maxCnt; index >= 0; index--)
             {
                 x2 = img.Width - (index * imgXStep + IMG_X_STEP);
-                if (index >= 0)
-                {
-                    curVal = fenXingInfo[index].CurPointType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
-                }
-                else
-                {
-                    curVal = fenXingInfo[index].DayVal;
-                }
-                y2 = this.GetYPos(img.Height, curVal, minVal, step);
 
                 if (fenXingInfo[index].CurPointType != PointType.Changing || index == 0)
                 {
+                    curVal = fenXingInfo[index].CurPointType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
+                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+
                     //// 写字用做标识
                     //if (fenXingInfo[index].CurPointType == PointType.Top)
                     //{
@@ -1264,13 +1285,20 @@ namespace DayBatch
                     x1 = x2;
                     y1 = y2;
                 }
-                else if (fenXingInfo[index].BuySellFlg > 0 && !buyed)
+                
+                if (fenXingInfo[index].BuySellFlg > 0 && !buyed)
                 {
+                    curVal = fenXingInfo[index].DayVal;
+                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+
                     grp.DrawString("B", font, buyBush, x2, y2);
                     buyed = true;
                 }
                 else if (fenXingInfo[index].BuySellFlg < 0 && buyed)
                 {
+                    curVal = fenXingInfo[index].DayVal;
+                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+
                     grp.DrawString("T", font, sellBush, x2, y2);
                     buyed = false;
                 }

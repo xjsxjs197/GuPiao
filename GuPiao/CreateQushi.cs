@@ -1692,6 +1692,8 @@ namespace GuPiao
             this.subFolder = TimeRange.M30.ToString() + "/";
             List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
             Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
+            StringBuilder notGoodSb = new StringBuilder();
+            StringBuilder goodSb = new StringBuilder();
 
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
@@ -1711,7 +1713,7 @@ namespace GuPiao
                 }
 
                 // 测试BuySell的逻辑
-                this.CheckBuySellPoint(stockCdDate, buySellInfo);
+                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb);
 
                 // 更新进度条
                 this.ProcessBarStep();
@@ -1720,14 +1722,15 @@ namespace GuPiao
             // 关闭进度条
             this.CloseProcessBar();
 
-            this.SaveTotalBuySellInfo(buySellInfo);
+            this.SaveTotalBuySellInfo(buySellInfo, notGoodSb, goodSb);
         }
 
         /// <summary>
         /// 测试买卖点的逻辑
         /// </summary>
         /// <param name="stockCdDate"></param>
-        private void CheckBuySellPoint(string stockCdDate, Dictionary<string, List<string>[]> buySellInfo)
+        private void CheckBuySellPoint(string stockCdDate, Dictionary<string, List<string>[]> buySellInfo,
+            StringBuilder notGoodSb, StringBuilder goodSb)
         {
             // 获得数据信息
             Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdDate, this.subFolder, "./");
@@ -1742,6 +1745,7 @@ namespace GuPiao
                 return;
             }
 
+            // 设置测试的开始时间
             string startDate;
             int startIdx = 0;
             if (this.subFolder.Equals(DAY_FOLDER))
@@ -1752,9 +1756,12 @@ namespace GuPiao
             {
                 startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd090000");
             }
-            for (int i = stockInfos.Count - 1; i >= 0; i--)
+
+            // 取得分型的数据
+            List<BaseDataInfo> fenxingInfo = DayBatchProcess.SetFenxingInfoDayM30(stockInfos);
+            for (int i = fenxingInfo.Count - 1; i >= 0; i--)
             {
-                if (string.Compare(stockInfos[i].Day, startDate) > 0)
+                if (string.Compare(fenxingInfo[i].Day, startDate) > 0)
                 {
                     startIdx = i;
                     break;
@@ -1765,8 +1772,6 @@ namespace GuPiao
             {
                 return;
             }
-
-            List<BaseDataInfo> fenxingInfo = DayBatchProcess.SetFenxingInfoDayM30(stockInfos);
 
             StringBuilder sb = new StringBuilder();
             string stockCd = stockCdDate.Substring(0, 6);
@@ -1783,6 +1788,17 @@ namespace GuPiao
                     sb.Append(fenxingInfo[i].DayVal.ToString().PadLeft(8, ' ')).Append(" ");
                     decimal diff = ((fenxingInfo[i].DayVal / buyPrice) - 1) * 100;
                     sb.Append(diff.ToString("0.00").PadLeft(7, ' ')).Append("%\r\n");
+
+                    if (diff < -1)
+                    {
+                        string[] tmp = sb.ToString().Split('\r');
+                        notGoodSb.Append(tmp[tmp.Length - 2]).Append("\r\n");
+                    }
+                    else if (diff > 1)
+                    {
+                        string[] tmp = sb.ToString().Split('\r');
+                        goodSb.Append(tmp[tmp.Length - 2]).Append("\r\n");
+                    }
 
                     if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
                     {
@@ -1849,7 +1865,8 @@ namespace GuPiao
         /// 保存买卖信息
         /// </summary>
         /// <param name="buySellInfo"></param>
-        private void SaveTotalBuySellInfo(Dictionary<string, List<string>[]> buySellInfo)
+        private void SaveTotalBuySellInfo(Dictionary<string, List<string>[]> buySellInfo,
+            StringBuilder notGoodSb, StringBuilder goodSb)
         {
             StringBuilder sb = new StringBuilder();
             List<string> dayList = new List<string>(buySellInfo.Keys);
@@ -1920,6 +1937,10 @@ namespace GuPiao
             sb.Append("End Total: " + myMoney);
 
             File.WriteAllText(BUY_SELL_POINT + "TotalBuySellInfo.txt", sb.ToString(), Encoding.UTF8);
+
+            File.WriteAllText(BUY_SELL_POINT + "BadBuySellPoint.txt", notGoodSb.ToString(), Encoding.UTF8);
+
+            File.WriteAllText(BUY_SELL_POINT + "GoodBuySellPoint.txt", goodSb.ToString(), Encoding.UTF8);
         }
 
         #endregion
