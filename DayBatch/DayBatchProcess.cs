@@ -610,11 +610,12 @@ namespace DayBatch
 
                     if (!buyed)
                     {
-                        // 判断是否是第三类买点
+                        // 判断是否是第二类买点
                         lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
-                        if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
+                        if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL
+                            && !hasMoreLowBottom(stockInfo, lastBottomPos, maxCnt))
                         {
-                            // 当前低点高于上一个低点，设置第三类买点
+                            // 当前低点高于上一个低点，设置第二类买点
                             stockInfo[i].BuySellFlg = 3;
                             buyed = true;
                             buyPrice = stockInfo[i].DayVal;
@@ -1400,6 +1401,33 @@ namespace DayBatch
             //    // 前后没有变化
             //    return 0;
             //}
+        }
+
+        /// <summary>
+        /// 查找更低的地点
+        /// </summary>
+        /// <param name="fenXingInfo"></param>
+        /// <param name="lastBottomPos"></param>
+        /// <param name="maxCnt"></param>
+        /// <returns></returns>
+        private static bool hasMoreLowBottom(List<BaseDataInfo> fenXingInfo, int lastBottomPos, int maxCnt)
+        {
+            for (int i = lastBottomPos + 1; i < maxCnt; i++)
+            {
+                if (fenXingInfo[i].CurPointType == PointType.Bottom)
+                {
+                    if (fenXingInfo[i].DayMinVal < fenXingInfo[lastBottomPos].DayMinVal)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return false;
         }
 
         #endregion
