@@ -1722,7 +1722,7 @@ namespace GuPiao
             // 关闭进度条
             this.CloseProcessBar();
 
-            this.SaveTotalBuySellInfo(buySellInfo, notGoodSb, goodSb);
+            this.SaveTotalBuySellInfo(allCsv, buySellInfo, notGoodSb, goodSb);
         }
 
         /// <summary>
@@ -1865,82 +1865,157 @@ namespace GuPiao
         /// 保存买卖信息
         /// </summary>
         /// <param name="buySellInfo"></param>
-        private void SaveTotalBuySellInfo(Dictionary<string, List<string>[]> buySellInfo,
+        private void SaveTotalBuySellInfo(List<FilePosInfo> allCsv, Dictionary<string, List<string>[]> buySellInfo,
             StringBuilder notGoodSb, StringBuilder goodSb)
         {
-            StringBuilder sb = new StringBuilder();
             List<string> dayList = new List<string>(buySellInfo.Keys);
             dayList.Sort();
-            bool buyed = false;
-            int buyCnt = 0;
-            string stockCd = string.Empty;
-            decimal myMoney = 1000;
-            decimal oldMyMoney = myMoney;
-            decimal buyMoney = 0;
 
-            sb.Append("Start Total: " + myMoney).Append("\r\n");
- 
+            int buyThread = 3;
+            decimal threadMoney = 1000;
+            List<string> buyedStock = new List<string>();
+            List<Dictionary<string, object>> buySellHst = new List<Dictionary<string, object>>();
+            Dictionary<string, object> buySellItem;
+            StringBuilder sb;
+            while (buyThread-- > 0)
+            {
+                buySellItem = new Dictionary<string, object>();
+                buySellItem.Add("stockCd", string.Empty);
+                buySellItem.Add("status", string.Empty);
+                buySellItem.Add("price", (decimal)0);
+                buySellItem.Add("buyCount", (decimal)0);
+                buySellItem.Add("buyMoney", (decimal)0);
+                buySellItem.Add("TotalMoney", threadMoney);
+
+                sb = new StringBuilder();
+                sb.Append("Thread").Append(buyThread).Append(" ");
+                sb.Append("Start Total: " + threadMoney).Append("\r\n");
+                buySellItem.Add("logBuf", sb);
+
+                buySellHst.Add(buySellItem);
+            }
+
             foreach (string day in dayList)
             {
                 List<string> buyInfo = buySellInfo[day][0];
                 List<string> sellInfo = buySellInfo[day][1];
-                //sb.Append(day).Append(" B ");
-                //sb.Append(string.Join(" ", buyInfo.ToArray())).Append("\r\n");
-                //sb.Append(day).Append(" S ");
-                //sb.Append(string.Join(" ", sellInfo.ToArray())).Append("\r\n");
+                buyedStock.Clear();
 
-                if (!buyed && buyInfo.Count > 0)
+                foreach (Dictionary<string, object> bsp in buySellHst)
                 {
-                    for (int i = 0; i < buyInfo.Count; i++)
-                    //for (int i = buyInfo.Count - 1; i >= 0; i--)
+                    if (!"B".Equals(bsp["status"] as string))
                     {
-                        string[] tmp = buyInfo[i].Split(' ');
-                        decimal price = decimal.Parse(tmp[1]);
-                        if (myMoney > (price * 100 + 5))
+                        foreach (string bp in buyInfo)
                         {
-                            stockCd = tmp[0];
-                            buyCnt = (int)((myMoney - 5) / (100 * price)) * 100;
-                            buyMoney = buyCnt * price + 5;
-                            myMoney = myMoney - buyMoney;
-                            sb.Append(day).Append(" B ").Append(stockCd).Append(" ");
-                            sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
-                            sb.Append(buyCnt.ToString().PadLeft(4, ' ')).Append("\r\n");
-                            buyed = true;
-                            break;
+                            string[] tmp = bp.Split(' ');
+                            decimal price = decimal.Parse(tmp[1]);
+
+                            if (!buyedStock.Contains(tmp[0]))
+                            {
+                                decimal totalMoney = (decimal)bsp["TotalMoney"];
+                                int canBuyCnt = this.CanBuyCount(totalMoney, price);
+                                if (canBuyCnt > 0)
+                                {
+                                    buyedStock.Add(tmp[0]);
+
+                                    bsp["stockCd"] = tmp[0];
+                                    bsp["status"] = "B";
+                                    bsp["price"] = price;
+                                    bsp["buyCount"] = (decimal)(canBuyCnt * 100);
+                                    bsp["buyMoney"] = (decimal)bsp["buyCount"] * price + 5;
+                                    bsp["TotalMoney"] = (decimal)bsp["TotalMoney"] - (decimal)bsp["buyMoney"];
+
+                                    sb = (StringBuilder)bsp["logBuf"];
+                                    sb.Append(day).Append(" B ").Append(tmp[0]).Append(" ");
+                                    sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
+                                    sb.Append(bsp["buyCount"].ToString().PadLeft(4, ' ')).Append("\r\n");
+                                    break;
+                                }
+                            }
                         }
                     }
-                }
-                else if (buyed && sellInfo.Count > 0)
-                {
-                    for (int i = 0; i < sellInfo.Count; i++)
+                    else
                     {
-                        if (sellInfo[i].StartsWith(stockCd, StringComparison.OrdinalIgnoreCase))
+                        foreach (string sp in sellInfo)
                         {
-                            string[] tmp = sellInfo[i].Split(' ');
-                            decimal price = decimal.Parse(tmp[1]);
-                            myMoney = myMoney + buyCnt * price;
-                            decimal diff = ((buyCnt * price / buyMoney) - 1) * 100;
-                            sb.Append(day).Append(" S ").Append(stockCd).Append(" ");
-                            sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
-                            sb.Append(buyCnt.ToString().PadLeft(4, ' ')).Append(" ");
-                            sb.Append(diff.ToString("0.00")).Append(" ").Append(myMoney).Append("(");
-                            diff = (myMoney / oldMyMoney - 1) * 100;
-                            sb.Append(diff.ToString("0.00")).Append(")");
-                            sb.Append("\r\n");
-                            buyed = false;
-                            break;
+                            if (sp.StartsWith(bsp["stockCd"] as string, StringComparison.OrdinalIgnoreCase))
+                            {
+                                string[] tmp = sp.Split(' ');
+                                decimal price = decimal.Parse(tmp[1]);
+                                decimal sellMoney = (decimal)bsp["buyCount"] * price;
+
+                                buyedStock.Remove(tmp[0]);
+
+                                bsp["status"] = "S";
+                                bsp["TotalMoney"] = (decimal)bsp["TotalMoney"] + sellMoney;
+
+                                decimal diff = ((sellMoney / (decimal)bsp["buyMoney"]) - 1) * 100;
+                                sb = (StringBuilder)bsp["logBuf"];
+                                sb.Append(day).Append(" S ").Append(bsp["stockCd"]).Append(" ");
+                                sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
+                                sb.Append(bsp["buyCount"].ToString().PadLeft(4, ' ')).Append(" ");
+                                sb.Append(diff.ToString("0.00")).Append(" ").Append(bsp["TotalMoney"]).Append("(");
+                                diff = ((decimal)bsp["TotalMoney"] / threadMoney - 1) * 100;
+                                sb.Append(diff.ToString("0.00")).Append(")");
+                                sb.Append("\r\n");
+                                break;
+                            }
                         }
                     }
                 }
             }
 
-            sb.Append("End Total: " + myMoney);
+            StringBuilder sbAll = new StringBuilder();
+            decimal totalAll = 0;
+            sbAll.Append("Total : ").Append(threadMoney * buySellHst.Count).Append(" ");
 
-            File.WriteAllText(BUY_SELL_POINT + "TotalBuySellInfo.txt", sb.ToString(), Encoding.UTF8);
+            foreach (Dictionary<string, object> bsp in buySellHst)
+            {
+                sb = (StringBuilder)bsp["logBuf"];
+                decimal total = (decimal)bsp["TotalMoney"];
+                sb.Append("End Total: ");
+
+                if ("B".Equals(bsp["status"]))
+                {
+                    FilePosInfo lastInfo = allCsv.FirstOrDefault(p => p.File.StartsWith(bsp["stockCd"] as string));
+                    // 获得数据信息
+                    Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(
+                        Util.GetShortNameWithoutType(lastInfo.File), this.subFolder, "./");
+                    if (dataInfo != null)
+                    {
+                        List<BaseDataInfo> stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+                        if (stockInfos.Count > 0)
+                        {
+                            total += (decimal)bsp["buyCount"] * stockInfos[0].DayVal;
+                        }
+                    }
+                }
+                totalAll += total;
+                sb.Append(total).Append(" ");
+                decimal diff = (total / threadMoney - 1) * 100;
+                sb.Append(diff.ToString("0.00")).Append("%");
+
+                sbAll.Append(sb.ToString()).Append("\r\n\r\n");
+            }
+            diff = (totalAll / (threadMoney * buySellHst.Count) - 1) * 100;
+            sbAll.Append(totalAll).Append(" ").Append(diff.ToString("0.00")).Append("%\r\n\r\n");
+
+            File.WriteAllText(BUY_SELL_POINT + "TotalBuySellInfo.txt", sbAll.ToString(), Encoding.UTF8);
 
             File.WriteAllText(BUY_SELL_POINT + "BadBuySellPoint.txt", notGoodSb.ToString(), Encoding.UTF8);
 
             File.WriteAllText(BUY_SELL_POINT + "GoodBuySellPoint.txt", goodSb.ToString(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 可以买多少数量的取得
+        /// </summary>
+        /// <param name="money"></param>
+        /// <param name="price"></param>
+        /// <returns></returns>
+        private int CanBuyCount(decimal money, decimal price)
+        {
+            return (int)((money - 5) / (price * 100));
         }
 
         #endregion

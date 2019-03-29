@@ -612,8 +612,7 @@ namespace DayBatch
                     {
                         // 判断是否是第二类买点
                         lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
-                        if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL
-                            && !hasMoreLowBottom(stockInfo, lastBottomPos, maxCnt))
+                        if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
                         {
                             // 当前低点高于上一个低点，设置第二类买点
                             stockInfo[i].BuySellFlg = 3;
@@ -750,7 +749,10 @@ namespace DayBatch
         {
             try
             {
-                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取" + timeRange.ToString() + "数据 开始\r\n", Encoding.UTF8);
+                string tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取" + timeRange.ToString() + "数据 开始";
+                Console.WriteLine();
+                Console.WriteLine(tmp);
+                File.AppendAllText(logFile, tmp + "\r\n", Encoding.UTF8);
 
                 // 设定结束日期
                 DateTime now = this.GetNotWeeklyDayDate();
@@ -767,10 +769,13 @@ namespace DayBatch
                 // 取得分钟级别数据的共通
                 this.GetMinuteDataCommon(endDay, timeRange);
 
-                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取" + timeRange.ToString() + "数据 结束\r\n", Encoding.UTF8);
+                tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取" + timeRange.ToString() + "数据 结束";
+                Console.WriteLine(tmp);
+                File.AppendAllText(logFile, tmp + "\r\n", Encoding.UTF8);
             }
             catch (Exception e)
             {
+                Console.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message);
                 File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
                 File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
             }
@@ -789,6 +794,8 @@ namespace DayBatch
             this.getData = new GetDataFromSina(this.basePath + CSV_FOLDER, endDay, timeRange);
 
             // 设置进度条
+            DosProgressBar dosProgressBar = new DosProgressBar();
+            int idx = 0;
             if (this.callBef != null)
             {
                 this.callBef(this.allStockCd.Count);
@@ -796,6 +803,7 @@ namespace DayBatch
 
             // 取得所有必要的数据
             this.needGetAllCd = this.getData.GetAllNeedCd(this.allStockCd, allCsv, endDay);
+            int totalLen = this.needGetAllCd.Count;
             foreach (string stockCd in this.needGetAllCd)
             {
                 try
@@ -808,6 +816,7 @@ namespace DayBatch
                     }
 
                     Thread.Sleep(1000);
+                    dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
                 }
                 catch (Exception exp)
                 {
@@ -843,7 +852,10 @@ namespace DayBatch
         {
             try
             {
-                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算" + timeRange.ToString() + "数据 开始\r\n", Encoding.UTF8);
+                string tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算" + timeRange.ToString() + "数据 开始";
+                Console.WriteLine();
+                Console.WriteLine(tmp);
+                File.AppendAllText(logFile, tmp + "\r\n", Encoding.UTF8);
 
                 // 设定结束日期
                 DateTime now = this.GetNotWeeklyDayDate();
@@ -866,6 +878,8 @@ namespace DayBatch
                 this.getData = new GetDataFromSina(this.basePath + CSV_FOLDER, endDay, timeRange);
 
                 // 设置进度条
+                DosProgressBar dosProgressBar = new DosProgressBar();
+                int idx = 0;
                 if (this.callBef != null)
                 {
                     this.callBef(this.allStockCd.Count);
@@ -873,6 +887,7 @@ namespace DayBatch
 
                 // 取得所有必要的数据
                 this.needGetAllCd = this.getData.GetAllNeedCd(this.allStockCd, allCsv, endDay);
+                int totalLen = this.needGetAllCd.Count;
                 foreach (string stockCd in this.needGetAllCd)
                 {
                     try
@@ -883,9 +898,12 @@ namespace DayBatch
                         {
                             File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " " + errMsg + "\r\n", Encoding.UTF8);
                         }
+                        dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
                     }
                     catch (Exception exp)
                     {
+                        Console.WriteLine(exp.Message);
+                        Console.WriteLine(exp.StackTrace);
                         File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算 " + stockCd + " 数据时发生异常\r\n", Encoding.UTF8);
                         File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.Message + "\r\n", Encoding.UTF8);
                         File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.StackTrace + "\r\n", Encoding.UTF8);
@@ -907,10 +925,13 @@ namespace DayBatch
                     this.callEnd();
                 }
 
-                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算" + timeRange.ToString() + "数据 结束\r\n", Encoding.UTF8);
+                tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算" + timeRange.ToString() + "数据 结束";
+                Console.WriteLine(tmp);
+                File.AppendAllText(logFile, tmp + "\r\n", Encoding.UTF8);
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.Message);
                 File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
                 File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
             }
