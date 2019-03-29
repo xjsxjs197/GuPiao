@@ -1750,18 +1750,18 @@ namespace GuPiao
             int startIdx = 0;
             if (this.subFolder.Equals(DAY_FOLDER))
             {
-                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd");
+                startDate = DateTime.Now.AddDays(-60).ToString("yyyyMMdd");
             }
             else
             {
-                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd090000");
+                startDate = DateTime.Now.AddDays(-60).ToString("yyyyMMdd090000");
             }
 
             // 取得分型的数据
             List<BaseDataInfo> fenxingInfo = DayBatchProcess.SetFenxingInfoDayM30(stockInfos);
-            for (int i = fenxingInfo.Count - 1; i >= 0; i--)
+            for (int i = 0; i < fenxingInfo.Count; i++)
             {
-                if (string.Compare(fenxingInfo[i].Day, startDate) > 0)
+                if (string.Compare(fenxingInfo[i].Day, startDate) < 0)
                 {
                     startIdx = i;
                     break;
@@ -1871,12 +1871,13 @@ namespace GuPiao
             List<string> dayList = new List<string>(buySellInfo.Keys);
             dayList.Sort();
 
-            int buyThread = 3;
+            int buyThread = 10;
             decimal threadMoney = 1000;
             List<string> buyedStock = new List<string>();
             List<Dictionary<string, object>> buySellHst = new List<Dictionary<string, object>>();
             Dictionary<string, object> buySellItem;
             StringBuilder sb;
+            decimal diff;
             while (buyThread-- > 0)
             {
                 buySellItem = new Dictionary<string, object>();
@@ -1899,6 +1900,7 @@ namespace GuPiao
             {
                 List<string> buyInfo = buySellInfo[day][0];
                 List<string> sellInfo = buySellInfo[day][1];
+                buyInfo.Reverse();
                 buyedStock.Clear();
 
                 foreach (Dictionary<string, object> bsp in buySellHst)
@@ -1949,7 +1951,7 @@ namespace GuPiao
                                 bsp["status"] = "S";
                                 bsp["TotalMoney"] = (decimal)bsp["TotalMoney"] + sellMoney;
 
-                                decimal diff = ((sellMoney / (decimal)bsp["buyMoney"]) - 1) * 100;
+                                diff = ((sellMoney / (decimal)bsp["buyMoney"]) - 1) * 100;
                                 sb = (StringBuilder)bsp["logBuf"];
                                 sb.Append(day).Append(" S ").Append(bsp["stockCd"]).Append(" ");
                                 sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
@@ -1967,7 +1969,6 @@ namespace GuPiao
 
             StringBuilder sbAll = new StringBuilder();
             decimal totalAll = 0;
-            sbAll.Append("Total : ").Append(threadMoney * buySellHst.Count).Append(" ");
 
             foreach (Dictionary<string, object> bsp in buySellHst)
             {
@@ -1977,7 +1978,7 @@ namespace GuPiao
 
                 if ("B".Equals(bsp["status"]))
                 {
-                    FilePosInfo lastInfo = allCsv.FirstOrDefault(p => p.File.StartsWith(bsp["stockCd"] as string));
+                    FilePosInfo lastInfo = allCsv.FirstOrDefault(p => p.File.IndexOf(bsp["stockCd"] as string) > 0);
                     // 获得数据信息
                     Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(
                         Util.GetShortNameWithoutType(lastInfo.File), this.subFolder, "./");
@@ -1992,11 +1993,12 @@ namespace GuPiao
                 }
                 totalAll += total;
                 sb.Append(total).Append(" ");
-                decimal diff = (total / threadMoney - 1) * 100;
+                diff = (total / threadMoney - 1) * 100;
                 sb.Append(diff.ToString("0.00")).Append("%");
 
                 sbAll.Append(sb.ToString()).Append("\r\n\r\n");
             }
+            sbAll.Append("Total : ").Append(threadMoney * buySellHst.Count).Append(" ");
             diff = (totalAll / (threadMoney * buySellHst.Count) - 1) * 100;
             sbAll.Append(totalAll).Append(" ").Append(diff.ToString("0.00")).Append("%\r\n\r\n");
 
