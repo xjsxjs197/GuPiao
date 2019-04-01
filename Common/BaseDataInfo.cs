@@ -49,5 +49,25 @@ namespace Common
         /// 买卖点标识(-3,-2,-1,0,1,2,3)
         /// </summary>
         public int BuySellFlg { get; set; }
+
+        /// <summary>
+        /// 日均线价位
+        /// </summary>
+        public decimal DayAvgVal { get; set; }
+
+        /// <summary>
+        /// 5日均线价位
+        /// </summary>
+        public decimal Day5AvgVal { get; set; }
+
+        /// <summary>
+        /// 10日均线价位
+        /// </summary>
+        public decimal Day10AvgVal { get; set; }
+
+        /// <summary>
+        /// 30日均线价位
+        /// </summary>
+        public decimal Day30AvgVal { get; set; }
     }
 }

@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FenXing\FenXing.cs" />
     <Compile Include="GetData\GetDataBase.cs" />
     <Compile Include="GetData\GetDataFrom163.cs" />
     <Compile Include="GetData\GetDataFromSina.cs" />

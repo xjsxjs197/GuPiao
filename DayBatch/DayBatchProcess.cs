@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Common;
 using DataProcess.GetData;
@@ -8,6 +9,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Threading;
+using DataProcess.FenXing;
 
 namespace DayBatch
 {
@@ -49,14 +51,14 @@ namespace DayBatch
         private const string DAY_FOLDER = @"Day/";
 
         /// <summary>
+        /// 买卖点目录
+        /// </summary>
+        private const string BUY_SELL_POINT = @"./BuySellPoint/";
+
+        /// <summary>
         /// 不要创业数据
         /// </summary>
         private const bool NO_CHUANGYE = true;
-
-        /// <summary>
-        /// 不作为变化的判断范围
-        /// </summary>
-        private const decimal LIMIT_VAL = (decimal)1.005;
 
         /// <summary>
         /// 所有数据信息
@@ -117,6 +119,11 @@ namespace DayBatch
         /// </summary>
         private DelegateRowEndDo callRowEnd;
 
+        /// <summary>
+        /// 分型处理
+        /// </summary>
+        private FenXing fenXing = new FenXing();
+
         #endregion
 
         #region " 初始化 "
@@ -157,6 +164,7 @@ namespace DayBatch
             bool hasDay = false;
             bool needGetData = true;
             bool needDrawImg = true;
+            bool emuTest = false;
             if (args == null || args.Length == 0)
             {
                 hasM5 = true;
@@ -192,6 +200,10 @@ namespace DayBatch
                     {
                         needDrawImg = false;
                     }
+                    else if ("emu".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        emuTest = true;
+                    }
                 }
             }
 
@@ -208,6 +220,12 @@ namespace DayBatch
             {
                 // 画趋势图
                 this.DrawQushiImg(hasM5, hasM15, hasM30, hasDay);
+            }
+
+            if (emuTest)
+            {
+                // 模拟运行
+                this.StartEmuTest();
             }
         }
 
@@ -379,7 +397,7 @@ namespace DayBatch
         /// <param name="stockInfos"></param>
         /// <param name="jibie">5、10、30等级别</param>
         /// <returns></returns>
-        public static List<BaseDataInfo> GetJibieStockInfo(List<BaseDataInfo> stockInfos, int jibie)
+        public static List<BaseDataInfo> GetAverageLineInfo(List<BaseDataInfo> stockInfos, int jibie)
         {
             List<BaseDataInfo> stockInfo = new List<BaseDataInfo>();
 
@@ -424,290 +442,6 @@ namespace DayBatch
             return stockInfo;
         }
 
-        /// <summary>
-        /// 设置分型情报
-        /// </summary>
-        /// <param name="stockInfo"></param>
-        public static List<BaseDataInfo> SetFenxingInfo(List<BaseDataInfo> stockInfo)
-        {
-            if (stockInfo.Count < 3)
-            {
-                return stockInfo;
-            }
-
-            // 设置第一个点
-            BaseDataInfo lastPoint = stockInfo[stockInfo.Count - 1];
-            BaseDataInfo tmpPoint = new BaseDataInfo();
-            tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
-            tmpPoint.DayMinVal = lastPoint.DayMinVal;
-            int chkVal = 0;
-            int lastChkVal = 0;
-            int lastTopPos = -1;
-            int lastBottomPos = -1;
-            
-            int maxCnt = stockInfo.Count - 2;
-            int lastIdx = maxCnt + 1;
-
-            for (int i = maxCnt; i >= 0; i--)
-            {
-                // 判断两个点的大小关系
-                chkVal = ChkPointsVal(stockInfo[i], tmpPoint);
-
-                if (chkVal > 0 && lastChkVal < 0)
-                {
-                    // 当前上升，前面是下降，说明前一个点是低点
-                    lastPoint.CurPointType = PointType.Bottom;
-
-                    // 判断是否是第三类买点
-                    lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
-                    if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
-                    {
-                        // 当前低点高于上一个低点，设置第三类买点
-                        stockInfo[i].BuySellFlg = 3;
-                    }
-
-                    //// 取得前一个高点位置
-                    //lastTopPos = GeBefTopVal(stockInfo, lastIdx, maxCnt);
-
-                    //if (lastTopPos > 0)
-                    //{
-                    //    // 判断底点和上一个高点的间隔（中间需要三个点才行）
-                    //    if (lastIdx - lastTopPos >= 3)
-                    //    {
-                    //        // 判断是否是第三类买点
-                    //        lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
-                    //        if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
-                    //        {
-                    //            // 当前低点高于上一个低点，设置第三类买点
-                    //            stockInfo[i].BuySellFlg = 3;
-                    //        }
-                    //    }
-                    //    else
-                    //    { 
-                    //        // 当前低点和上一个高点间隔太近，两个都不算
-                    //        lastPoint.CurPointType = PointType.Changing;
-                    //        stockInfo[lastTopPos].CurPointType = PointType.Changing;
-                    //    }
-                    //}
-                }
-                else if (chkVal < 0 && lastChkVal > 0)
-                {
-                    // 当前下降，前面是上升，说明前一个点是高点
-                    lastPoint.CurPointType = PointType.Top;
-
-                    // 设置第一类卖点
-                    stockInfo[i].BuySellFlg = -1;
-
-                    //// 取得前一个低点位置
-                    //lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
-
-                    //if (lastBottomPos > 0)
-                    //{
-                    //    // 判断高点和上一个低点的间隔（中间需要三个点才行）
-                    //    if (lastIdx - lastBottomPos >= 3)
-                    //    {
-                    //        // 设置第一类卖点
-                    //        stockInfo[i].BuySellFlg = -1;
-                    //    }
-                    //    else
-                    //    {
-                    //        // 当前高点和上一个低点间隔太近，两个都不算
-                    //        lastPoint.CurPointType = PointType.Changing;
-                    //        stockInfo[lastBottomPos].CurPointType = PointType.Changing;
-                    //    }
-                    //}
-                    
-                }
-
-                // 更新当前的点
-                if (chkVal != 0)
-                {
-                    lastChkVal = chkVal;
-                    lastPoint = stockInfo[i];
-                    lastIdx = i;
-                    tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
-                    tmpPoint.DayMinVal = lastPoint.DayMinVal;
-                }
-            }
-
-            return stockInfo;
-        }
-
-        /// <summary>
-        /// 设置分型情报（在30分钟中设置天的）
-        /// </summary>
-        /// <param name="stockInfo"></param>
-        public static List<BaseDataInfo> SetFenxingInfoDayM30(List<BaseDataInfo> stockInfo)
-        {
-            // 设置第一个点
-            BaseDataInfo lastPoint = new BaseDataInfo();
-            while (stockInfo.Count > 0)
-            {
-                lastPoint = stockInfo[stockInfo.Count - 1];
-                if (lastPoint.Day.IndexOf("100000") > 0)
-                {
-                    break;
-                }
-                else
-                {
-                    stockInfo.Remove(lastPoint);
-                }
-            }
-
-            if (stockInfo.Count < 3)
-            {
-                return stockInfo;
-            }
-
-            // 特殊处理30分钟数据
-            BaseDataInfo tmpPoint = new BaseDataInfo();
-            tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
-            tmpPoint.DayMinVal = lastPoint.DayMinVal;
-            int maxCnt = stockInfo.Count - 2;
-            int lastIdx = maxCnt + 1;
-            for (int i = maxCnt; i >= 0; i--)
-            {
-                if (stockInfo[i].DayMaxVal > tmpPoint.DayMaxVal)
-                {
-                    tmpPoint.DayMaxVal = stockInfo[i].DayMaxVal;
-                }
-                if (stockInfo[i].DayMinVal < tmpPoint.DayMinVal)
-                {
-                    tmpPoint.DayMinVal = stockInfo[i].DayMinVal;
-                }
-
-                if (stockInfo[i].Day.IndexOf("100000") > 0)
-                {
-                    tmpPoint.DayMaxVal = stockInfo[i].DayMaxVal;
-                    tmpPoint.DayMinVal = stockInfo[i].DayMinVal;
-                }
-                else
-                {
-                    stockInfo[i].DayMaxVal = tmpPoint.DayMaxVal;
-                    stockInfo[i].DayMinVal = tmpPoint.DayMinVal;
-                }
-            }
-
-            // 开始比较
-            int chkVal = 0;
-            int lastChkVal = 0;
-            int lastTopPos = -1;
-            int lastBottomPos = -1;
-            bool buyed = false;
-            string buyDate = string.Empty;
-            decimal buyPrice = 0;
-            tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
-            tmpPoint.DayMinVal = lastPoint.DayMinVal;
-            for (int i = maxCnt; i >= 0; i--)
-            {
-                // 判断两个点的大小关系
-                chkVal = ChkPointsVal(stockInfo[i], tmpPoint);
-
-                if (chkVal > 0 && lastChkVal < 0)
-                {
-                    // 当前上升，前面是下降，说明前一个点是低点
-                    lastPoint.CurPointType = PointType.Bottom;
-
-                    if (!buyed)
-                    {
-                        // 判断是否是第二类买点
-                        lastBottomPos = GeBefBottomPos(stockInfo, lastIdx, maxCnt);
-                        if (lastBottomPos > 0 && lastPoint.DayMinVal > stockInfo[lastBottomPos].DayMinVal * LIMIT_VAL)
-                        {
-                            // 当前低点高于上一个低点，设置第二类买点
-                            stockInfo[i].BuySellFlg = 3;
-                            buyed = true;
-                            buyPrice = stockInfo[i].DayVal;
-                            buyDate = stockInfo[i].Day.Substring(0, 8);
-                        }
-                    }
-                }
-                else if (chkVal < 0)
-                {
-                    if (lastChkVal > 0)
-                    {
-                        // 当前下降，前面是上升，说明前一个点是高点
-                        lastPoint.CurPointType = PointType.Top;
-
-                        if (buyed)
-                        {
-                            // 设置第一类卖点
-                            lastTopPos = GeBefTopVal(stockInfo, lastIdx, maxCnt);
-                            if (lastTopPos > 0 && stockInfo[i].DayVal * LIMIT_VAL < stockInfo[lastTopPos].DayMaxVal
-                                && !stockInfo[i].Day.StartsWith(buyDate))
-                            {
-                                stockInfo[i].BuySellFlg = -1;
-                                buyed = false;
-                            }
-                        }
-                    }
-
-                    // 只要下降到买点，就卖出
-                    if (buyed && stockInfo[i].DayVal < buyPrice * LIMIT_VAL && !stockInfo[i].Day.StartsWith(buyDate))
-                    {
-                        stockInfo[i].BuySellFlg = -1;
-                        buyed = false;
-                    }
-                }
-
-                // 更新当前的点
-                if (chkVal != 0)
-                {
-                    lastChkVal = chkVal;
-                    lastPoint = stockInfo[i];
-                    lastIdx = i;
-                    tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
-                    tmpPoint.DayMinVal = lastPoint.DayMinVal;
-                }
-            }
-
-            return stockInfo;
-        }
-
-        /// <summary>
-        /// 取得前一个顶分型的位置
-        /// </summary>
-        /// <param name="fenXingInfo"></param>
-        /// <param name="idx"></param>
-        /// <param name="maxCnt"></param>
-        /// <returns></returns>
-        public static int GeBefTopVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
-        {
-            for (int i = idx + 1; i < maxCnt; i++)
-            {
-                if (fenXingInfo[i].CurPointType == PointType.Top)
-                {
-                    //return fenXingInfo[i].DayVal;
-                    //return fenXingInfo[i].DayMaxVal;
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        /// <summary>
-        /// 取得前一个底分型的位置
-        /// </summary>
-        /// <param name="fenXingInfo"></param>
-        /// <param name="idx"></param>
-        /// <param name="maxCnt"></param>
-        /// <returns></returns>
-        public static int GeBefBottomPos(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
-        {
-            for (int i = idx + 1; i < maxCnt; i++)
-            {
-                if (fenXingInfo[i].CurPointType == PointType.Bottom)
-                {
-                    //return fenXingInfo[i].DayVal;
-                    //return fenXingInfo[i].DayMinVal;
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         #endregion
 
         #region " 主要处理 "
@@ -720,7 +454,12 @@ namespace DayBatch
             // 获取5分钟数据
             if (hasM5)
             {
-                this.GetMinuteData(TimeRange.M5);
+                bool isSuccess = this.GetMinuteData(TimeRange.M5);
+                if (!isSuccess)
+                {
+                    // 失败了，再来一次
+                    this.GetMinuteData(TimeRange.M5);
+                }
             }
 
             // 获取15分钟数据
@@ -745,8 +484,9 @@ namespace DayBatch
         /// <summary>
         /// 取得所有分钟级别的数据
         /// </summary>
-        private void GetMinuteData(TimeRange timeRange)
+        private bool GetMinuteData(TimeRange timeRange)
         {
+            bool isSuccess = true;
             try
             {
                 string tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取" + timeRange.ToString() + "数据 开始";
@@ -767,7 +507,7 @@ namespace DayBatch
                 }
 
                 // 取得分钟级别数据的共通
-                this.GetMinuteDataCommon(endDay, timeRange);
+                isSuccess = this.GetMinuteDataCommon(endDay, timeRange);
 
                 tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取" + timeRange.ToString() + "数据 结束";
                 Console.WriteLine(tmp);
@@ -775,17 +515,22 @@ namespace DayBatch
             }
             catch (Exception e)
             {
+                isSuccess = false;
                 Console.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message);
                 File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.Message + "\r\n", Encoding.UTF8);
                 File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + e.StackTrace + "\r\n", Encoding.UTF8);
             }
+
+            return isSuccess;
         }
 
         /// <summary>
         /// 取得分钟级别数据的共通
         /// </summary>
-        private void GetMinuteDataCommon(string endDay, TimeRange timeRange)
+        private bool GetMinuteDataCommon(string endDay, TimeRange timeRange)
         {
+            bool isSuccess = true;
+
             // 取得已经存在的所有数据信息
             this.allCsv = Util.GetAllFiles(this.basePath + CSV_FOLDER + timeRange.ToString() + "/");
 
@@ -820,6 +565,8 @@ namespace DayBatch
                 }
                 catch (Exception exp)
                 {
+                    isSuccess = false;
+
                     File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取 " + stockCd + " 数据时发生异常\r\n", Encoding.UTF8);
                     File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.Message + "\r\n", Encoding.UTF8);
                     File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + exp.StackTrace + "\r\n", Encoding.UTF8);
@@ -842,6 +589,8 @@ namespace DayBatch
             {
                 this.callEnd();
             }
+
+            return isSuccess;
         }
 
         /// <summary>
@@ -1096,7 +845,7 @@ namespace DayBatch
             if (timeRange == TimeRange.Day)
             {
                 // 取得5日级别信息
-                List<BaseDataInfo> stockInfo5Jibie = GetJibieStockInfo(stockInfos, 5);
+                List<BaseDataInfo> stockInfo5Jibie = GetAverageLineInfo(stockInfos, 5);
 
                 // 开始画5日线
                 if (stockInfo5Jibie.Count > 0)
@@ -1118,12 +867,12 @@ namespace DayBatch
             // 开始画分型、笔的线段
             if (timeRange == TimeRange.M30)
             {
-                List<BaseDataInfo> fenXingInfo = SetFenxingInfoDayM30(stockInfos);
+                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingM30(stockInfos);
                 this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
             }
             else
             {
-                List<BaseDataInfo> fenXingInfo = SetFenxingInfo(stockInfos);
+                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
                 this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
             }
 
@@ -1332,123 +1081,346 @@ namespace DayBatch
             return hasBuyPoint;
         }
 
+        #endregion
+
+        #region " 模拟运行 "
+
         /// <summary>
-        /// 取得没有包括关系的值的位置
+        /// 模拟运行
         /// </summary>
-        /// <param name="stockInfo"></param>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        private static int GetNotIncludeInfo(List<BaseDataInfo> stockInfo, int idx)
+        private void StartEmuTest()
         {
-            BaseDataInfo curItem = stockInfo[idx];
+            // 取得已经存在的所有数据信息
+            this.subFolder = TimeRange.M30.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+            Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
+            StringBuilder notGoodSb = new StringBuilder();
+            StringBuilder goodSb = new StringBuilder();
 
-            while (idx >= 0)
+            // 设置进度条
+            DosProgressBar dosProgressBar = new DosProgressBar();
+            int idx = 0;
+            int totalLen = allCsv.Count;
+            Console.WriteLine();
+
+            foreach (FilePosInfo fileItem in allCsv)
             {
-                if (idx == 0)
-                {
-                    return 0;
-                }
+                idx++;
 
-                BaseDataInfo nextItem = stockInfo[idx - 1];
-
-                // 判断是否变化
-                if ((curItem.DayVal > nextItem.DayVal && (curItem.DayVal - nextItem.DayVal) <= curItem.DayVal * (LIMIT_VAL - 1))
-                    || (curItem.DayVal < nextItem.DayVal && (nextItem.DayVal - curItem.DayVal) <= nextItem.DayVal * (LIMIT_VAL - 1)))
+                if (fileItem.IsFolder)
                 {
-                    // 前后没有变化
-                    idx--;
                     continue;
                 }
 
-                break;
+                string stockCdDate = Util.GetShortNameWithoutType(fileItem.File);
+                if (NO_CHUANGYE && stockCdDate.StartsWith("300"))
+                {
+                    continue;
+                }
+
+                // 测试BuySell的逻辑
+                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb);
+
+                // 更新进度条
+                dosProgressBar.Dispaly((int)((idx / (totalLen * 1.0)) * 100));
             }
 
-            return idx;
+            this.SaveTotalBuySellInfo(allCsv, buySellInfo, notGoodSb, goodSb);
         }
 
         /// <summary>
-        /// 判断两个点的关系
+        /// 测试买卖点的逻辑
         /// </summary>
-        /// <param name="point2"></param>
-        /// <param name="point1"></param>
-        /// <returns></returns>
-        private static int ChkPointsVal(BaseDataInfo point2, BaseDataInfo point1)
+        /// <param name="stockCdDate"></param>
+        private void CheckBuySellPoint(string stockCdDate, Dictionary<string, List<string>[]> buySellInfo,
+            StringBuilder notGoodSb, StringBuilder goodSb)
         {
-            // 判断是否变化
-            if (point2.DayMaxVal > point1.DayMaxVal * LIMIT_VAL
-                && point2.DayMinVal > point1.DayMinVal * LIMIT_VAL)
+            // 获得数据信息
+            Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdDate, this.subFolder, "./");
+            if (dataInfo == null)
             {
-                return 1;
+                return;
             }
-            else if (point1.DayMaxVal > point2.DayMaxVal * LIMIT_VAL
-                && point1.DayMinVal > point2.DayMinVal * LIMIT_VAL)
+
+            List<BaseDataInfo> stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+            if (stockInfos.Count == 0)
             {
-                return -1;
+                return;
+            }
+
+            // 设置测试的开始时间
+            string startDate;
+            int startIdx = 0;
+            if (this.subFolder.Equals(DAY_FOLDER))
+            {
+                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd");
             }
             else
             {
-                // 前后有包含关系，或者没有变化
-                point1.DayMaxVal = point2.DayMaxVal;
-                return 0;
+                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd090000");
             }
 
-            //// 判断是否变化
-            //if (point2.DayVal > point1.DayVal)
-            //{
-            //    if ((point2.DayVal - point1.DayVal) <= point1.DayVal * (LIMIT_VAL - 1))
-            //    {
-            //        // 前后没有变化
-            //        return 0;
-            //    }
-            //    else
-            //    {
-            //        return 1;
-            //    }
-            //}
-            //else if (point2.DayVal < point1.DayVal)
-            //{
-            //    if ((point1.DayVal - point2.DayVal) <= point2.DayVal * (LIMIT_VAL - 1))
-            //    {
-            //        // 前后没有变化
-            //        return 0;
-            //    }
-            //    else
-            //    {
-            //        return -1;
-            //    }
-            //}
-            //else
-            //{
-            //    // 前后没有变化
-            //    return 0;
-            //}
-        }
-
-        /// <summary>
-        /// 查找更低的地点
-        /// </summary>
-        /// <param name="fenXingInfo"></param>
-        /// <param name="lastBottomPos"></param>
-        /// <param name="maxCnt"></param>
-        /// <returns></returns>
-        private static bool hasMoreLowBottom(List<BaseDataInfo> fenXingInfo, int lastBottomPos, int maxCnt)
-        {
-            for (int i = lastBottomPos + 1; i < maxCnt; i++)
+            // 取得分型的数据
+            List<BaseDataInfo> fenxingInfo = this.fenXing.DoFenXingM30(stockInfos);
+            for (int i = 0; i < fenxingInfo.Count; i++)
             {
-                if (fenXingInfo[i].CurPointType == PointType.Bottom)
+                if (string.Compare(fenxingInfo[i].Day, startDate) < 0)
                 {
-                    if (fenXingInfo[i].DayMinVal < fenXingInfo[lastBottomPos].DayMinVal)
+                    startIdx = i;
+                    break;
+                }
+            }
+
+            if (startIdx == 0)
+            {
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            string stockCd = stockCdDate.Substring(0, 6);
+            decimal buyPrice = 0;
+            bool buyed = false;
+            List<string> buyInfo;
+            List<string> sellInfo;
+            for (int i = startIdx; i >= 0; i--)
+            {
+                if (fenxingInfo[i].BuySellFlg < 0 && buyed)
+                {
+                    buyed = false;
+                    sb.Append(fenxingInfo[i].Day).Append(" ");
+                    sb.Append(fenxingInfo[i].DayVal.ToString().PadLeft(8, ' ')).Append(" ");
+                    decimal diff = ((fenxingInfo[i].DayVal / buyPrice) - 1) * 100;
+                    sb.Append(diff.ToString("0.00").PadLeft(7, ' ')).Append("%\r\n");
+
+                    if (diff < -1)
                     {
-                        return true;
+                        string[] tmp = sb.ToString().Split('\r');
+                        notGoodSb.Append(tmp[tmp.Length - 2]).Append("\r\n");
+                    }
+                    else if (diff > 1)
+                    {
+                        string[] tmp = sb.ToString().Split('\r');
+                        goodSb.Append(tmp[tmp.Length - 2]).Append("\r\n");
+                    }
+
+                    if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
+                    {
+                        buyInfo = new List<string>();
+                        sellInfo = new List<string>();
+                        List<string>[] listBuySell = new List<string>[2];
+                        listBuySell[0] = buyInfo;
+                        listBuySell[1] = sellInfo;
+                        buySellInfo.Add(fenxingInfo[i].Day, listBuySell);
                     }
                     else
                     {
-                        return false;
+                        List<string>[] listBuySell = buySellInfo[fenxingInfo[i].Day];
+                        buyInfo = listBuySell[0];
+                        sellInfo = listBuySell[1];
+                    }
+                    //sellInfo.Add(stockCd + "(" + fenxingInfo[i].DayVal + "(" + diff.ToString("0.00") + "%))");
+                    sellInfo.Add(stockCd + " " + fenxingInfo[i].DayVal);
+                }
+                else if (fenxingInfo[i].BuySellFlg > 0 && !buyed)
+                {
+                    //decimal befBottomVal = DayBatchProcess.GeBefBottomVal(fenxingInfo, i, startIdx);
+                    //if (!buyed && befBottomVal != 0 && fenxingInfo[i].DayVal > befBottomVal * Consts.LIMIT_VAL)
+                    {
+                        buyed = true;
+                        buyPrice = fenxingInfo[i].DayVal;
+                        sb.Append(stockCd).Append(" ");
+                        sb.Append(fenxingInfo[i].Day).Append(" ");
+                        sb.Append(buyPrice.ToString().PadLeft(8, ' ')).Append(" ");
+
+                        if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
+                        {
+                            buyInfo = new List<string>();
+                            sellInfo = new List<string>();
+                            List<string>[] listBuySell = new List<string>[2];
+                            listBuySell[0] = buyInfo;
+                            listBuySell[1] = sellInfo;
+                            buySellInfo.Add(fenxingInfo[i].Day, listBuySell);
+                        }
+                        else
+                        {
+                            List<string>[] listBuySell = buySellInfo[fenxingInfo[i].Day];
+                            buyInfo = listBuySell[0];
+                            sellInfo = listBuySell[1];
+                        }
+                        //buyInfo.Add(stockCd + "(" + buyPrice + ")");
+                        buyInfo.Add(stockCd + " " + buyPrice);
                     }
                 }
             }
 
-            return false;
+            if (buyed)
+            {
+                sb.Append("\r\n");
+            }
+
+            if (sb.Length > 0)
+            {
+                File.WriteAllText(BUY_SELL_POINT + stockCd + ".txt", sb.ToString(), Encoding.UTF8);
+            }
+        }
+
+        /// <summary>
+        /// 保存买卖信息
+        /// </summary>
+        /// <param name="buySellInfo"></param>
+        private void SaveTotalBuySellInfo(List<FilePosInfo> allCsv, Dictionary<string, List<string>[]> buySellInfo,
+            StringBuilder notGoodSb, StringBuilder goodSb)
+        {
+            List<string> dayList = new List<string>(buySellInfo.Keys);
+            dayList.Sort();
+
+            int buyThread = 5;
+            decimal threadMoney = 1000;
+            List<string> buyedStock = new List<string>();
+            List<Dictionary<string, object>> buySellHst = new List<Dictionary<string, object>>();
+            Dictionary<string, object> buySellItem;
+            StringBuilder sb;
+            decimal diff;
+            while (buyThread-- > 0)
+            {
+                buySellItem = new Dictionary<string, object>();
+                buySellItem.Add("stockCd", string.Empty);
+                buySellItem.Add("status", string.Empty);
+                buySellItem.Add("price", (decimal)0);
+                buySellItem.Add("buyCount", (decimal)0);
+                buySellItem.Add("buyMoney", (decimal)0);
+                buySellItem.Add("TotalMoney", threadMoney);
+
+                sb = new StringBuilder();
+                sb.Append("Thread").Append(buyThread).Append(" ");
+                sb.Append("Start Total: " + threadMoney).Append("\r\n");
+                buySellItem.Add("logBuf", sb);
+
+                buySellHst.Add(buySellItem);
+            }
+
+            foreach (string day in dayList)
+            {
+                List<string> buyInfo = buySellInfo[day][0];
+                List<string> sellInfo = buySellInfo[day][1];
+                buyInfo.Reverse();
+                buyedStock.Clear();
+
+                foreach (Dictionary<string, object> bsp in buySellHst)
+                {
+                    if (!"B".Equals(bsp["status"] as string))
+                    {
+                        foreach (string bp in buyInfo)
+                        {
+                            string[] tmp = bp.Split(' ');
+                            decimal price = decimal.Parse(tmp[1]);
+
+                            if (!buyedStock.Contains(tmp[0]))
+                            {
+                                decimal totalMoney = (decimal)bsp["TotalMoney"];
+                                int canBuyCnt = this.CanBuyCount(totalMoney, price);
+                                if (canBuyCnt > 0)
+                                {
+                                    buyedStock.Add(tmp[0]);
+
+                                    bsp["stockCd"] = tmp[0];
+                                    bsp["status"] = "B";
+                                    bsp["price"] = price;
+                                    bsp["buyCount"] = (decimal)(canBuyCnt * 100);
+                                    bsp["buyMoney"] = (decimal)bsp["buyCount"] * price + 5;
+                                    bsp["TotalMoney"] = (decimal)bsp["TotalMoney"] - (decimal)bsp["buyMoney"];
+
+                                    sb = (StringBuilder)bsp["logBuf"];
+                                    sb.Append(day).Append(" B ").Append(tmp[0]).Append(" ");
+                                    sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
+                                    sb.Append(bsp["buyCount"].ToString().PadLeft(4, ' ')).Append("\r\n");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (string sp in sellInfo)
+                        {
+                            if (sp.StartsWith(bsp["stockCd"] as string, StringComparison.OrdinalIgnoreCase))
+                            {
+                                string[] tmp = sp.Split(' ');
+                                decimal price = decimal.Parse(tmp[1]);
+                                decimal sellMoney = (decimal)bsp["buyCount"] * price;
+
+                                buyedStock.Remove(tmp[0]);
+
+                                bsp["status"] = "S";
+                                bsp["TotalMoney"] = (decimal)bsp["TotalMoney"] + sellMoney;
+
+                                diff = ((sellMoney / (decimal)bsp["buyMoney"]) - 1) * 100;
+                                sb = (StringBuilder)bsp["logBuf"];
+                                sb.Append(day).Append(" S ").Append(bsp["stockCd"]).Append(" ");
+                                sb.Append(price.ToString().PadLeft(8, ' ')).Append(" ");
+                                sb.Append(bsp["buyCount"].ToString().PadLeft(4, ' ')).Append(" ");
+                                sb.Append(diff.ToString("0.00")).Append(" ").Append(bsp["TotalMoney"]).Append("(");
+                                diff = ((decimal)bsp["TotalMoney"] / threadMoney - 1) * 100;
+                                sb.Append(diff.ToString("0.00")).Append(")");
+                                sb.Append("\r\n");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            StringBuilder sbAll = new StringBuilder();
+            decimal totalAll = 0;
+
+            foreach (Dictionary<string, object> bsp in buySellHst)
+            {
+                sb = (StringBuilder)bsp["logBuf"];
+                decimal total = (decimal)bsp["TotalMoney"];
+                sb.Append("End Total: ");
+
+                if ("B".Equals(bsp["status"]))
+                {
+                    FilePosInfo lastInfo = allCsv.FirstOrDefault(p => p.File.IndexOf(bsp["stockCd"] as string) > 0);
+                    // 获得数据信息
+                    Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(
+                        Util.GetShortNameWithoutType(lastInfo.File), this.subFolder, "./");
+                    if (dataInfo != null)
+                    {
+                        List<BaseDataInfo> stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+                        if (stockInfos.Count > 0)
+                        {
+                            total += (decimal)bsp["buyCount"] * stockInfos[0].DayVal;
+                        }
+                    }
+                }
+                totalAll += total;
+                sb.Append(total).Append(" ");
+                diff = (total / threadMoney - 1) * 100;
+                sb.Append(diff.ToString("0.00")).Append("%");
+
+                sbAll.Append(sb.ToString()).Append("\r\n\r\n");
+            }
+            sbAll.Append("Total : ").Append(threadMoney * buySellHst.Count).Append(" ");
+            diff = (totalAll / (threadMoney * buySellHst.Count) - 1) * 100;
+            sbAll.Append(totalAll).Append(" ").Append(diff.ToString("0.00")).Append("%\r\n\r\n");
+
+            File.WriteAllText(BUY_SELL_POINT + "TotalBuySellInfo.txt", sbAll.ToString(), Encoding.UTF8);
+
+            File.WriteAllText(BUY_SELL_POINT + "BadBuySellPoint.txt", notGoodSb.ToString(), Encoding.UTF8);
+
+            File.WriteAllText(BUY_SELL_POINT + "GoodBuySellPoint.txt", goodSb.ToString(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 可以买多少数量的取得
+        /// </summary>
+        /// <param name="money"></param>
+        /// <param name="price"></param>
+        /// <returns></returns>
+        private int CanBuyCount(decimal money, decimal price)
+        {
+            return (int)((money - 5) / (price * 100));
         }
 
         #endregion
