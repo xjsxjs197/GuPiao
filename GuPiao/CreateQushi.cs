@@ -612,6 +612,7 @@ namespace GuPiao
             //this.Do(this.CheckAllCd);
             //this.Do(this.CheckRightCd);
             //this.Do(this.ReplaceDayData);
+            //this.Do(this.SetRongziRongYuan);
         }
 
         #endregion
@@ -1388,6 +1389,33 @@ namespace GuPiao
         #endregion
 
         #region " 测试模块 "
+
+        /// <summary>
+        /// 融资融券设置
+        /// </summary>
+        private void SetRongziRongYuan()
+        {
+            string[] allLine = File.ReadAllLines(@"./Data/RongZiRongYuan.txt");
+            StringBuilder sb = new StringBuilder();
+
+            foreach (string line in allLine)
+            {
+                if (string.IsNullOrEmpty(line))
+                {
+                    continue;
+                }
+
+                string[] tmp = line.Split(' ');
+                if (tmp.Length >= 3)
+                {
+                    sb.Append(tmp[0]).Append(" ");
+                    sb.Append(tmp[1]).Append(" ");
+                    sb.Append(tmp[2]).Append("\r\n");
+                }
+            }
+
+            File.WriteAllText(@"./Data/RongZiRongYuan1.txt", sb.ToString(), Encoding.UTF8);
+        }
 
         /// <summary>
         /// 修正天的数据

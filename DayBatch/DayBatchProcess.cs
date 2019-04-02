@@ -1100,7 +1100,7 @@ namespace DayBatch
         {
             // 取得已经存在的所有数据信息
             this.subFolder = TimeRange.M30.ToString() + "/";
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+            List<FilePosInfo> allCsv = this.FilterRongziRongQuan(Util.GetAllFiles(CSV_FOLDER + this.subFolder));
             Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
             StringBuilder notGoodSb = new StringBuilder();
             StringBuilder goodSb = new StringBuilder();
@@ -1471,6 +1471,47 @@ namespace DayBatch
             }
 
             return emuInfo;
+        }
+
+        /// <summary>
+        /// 过滤融资融券
+        /// </summary>
+        /// <param name="allCsv"></param>
+        /// <returns></returns>
+        private List<FilePosInfo> FilterRongziRongQuan(List<FilePosInfo> allCsv)
+        {
+            string[] rongziRongQuan = File.ReadAllLines(@"./Data/RongZiRongYuan.txt");
+            List<string> allRongzi = new List<string>();
+            foreach (string line in rongziRongQuan)
+            {
+                if (string.IsNullOrEmpty(line))
+                {
+                    continue;
+                }
+
+                string[] tmp = line.Split(' ');
+                if (tmp.Length >= 3)
+                {
+                    allRongzi.Add(tmp[1]);
+                }
+            }
+
+            List<FilePosInfo> newCsv = new List<FilePosInfo>();
+            foreach (FilePosInfo item in allCsv)
+            {
+                if (item.IsFolder)
+                {
+                    continue;
+                }
+
+                string cdDate = Util.GetShortNameWithoutType(item.File);
+                if (!allRongzi.Contains(cdDate.Substring(0, 6)))
+                {
+                    newCsv.Add(item);
+                }
+            }
+
+            return newCsv;
         }
 
         #endregion
