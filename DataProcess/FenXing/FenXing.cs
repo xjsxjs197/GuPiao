@@ -46,11 +46,11 @@ namespace DataProcess.FenXing
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public int DoRealTimeFenXingM30(BaseDataInfo data)
+        public int DoRealTimeFenXingM30(BaseDataInfo data, int avgDataLen)
         {
             hstData.Add(data);
 
-            this.DoFenXingM30();
+            this.DoFenXingM30(avgDataLen);
 
             return data.BuySellFlg;
         }
@@ -73,12 +73,12 @@ namespace DataProcess.FenXing
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public List<BaseDataInfo> DoFenXingM30(List<BaseDataInfo> data)
+        public List<BaseDataInfo> DoFenXingM30(List<BaseDataInfo> data, int avgDataLen)
         {
             hstData.Clear();
             hstData.AddRange(data);
 
-            return this.DoFenXingM30();
+            return this.DoFenXingM30(avgDataLen);
         }
 
         #endregion
@@ -154,7 +154,7 @@ namespace DataProcess.FenXing
         /// 分型处理(30分钟)
         /// </summary>
         /// <returns></returns>
-        private List<BaseDataInfo> DoFenXingM30()
+        private List<BaseDataInfo> DoFenXingM30(int avgDataLen)
         {
             // 设置第一个点
             BaseDataInfo lastPoint = new BaseDataInfo();
@@ -206,7 +206,7 @@ namespace DataProcess.FenXing
             }
 
             // 设置日均线数据
-            this.SetDayAverageLineInfo();
+            this.SetDayAverageLineInfo(avgDataLen);
 
             // 开始比较
             int chkVal = 0;
@@ -390,13 +390,12 @@ namespace DataProcess.FenXing
         /// <summary>
         /// 设置日均线数据
         /// </summary>
-        /// <returns></returns>
-        private void SetDayAverageLineInfo()
+        /// <param name="avgDataLen">均值的长度（1为半小时）</param>
+        private void SetDayAverageLineInfo(int avgDataLen)
         {
-            const int AVG_DATA_LEN = 8;
             int index = 0;
-            int jibieCount = AVG_DATA_LEN - 1;
-            int maxCount = this.hstData.Count - AVG_DATA_LEN;
+            int jibieCount = avgDataLen - 1;
+            int maxCount = this.hstData.Count - avgDataLen;
             decimal total = 0;
 
             while (index <= maxCount)
@@ -407,7 +406,7 @@ namespace DataProcess.FenXing
                     total += this.hstData[index + i].DayVal;
                 }
 
-                this.hstData[index].DayAvgVal = total / AVG_DATA_LEN;
+                this.hstData[index].DayAvgVal = total / avgDataLen;
 
                 index++;
             }

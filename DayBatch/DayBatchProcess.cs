@@ -752,13 +752,19 @@ namespace DayBatch
         {
             try
             {
-                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 画" + timeRange.ToString() + "趋势图 开始\r\n", Encoding.UTF8);
+                string tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 画" + timeRange.ToString() + "趋势图 开始";
+                Console.WriteLine();
+                Console.WriteLine(tmp);
+                File.AppendAllText(logFile, tmp + "\r\n", Encoding.UTF8);
 
                 // 取得已经存在的所有数据信息
                 this.subFolder = timeRange.ToString() + "/";
                 List<FilePosInfo> allCsv = Util.GetAllFiles(this.basePath + CSV_FOLDER + this.subFolder);
 
                 // 设置进度条
+                DosProgressBar dosProgressBar = new DosProgressBar();
+                int idx = 0;
+                int totalLen = allCsv.Count;
                 if (this.callBef != null)
                 {
                     this.callBef(allCsv.Count);
@@ -776,6 +782,8 @@ namespace DayBatch
                     try
                     {
                         this.CreateQushiImg(Util.GetShortNameWithoutType(fileItem.File), timeRange);
+                        
+                        dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
                     }
                     catch (Exception e)
                     {
@@ -867,7 +875,7 @@ namespace DayBatch
             // 开始画分型、笔的线段
             if (timeRange == TimeRange.M30)
             {
-                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingM30(stockInfos);
+                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingM30(stockInfos, 8);
                 this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
             }
             else
@@ -1096,6 +1104,9 @@ namespace DayBatch
             Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
             StringBuilder notGoodSb = new StringBuilder();
             StringBuilder goodSb = new StringBuilder();
+            Dictionary<string, string> emuInfo = this.GetEmuSettingInfo();
+            int befDay = Convert.ToInt32(emuInfo["befDay"]);
+            int avgDataLen = Convert.ToInt32(emuInfo["avgDataLen"]);
 
             // 设置进度条
             DosProgressBar dosProgressBar = new DosProgressBar();
@@ -1119,13 +1130,13 @@ namespace DayBatch
                 }
 
                 // 测试BuySell的逻辑
-                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb);
+                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb, befDay, avgDataLen);
 
                 // 更新进度条
                 dosProgressBar.Dispaly((int)((idx / (totalLen * 1.0)) * 100));
             }
 
-            this.SaveTotalBuySellInfo(allCsv, buySellInfo, notGoodSb, goodSb);
+            this.SaveTotalBuySellInfo(allCsv, buySellInfo, notGoodSb, goodSb, emuInfo);
         }
 
         /// <summary>
@@ -1133,7 +1144,7 @@ namespace DayBatch
         /// </summary>
         /// <param name="stockCdDate"></param>
         private void CheckBuySellPoint(string stockCdDate, Dictionary<string, List<string>[]> buySellInfo,
-            StringBuilder notGoodSb, StringBuilder goodSb)
+            StringBuilder notGoodSb, StringBuilder goodSb, int befDay, int avgDataLen)
         {
             // 获得数据信息
             Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdDate, this.subFolder, "./");
@@ -1150,18 +1161,18 @@ namespace DayBatch
 
             // 设置测试的开始时间
             string startDate;
-            int startIdx = 0;
+            int startIdx = -1;
             if (this.subFolder.Equals(DAY_FOLDER))
             {
-                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd");
+                startDate = DateTime.Now.AddDays(-befDay).ToString("yyyyMMdd");
             }
             else
             {
-                startDate = DateTime.Now.AddDays(-30).ToString("yyyyMMdd090000");
+                startDate = DateTime.Now.AddDays(-befDay).ToString("yyyyMMdd090000");
             }
 
             // 取得分型的数据
-            List<BaseDataInfo> fenxingInfo = this.fenXing.DoFenXingM30(stockInfos);
+            List<BaseDataInfo> fenxingInfo = this.fenXing.DoFenXingM30(stockInfos, avgDataLen);
             for (int i = 0; i < fenxingInfo.Count; i++)
             {
                 if (string.Compare(fenxingInfo[i].Day, startDate) < 0)
@@ -1171,9 +1182,9 @@ namespace DayBatch
                 }
             }
 
-            if (startIdx == 0)
+            if (startIdx == -1)
             {
-                return;
+                startIdx = fenxingInfo.Count - 1;
             }
 
             StringBuilder sb = new StringBuilder();
@@ -1269,13 +1280,15 @@ namespace DayBatch
         /// </summary>
         /// <param name="buySellInfo"></param>
         private void SaveTotalBuySellInfo(List<FilePosInfo> allCsv, Dictionary<string, List<string>[]> buySellInfo,
-            StringBuilder notGoodSb, StringBuilder goodSb)
+            StringBuilder notGoodSb, StringBuilder goodSb, Dictionary<string, string> emuInfo)
         {
             List<string> dayList = new List<string>(buySellInfo.Keys);
             dayList.Sort();
 
-            int buyThread = 5;
-            decimal threadMoney = 1000;
+            int buyThread = Convert.ToInt32(emuInfo["threadCnt"]);
+            decimal threadMoney = Convert.ToDecimal(emuInfo["threadMoney"]);
+            bool isReverse = Convert.ToBoolean(emuInfo["isReverse"]);
+
             List<string> buyedStock = new List<string>();
             List<Dictionary<string, object>> buySellHst = new List<Dictionary<string, object>>();
             Dictionary<string, object> buySellItem;
@@ -1303,7 +1316,10 @@ namespace DayBatch
             {
                 List<string> buyInfo = buySellInfo[day][0];
                 List<string> sellInfo = buySellInfo[day][1];
-                buyInfo.Reverse();
+                if (isReverse)
+                {
+                    buyInfo.Reverse();
+                }
                 buyedStock.Clear();
 
                 foreach (Dictionary<string, object> bsp in buySellHst)
@@ -1421,6 +1437,40 @@ namespace DayBatch
         private int CanBuyCount(decimal money, decimal price)
         {
             return (int)((money - 5) / (price * 100));
+        }
+
+        /// <summary>
+        /// 取得模拟运行时的参数
+        /// </summary>
+        /// <returns></returns>
+        private Dictionary<string, string> GetEmuSettingInfo()
+        {
+            Dictionary<string, string> emuInfo = new Dictionary<string, string>();
+            emuInfo.Add("befDay", "30");
+            emuInfo.Add("threadCnt", "5");
+            emuInfo.Add("threadMoney", "1000");
+            emuInfo.Add("isReverse", "0");
+            emuInfo.Add("avgDataLen", "4");
+
+            try
+            {
+                string[] emuSetting = File.ReadAllLines(@"./BuyCellEmuSetting.txt");
+                if (emuSetting.Length >= 8)
+                {
+                    emuInfo["befDay"] = emuSetting[1];
+                    emuInfo["threadCnt"] = emuSetting[3];
+                    emuInfo["threadMoney"] = emuSetting[5];
+                    emuInfo["isReverse"] = emuSetting[7];
+                    emuInfo["avgDataLen"] = emuSetting[9];
+                }
+            }
+            catch (Exception e)
+            {
+                Console.Write(e.Message);
+                Console.WriteLine();
+            }
+
+            return emuInfo;
         }
 
         #endregion
