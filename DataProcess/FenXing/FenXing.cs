@@ -229,7 +229,8 @@ namespace DataProcess.FenXing
                     // 当前上升，前面是下降，说明前一个点是低点
                     lastPoint.CurPointType = PointType.Bottom;
 
-                    if (!buyed && this.hstData[i].DayVal > this.hstData[i].DayAvgVal)
+                    if (!buyed && this.hstData[i].DayVal > this.hstData[i].DayAvgVal
+                        && !this.hstData[i].Day.EndsWith("100000") && !this.hstData[i].Day.EndsWith("150000"))
                     {
                         // 大于日线，并且未买过，判断是否是第二类买点
                         lastBottomPos = this.GeBefBottomPos(this.hstData, lastIdx, maxCnt);
@@ -261,6 +262,14 @@ namespace DataProcess.FenXing
                                 buyed = false;
                             }
                         }
+
+                        if (startingSell)
+                        {
+                            // 开始卖的准备，并且趋势开始上升
+                            this.hstData[i].BuySellFlg = -1;
+                            buyed = false;
+                            startingSell = false;
+                        }
                     }
 
                     // 已经买过，只要下降到买入价，或者下降到日线一下，并且不是当天，开始卖的准备
@@ -271,11 +280,9 @@ namespace DataProcess.FenXing
                     }
                 }
 
-                if (chkVal >= 0 && startingSell)
-                { 
-                    // 开始卖的准备，并且趋势开始上升
-                    this.hstData[i].BuySellFlg = -1;
-                    buyed = false;
+                if (chkVal >= 0 && startingSell && (this.hstData[i].DayVal > buyPrice * LIMIT_VAL || this.hstData[i].DayVal > this.hstData[i].DayAvgVal))
+                {
+                    // 已经开始卖的准备，但是趋势开始上升，清除标志位
                     startingSell = false;
                 }
 

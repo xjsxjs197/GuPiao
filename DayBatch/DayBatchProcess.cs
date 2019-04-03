@@ -510,6 +510,7 @@ namespace DayBatch
                 isSuccess = this.GetMinuteDataCommon(endDay, timeRange);
 
                 tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 获取" + timeRange.ToString() + "数据 结束";
+                Console.WriteLine();
                 Console.WriteLine(tmp);
                 File.AppendAllText(logFile, tmp + "\r\n", Encoding.UTF8);
             }
@@ -540,7 +541,7 @@ namespace DayBatch
 
             // 设置进度条
             DosProgressBar dosProgressBar = new DosProgressBar();
-            int idx = 0;
+            int idx = 1;
             if (this.callBef != null)
             {
                 this.callBef(this.allStockCd.Count);
@@ -628,7 +629,7 @@ namespace DayBatch
 
                 // 设置进度条
                 DosProgressBar dosProgressBar = new DosProgressBar();
-                int idx = 0;
+                int idx = 1;
                 if (this.callBef != null)
                 {
                     this.callBef(this.allStockCd.Count);
@@ -675,6 +676,7 @@ namespace DayBatch
                 }
 
                 tmp = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " 计算" + timeRange.ToString() + "数据 结束";
+                Console.WriteLine();
                 Console.WriteLine(tmp);
                 File.AppendAllText(logFile, tmp + "\r\n", Encoding.UTF8);
             }
