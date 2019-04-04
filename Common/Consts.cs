@@ -66,9 +66,14 @@ namespace Common
         public const string RESULT_FOLDER = @"ChkResult/";
 
         /// <summary>
-        /// 买卖点目录
+        /// 使用历史数据，生成的买卖点目录
         /// </summary>
-        public const string BUY_SELL_POINT = @"BuySellPoint/";
+        public const string BUY_SELL_POINT_HST = @"BuySellPointHst/";
+
+        /// <summary>
+        /// 使用实时数据，生成的买卖点目录
+        /// </summary>
+        public const string BUY_SELL_POINT_REAL = @"BuySellPointReal/";
 
         /// <summary>
         /// 天数据的目录

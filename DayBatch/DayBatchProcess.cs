@@ -1210,7 +1210,6 @@ namespace DayBatch
                 {
                     buyed = true;
                     buyPrice = fenxingInfo[i].DayVal;
-                    sb.Append(stockCd).Append(" ");
                     sb.Append(fenxingInfo[i].Day).Append(" ");
                     sb.Append(buyPrice.ToString().PadLeft(8, ' ')).Append(" ");
 
@@ -1240,7 +1239,7 @@ namespace DayBatch
 
             if (sb.Length > 0)
             {
-                File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT + stockCd + ".txt", sb.ToString(), Encoding.UTF8);
+                File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + stockCd + ".txt", sb.ToString(), Encoding.UTF8);
             }
         }
 
@@ -1390,11 +1389,11 @@ namespace DayBatch
             diff = (totalAll / (threadMoney * buySellHst.Count) - 1) * 100;
             sbAll.Append(totalAll).Append(" ").Append(diff.ToString("0.00")).Append("%\r\n\r\n");
 
-            File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT + "TotalBuySellInfo.txt", sbAll.ToString(), Encoding.UTF8);
+            File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + "TotalBuySellInfo.txt", sbAll.ToString(), Encoding.UTF8);
 
-            File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT + "BadBuySellPoint.txt", notGoodSb.ToString(), Encoding.UTF8);
+            File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + "BadBuySellPoint.txt", notGoodSb.ToString(), Encoding.UTF8);
 
-            File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT + "GoodBuySellPoint.txt", goodSb.ToString(), Encoding.UTF8);
+            File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + "GoodBuySellPoint.txt", goodSb.ToString(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -1415,21 +1414,7 @@ namespace DayBatch
         /// <returns></returns>
         private List<FilePosInfo> FilterRongziRongQuan(List<FilePosInfo> allCsv)
         {
-            string[] rongziRongQuan = File.ReadAllLines(@"./Data/RongZiRongYuan.txt");
-            List<string> allRongzi = new List<string>();
-            foreach (string line in rongziRongQuan)
-            {
-                if (string.IsNullOrEmpty(line))
-                {
-                    continue;
-                }
-
-                string[] tmp = line.Split(' ');
-                if (tmp.Length >= 3)
-                {
-                    allRongzi.Add(tmp[1]);
-                }
-            }
+            List<string> allRongzi = Util.GetRongZiRongQuan();
 
             List<FilePosInfo> newCsv = new List<FilePosInfo>();
             foreach (FilePosInfo item in allCsv)

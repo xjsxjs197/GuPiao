@@ -1109,6 +1109,10 @@ namespace Common
             return retString;
         }
 
+        #endregion
+
+        #region " 数据处理相关共通 "
+
         /// <summary>
         /// 取得非节假日的日期
         /// </summary>
@@ -1182,6 +1186,7 @@ namespace Common
                 emuInfo.NeedChuangYe = Convert.ToBoolean(emuSetting[11]);
                 emuInfo.NeedRongZiRongQuan = Convert.ToBoolean(emuSetting[13]);
                 emuInfo.DataCntPerSecond = Convert.ToInt32(emuSetting[15]);
+                emuInfo.SystemTitle = emuSetting[17];
             }
             catch (Exception e)
             {
@@ -1191,6 +1196,41 @@ namespace Common
             }
 
             return emuInfo;
+        }
+
+        /// <summary>
+        /// 是否是创业板数据
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <returns></returns>
+        public static bool IsChuangyeStock(string stockCd)
+        {
+            return stockCd.StartsWith("300");
+        }
+
+        /// <summary>
+        /// 取得融资融券信息
+        /// </summary>
+        /// <returns></returns>
+        public static List<string> GetRongZiRongQuan()
+        {
+            List<string> allRongzi = new List<string>();
+            string[] rongziRongQuan = File.ReadAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "RongZiRongYuan.txt");
+            foreach (string line in rongziRongQuan)
+            {
+                if (string.IsNullOrEmpty(line))
+                {
+                    continue;
+                }
+
+                string[] tmp = line.Split(' ');
+                if (tmp.Length >= 3)
+                {
+                    allRongzi.Add(tmp[1]);
+                }
+            }
+
+            return allRongzi;
         }
 
         #endregion

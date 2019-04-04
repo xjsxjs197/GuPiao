@@ -49,5 +49,10 @@ namespace Common
         /// 每秒取多少数据
         /// </summary>
         public int DataCntPerSecond { get; set; }
+
+        /// <summary>
+        /// 系统名称以及版本号
+        /// </summary>
+        public string SystemTitle { get; set; }
     }
 }

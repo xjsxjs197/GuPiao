@@ -84,4 +84,11 @@ DayBatch/DayBatch.csproj.user
 Bin/ChkResult/BuyPoints.txt
 DayBatch/obj/Debug/Refactor/DayBatch.exe
 
-Bin/BuySellPoint/*.txt
+Bin/BuySellPointHst/*.txt
+Bin/BuySellPointReal/*.txt
+Bin/Data/TradeConfig.zmd
+Bin/system.uid
+Bin/TradeX-M.ini
+Bin/TradeX-M.lic
+Bin/TradeX.xml
+Bin/ZMTradeCoreM.bin
