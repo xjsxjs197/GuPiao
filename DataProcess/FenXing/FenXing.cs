@@ -229,7 +229,8 @@ namespace DataProcess.FenXing
                     {
                         // 大于日线，并且未买过，判断是否是第二类买点
                         lastBottomPos = this.GeBefBottomPos(this.hstData, lastIdx, maxCnt);
-                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
+                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL
+                            && !this.hasMoreLowBottom(this.hstData, lastBottomPos, maxCnt))
                         {
                             // 当前低点高于上一个低点，设置第二类买点
                             this.hstData[i].BuySellFlg = 2;
@@ -375,7 +376,7 @@ namespace DataProcess.FenXing
             {
                 if (fenXingInfo[i].CurPointType == PointType.Bottom)
                 {
-                    if (fenXingInfo[i].DayMinVal < fenXingInfo[lastBottomPos].DayMinVal)
+                    if (fenXingInfo[i].DayMinVal * Consts.LIMIT_VAL < fenXingInfo[lastBottomPos].DayMinVal)
                     {
                         return true;
                     }

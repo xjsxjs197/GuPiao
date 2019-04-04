@@ -99,6 +99,11 @@ namespace DayBatch
         /// </summary>
         private FenXing fenXing = new FenXing();
 
+        /// <summary>
+        /// 设定信息
+        /// </summary>
+        private BuySellSetting configInfo;
+
         #endregion
 
         #region " 初始化 "
@@ -697,6 +702,9 @@ namespace DayBatch
         /// <param name="hasDay"></param>
         private void DrawQushiImg(bool hasM5, bool hasM15, bool hasM30, bool hasDay)
         {
+            // 读取设定信息
+            this.configInfo = Util.GetBuyCellSettingInfo();
+
             // 画5分钟趋势图
             if (hasM5)
             {
@@ -852,7 +860,7 @@ namespace DayBatch
             // 开始画分型、笔的线段
             if (timeRange == TimeRange.M30)
             {
-                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingM30(stockInfos, 8);
+                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingM30(stockInfos, this.configInfo.AvgDataLen);
                 this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
             }
             else
