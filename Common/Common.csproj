@@ -62,36 +62,35 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseDataInfo.cs" />
-    <Compile Include="BaseForm.cs">
+    <Compile Include="Object\BaseDataInfo.cs" />
+    <Compile Include="BaseModule\BaseForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="BaseForm.Designer.cs">
+    <Compile Include="BaseModule\BaseForm.Designer.cs">
       <DependentUpon>BaseForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="FilePosInfo.cs" />
-    <Compile Include="PointType.cs" />
-    <Compile Include="DosProgressBar.cs" />
+    <Compile Include="BaseModule\Win32API.cs" />
+    <Compile Include="Consts.cs" />
+    <Compile Include="Enum\BuySellType.cs" />
+    <Compile Include="Enum\CurOpt.cs" />
+    <Compile Include="Enum\OrderStatus.cs" />
+    <Compile Include="Enum\OrderType.cs" />
+    <Compile Include="Object\BuySellPoint.cs" />
+    <Compile Include="Object\BuySellSetting.cs" />
+    <Compile Include="Object\FilePosInfo.cs" />
+    <Compile Include="Enum\PointType.cs" />
+    <Compile Include="BaseModule\DosProgressBar.cs" />
+    <Compile Include="Object\GuPiaoInfo.cs" />
+    <Compile Include="Object\OrderInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RichTextBoxEx .cs">
+    <Compile Include="BaseModule\RichTextBoxEx .cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="TimeRange.cs" />
+    <Compile Include="Enum\TimeRange.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="WuQuantizer\Box.cs" />
-    <Compile Include="WuQuantizer\ColorData.cs" />
-    <Compile Include="WuQuantizer\CubeCut.cs" />
-    <Compile Include="WuQuantizer\IWuQuantizer.cs" />
-    <Compile Include="WuQuantizer\Lookup.cs" />
-    <Compile Include="WuQuantizer\LookupData.cs" />
-    <Compile Include="WuQuantizer\Pixel.cs" />
-    <Compile Include="WuQuantizer\QuantizationException.cs" />
-    <Compile Include="WuQuantizer\QuantizedPalette.cs" />
-    <Compile Include="WuQuantizer\WuQuantizer.cs" />
-    <Compile Include="WuQuantizer\WuQuantizerBase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="BaseForm.resx">
+    <EmbeddedResource Include="BaseModule\BaseForm.resx">
       <DependentUpon>BaseForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>

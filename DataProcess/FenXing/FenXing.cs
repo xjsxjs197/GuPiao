@@ -18,11 +18,6 @@ namespace DataProcess.FenXing
         /// </summary>
         private List<BaseDataInfo> hstData = new List<BaseDataInfo>();
 
-        /// <summary>
-        /// 不作为变化的判断范围
-        /// </summary>
-        private const decimal LIMIT_VAL = (decimal)1.005;
-
         #endregion
 
         #region " 公有方法 "
@@ -121,7 +116,7 @@ namespace DataProcess.FenXing
 
                     // 判断是否是第二类买点
                     lastBottomPos = this.GeBefBottomPos(this.hstData, lastIdx, maxCnt);
-                    if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * LIMIT_VAL)
+                    if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
                     {
                         // 当前低点高于上一个低点，设置第二类买点
                         this.hstData[i].BuySellFlg = 2;
@@ -234,7 +229,7 @@ namespace DataProcess.FenXing
                     {
                         // 大于日线，并且未买过，判断是否是第二类买点
                         lastBottomPos = this.GeBefBottomPos(this.hstData, lastIdx, maxCnt);
-                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * LIMIT_VAL)
+                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
                         {
                             // 当前低点高于上一个低点，设置第二类买点
                             this.hstData[i].BuySellFlg = 2;
@@ -255,7 +250,7 @@ namespace DataProcess.FenXing
                         {
                             // 已经买过，并且不是当天，判断是否设置第一类卖点
                             lastTopPos = this.GeBefTopVal(this.hstData, lastIdx, maxCnt);
-                            if (lastTopPos > 0 && this.hstData[i].DayVal * LIMIT_VAL < this.hstData[lastTopPos].DayMaxVal)
+                            if (lastTopPos > 0 && this.hstData[i].DayVal * Consts.LIMIT_VAL < this.hstData[lastTopPos].DayMaxVal)
                             {
                                 // 当前高点比前一个高点底，设置第一类卖点
                                 //this.hstData[i].BuySellFlg = -1;
@@ -273,7 +268,7 @@ namespace DataProcess.FenXing
                     }
 
                     // 已经买过，只要下降到买入价，或者下降到日线一下，并且不是当天，开始卖的准备
-                    if (buyed && (this.hstData[i].DayVal < buyPrice * LIMIT_VAL || this.hstData[i].DayVal < this.hstData[i].DayAvgVal)
+                    if (buyed && (this.hstData[i].DayVal < buyPrice * Consts.LIMIT_VAL || this.hstData[i].DayVal < this.hstData[i].DayAvgVal)
                         && !this.hstData[i].Day.StartsWith(buyDate))
                     {
                         startingSell = true;
@@ -349,13 +344,13 @@ namespace DataProcess.FenXing
         private int ChkPointsVal(BaseDataInfo point2, BaseDataInfo point1)
         {
             // 判断是否变化
-            if (point2.DayMaxVal > point1.DayMaxVal * LIMIT_VAL
-                && point2.DayMinVal > point1.DayMinVal * LIMIT_VAL)
+            if (point2.DayMaxVal > point1.DayMaxVal * Consts.LIMIT_VAL
+                && point2.DayMinVal > point1.DayMinVal * Consts.LIMIT_VAL)
             {
                 return 1;
             }
-            else if (point1.DayMaxVal > point2.DayMaxVal * LIMIT_VAL
-                && point1.DayMinVal > point2.DayMinVal * LIMIT_VAL)
+            else if (point1.DayMaxVal > point2.DayMaxVal * Consts.LIMIT_VAL
+                && point1.DayMinVal > point2.DayMinVal * Consts.LIMIT_VAL)
             {
                 return -1;
             }

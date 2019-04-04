@@ -21,8 +21,6 @@ namespace GuPiaoTool
 
         List<string> noList = new List<string>();
         List<string> nameList = new List<string>();
-        List<BuySellPoint> buySellPoints = new List<BuySellPoint>();
-        BuySellPoint defaultBuySellPoint = new BuySellPoint();
         System.Timers.Timer timersTimer = null;
         bool isRuning = false;
         TradeUtil tradeUtil = new TradeUtil();
@@ -315,16 +313,6 @@ namespace GuPiaoTool
             }
 
             this.grdGuPiao.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = oldVal;
-
-            // 更新自动买卖标志
-            if (e.ColumnIndex == 7)
-            {
-                this.guPiaoInfo[e.RowIndex].isAutoBuy = (bool)oldVal;
-            }
-            else
-            {
-                this.guPiaoInfo[e.RowIndex].isAutoSell = (bool)oldVal;
-            }
         }
 
         /*
@@ -577,61 +565,6 @@ namespace GuPiaoTool
         }
 
         /// <summary>
-        /// 检查是否可以自动卖
-        /// </summary>
-        private void CheckAutoSell(object state)
-        {
-            try
-            {
-                foreach (GuPiaoInfo guPiaoItem in this.guPiaoInfo)
-                {
-                    if (this.CanAutoSell(guPiaoItem))
-                    {
-                        // 可以自动卖
-                        string retMsg = this.tradeUtil.SellStock(guPiaoItem.fundcode.Substring(2, 6), guPiaoItem.CanUseCount, 999.0f, BuySellType.QuickSell);
-
-                        // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
-                        mSyncContext.Post(this.ThreadDispMsg, retMsg);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                //MessageBox.Show(e.Message + "\n" + e.StackTrace);
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
-            }
-        }
-
-        /// <summary>
-        /// 检查是否可以自动买
-        /// </summary>
-        private void CheckAutoBuy(object state)
-        {
-            Dictionary<string, string> buyInfo = new Dictionary<string, string>();
-            try
-            {
-                foreach (GuPiaoInfo guPiaoItem in this.guPiaoInfo)
-                {
-                    string trendTxt = string.Empty;
-                    string stockInfo = guPiaoItem.fundcode + "(" + guPiaoItem.name + ")";
-                    
-                    // 判断当前走势
-                    this.CheckValTrend(guPiaoItem);
-
-                    buyInfo.Add(stockInfo, guPiaoItem.curTrend.ToString());
-                }
-            }
-            catch (Exception e)
-            {
-                //MessageBox.Show(e.Message + "\n" + e.StackTrace);
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
-            }
-
-            // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
-            mSyncContext.Post(this.DispTrendInfo, buyInfo);
-        }
-
-        /// <summary>
         /// 设置页面的趋势
         /// </summary>
         /// <param name="state"></param>
@@ -654,217 +587,6 @@ namespace GuPiaoTool
             {
                 //MessageBox.Show(e.Message + "\n" + e.StackTrace);
                 ThreadPool.QueueUserWorkItem(new WaitCallback(this.AppendErrorLog), e);
-            }
-        }
-
-        /// <summary>
-        /// 检查是否可以自动卖
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private bool CanAutoSell(GuPiaoInfo item)
-        {
-            if (item.CanUseCount == 0)
-            {
-                return false;
-            }
-
-            float yingkuiPer = this.SetYinkuiPer(item, null);
-
-            //// 使用趋势判断
-            //// 判断高点卖
-            //if (yingkuiPer > item.topSellPoint || yingkuiPer < item.bottomSellPoint)
-            //{
-            //    // 大于高位卖点或低于低位卖点时
-            //    // 并且趋势向下，卖出
-            //    if (this.CheckValTrend(item) <= -5)
-            //    {
-            //        // 5秒趋势向下
-            //        return true;
-            //    }
-            //}
-            //else
-            //{
-            //    // 正常情况下，如果10秒趋势向下，卖出
-            //    if (this.CheckValTrend(item) <= -10)
-            //    {
-            //        // 10秒趋势向下
-            //        return true;
-            //    }
-            //}
-
-            // 使用设定的卖点判断
-            // 判断高点卖
-            if (yingkuiPer > 0 && this.CanAutoTopSell(item, yingkuiPer))
-            {
-                return true;
-            }
-
-            // 判断低点卖
-            if (yingkuiPer < 0 && this.CanAutoBottomSell(item, yingkuiPer))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// 检查是否可以自动高点卖
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="yingkuiPer"></param>
-        /// <returns></returns>
-        private bool CanAutoTopSell(GuPiaoInfo item, float yingkuiPer)
-        {
-            // 判断高点卖
-            if (item.isWaitingSell)
-            {
-                // 在犹豫时间内判断
-                if (yingkuiPer > item.topSellPoint)
-                {
-                    // 如果有升高的趋势，重新设置高点，重新开始犹豫等待
-                    item.topSellPoint = yingkuiPer;
-                    item.curSellWaitTime = item.sellWaitTime;
-                }
-                else
-                {
-                    // 如果开始下降
-                    if (yingkuiPer < (item.topSellPoint - item.waitPoint))
-                    {
-                        // 低于了最高点 - 犹豫点，开始自动卖
-                        item.isWaitingSell = false;
-                        return true;
-                    }
-                }
-            }
-            else if (yingkuiPer > item.topSellPoint)
-            {
-                // 到达设置的卖点，开始犹豫等待
-                item.isWaitingSell = true;
-                item.curSellWaitTime = item.sellWaitTime;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// 检查是否可以自动低点卖
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="yingkuiPer"></param>
-        /// <returns></returns>
-        private bool CanAutoBottomSell(GuPiaoInfo item, float yingkuiPer)
-        {
-            //// 判断低点卖
-            //if (item.isWaitingSell)
-            //{
-            //    // 如果开始下降
-            //    if (yingkuiPer < (item.bottomSellPoint - item.waitPoint))
-            //    {
-            //        // 低于了最低点 - 犹豫点，开始自动卖
-            //        item.isWaitingSell = false;
-            //        return true;
-            //    }
-            //    else if (yingkuiPer > item.bottomSellPoint)
-            //    {
-            //        // 已经升高到卖点以上了，取消自动卖的等待
-            //        item.isWaitingSell = false;
-            //        item.curSellWaitTime = item.sellWaitTime;
-            //    }
-            //}
-            //else if (yingkuiPer < item.bottomSellPoint)
-            //{
-            //    // 到达设置的卖点，开始犹豫等待
-            //    item.isWaitingSell = true;
-            //    item.curSellWaitTime = item.sellWaitTime;
-            //}
-
-            if (yingkuiPer < item.bottomSellPoint)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// 判断当前走势
-        /// </summary>
-        /// <param name="state"></param>
-        private void CheckValTrend(object state)
-        { 
-            GuPiaoInfo item = (GuPiaoInfo)state;
-            List<float> valsList = item.valsList;
-            if (valsList.Count < 2)
-            {
-                return;
-            }
-
-            lock (valsList)
-            {
-                int index = valsList.Count - 1;
-                if (valsList[index] > CHK_MIN_VAL && valsList[index - 1] > CHK_MIN_VAL)
-                {
-                    // 当前是上升趋势
-                    item.curTrend.Append("B");
-
-                    // 判断以前的趋势，如果是下降或水平，则说明到底部了，上升趋势可能会很强烈
-                    index -= 2;
-                    while (index >= 1)
-                    {
-                        if (valsList[index] <= CHK_MIN_VAL && valsList[index - 1] <= CHK_MIN_VAL)
-                        {
-                            if (item.curTrend.Length < 3)
-                            {
-                                item.curTrend.Append("B");
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-
-                        index -= 2;
-                    }
-                }
-                else if (valsList[index] <= -CHK_MIN_VAL && valsList[index - 1] <= -CHK_MIN_VAL)
-                {
-                    // 当前是下降趋势
-                    item.curTrend.Append("S");
-
-                    // 判断以前的趋势，如果是上升或水平，则说明到顶部了，下降趋势可能会很强烈
-                    index -= 2;
-                    while (index >= 1)
-                    {
-                        if (valsList[index] > -CHK_MIN_VAL && valsList[index - 1] > -CHK_MIN_VAL)
-                        {
-                            if (item.curTrend.Length < 3)
-                            {
-                                item.curTrend.Append("S");
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-
-                        index -= 2;
-                    }
-                }
-                else
-                { 
-                    // 清空当前趋势
-                    item.curTrend.Length = 0;
-                }
             }
         }
 
@@ -913,32 +635,6 @@ namespace GuPiaoTool
                 return false;
             }
 
-            // 读取买卖点配置信息
-            buySellPoints.Clear();
-            baseInfo = File.ReadAllLines(@"./BuyCellPointInfo.txt", Encoding.UTF8);
-            for (int i = 1; i < baseInfo.Length; i++)
-            {
-                string[] buyCellInfos = baseInfo[i].Split(' ');
-                BuySellPoint buyCellItem = new BuySellPoint();
-                buyCellItem.StockCd = buyCellInfos[0];
-                buyCellItem.TopSellPoint = Convert.ToInt32(buyCellInfos[1]);
-                buyCellItem.BottomSellPoint = Convert.ToInt32(buyCellInfos[2]);
-                buyCellItem.SellWaitTime = Convert.ToInt32(buyCellInfos[3]);
-                buyCellItem.WaitPoint = Convert.ToInt32(buyCellInfos[4]);
-                buySellPoints.Add(buyCellItem);
-            }
-
-            if (buySellPoints.Count == 0)
-            {
-                MessageBox.Show("买卖点信息有误！");
-                return false;
-            }
-
-            defaultBuySellPoint.TopSellPoint = buySellPoints[0].TopSellPoint;
-            defaultBuySellPoint.BottomSellPoint = buySellPoints[0].BottomSellPoint;
-            defaultBuySellPoint.SellWaitTime = buySellPoints[0].SellWaitTime;
-            defaultBuySellPoint.WaitPoint = buySellPoints[0].WaitPoint;
-
             return true;
         }
 
@@ -967,12 +663,6 @@ namespace GuPiaoTool
 
                     // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
                     mSyncContext.Post(this.DisplayData, null);
-
-                    // 检查是否可以自动卖
-                    //ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoSell));
-
-                    // 检查是否可以自动买
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckAutoBuy));
                 }
             }
             catch (Exception e)
@@ -1181,23 +871,6 @@ namespace GuPiaoTool
                     item.lastVal = float.Parse(details[3]);
                     item.curTrend = new StringBuilder();
 
-                    // 取得自动的卖点
-                    BuySellPoint pointInfo = this.buySellPoints.FirstOrDefault(p => p.StockCd.Equals(item.fundcode));
-                    if (pointInfo == null)
-                    {
-                        item.topSellPoint = this.defaultBuySellPoint.TopSellPoint;
-                        item.bottomSellPoint = -this.defaultBuySellPoint.BottomSellPoint;
-                        item.sellWaitTime = this.defaultBuySellPoint.SellWaitTime;
-                        item.waitPoint = this.defaultBuySellPoint.WaitPoint;
-                    }
-                    else
-                    {
-                        item.topSellPoint = pointInfo.TopSellPoint;
-                        item.bottomSellPoint = -pointInfo.BottomSellPoint;
-                        item.sellWaitTime = pointInfo.SellWaitTime;
-                        item.waitPoint = pointInfo.WaitPoint;
-                    }
-
                     this.guPiaoInfo.Add(item);
                 }
                 
@@ -1249,9 +922,6 @@ namespace GuPiaoTool
                         item.valsList.RemoveAt(0);
                     }
                 }
-
-                // 判断当前走势
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.CheckValTrend), item);
             }
         }
 

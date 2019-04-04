@@ -1,7 +1,7 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
-namespace GuPiaoTool
+
+namespace Common
 {
     public class GuPiaoInfo
     {
@@ -64,41 +64,6 @@ namespace GuPiaoTool
         /// 自动买的等待时间
         /// </summary>
         public int buyWaitTime { get; set; }
-
-        /// <summary>
-        /// 高位卖点
-        /// </summary>
-        public float topSellPoint { get; set; }
-
-        /// <summary>
-        /// 低位卖点
-        /// </summary>
-        public float bottomSellPoint { get; set; }
-
-        /// <summary>
-        /// 犹豫的点（上下浮动的点）
-        /// </summary>
-        public float waitPoint { get; set; }
-
-        /// <summary>
-        /// 可以自动卖
-        /// </summary>
-        public bool isAutoSell { get; set; }
-
-        /// <summary>
-        /// 可以自动买
-        /// </summary>
-        public bool isAutoBuy { get; set; }
-
-        /// <summary>
-        /// 正在等待卖
-        /// </summary>
-        public bool isWaitingSell { get; set; }
-
-        /// <summary>
-        /// 正在等待买
-        /// </summary>
-        public bool isWaitingBuy { get; set; }
 
         /// <summary>
         /// 今日最高价

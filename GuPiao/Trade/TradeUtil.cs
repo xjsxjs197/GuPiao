@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using ZMTradeCom;
 using GuPiaoTool;
 using System.IO;
+using Common;
 
 namespace GuPiao
 {

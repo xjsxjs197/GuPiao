@@ -38,31 +38,6 @@ namespace GuPiao
         private const int IMG_H = 400;
 
         /// <summary>
-        /// 数据路径信息
-        /// </summary>
-        private const string CSV_FOLDER = @"./Data/";
-
-        /// <summary>
-        /// 图片路径信息
-        /// </summary>
-        private const string IMG_FOLDER = @"./PngImg/";
-
-        /// <summary>
-        /// 趋势过滤结果路径信息
-        /// </summary>
-        private const string RESULT_FOLDER = @"./ChkResult/";
-
-        /// <summary>
-        /// 买卖点目录
-        /// </summary>
-        private const string BUY_SELL_POINT = @"./BuySellPoint/";
-
-        /// <summary>
-        /// 天数据的目录
-        /// </summary>
-        private const string DAY_FOLDER = @"Day/";
-
-        /// <summary>
         /// 工具的名称
         /// </summary>
         private const string TITLE = "财富数据 ";
@@ -196,7 +171,7 @@ namespace GuPiao
         {
             InitializeComponent();
 
-            this.subFolder = DAY_FOLDER;
+            this.subFolder = Consts.DAY_FOLDER;
             this.cmbCon.SelectedIndex = 0;
             this.pnlBody.BackColor = Color.FromArgb(199, 237, 204);
 
@@ -396,7 +371,7 @@ namespace GuPiao
                     break;
 
                 case "显示日线":
-                    this.subFolder = DAY_FOLDER;
+                    this.subFolder = Consts.DAY_FOLDER;
                     this.DisplayAllStockPng(null);
                     this.cmbCon.Enabled = true;
                     break;
@@ -421,7 +396,7 @@ namespace GuPiao
 
                 default:
                     // 显示所有信息
-                    this.subFolder = DAY_FOLDER;
+                    this.subFolder = Consts.DAY_FOLDER;
                     this.DisplayAllStockPng(null);
                     this.cmbCon.Enabled = true;
                     break;
@@ -566,7 +541,7 @@ namespace GuPiao
                 }
                 this.subFolder = timeRange.ToString() + "/";
                 this.posFromRight = 0;
-                this.RedrawQushiImg(IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
+                this.RedrawQushiImg(Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
 
                 // 设置当前的数据时间
                 this.dataDate = this.GetDataDate(this.subFolder);
@@ -658,7 +633,7 @@ namespace GuPiao
             QushiBase chkQushi = (QushiBase)param[0];
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + DAY_FOLDER);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + Consts.DAY_FOLDER);
 
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
@@ -709,7 +684,7 @@ namespace GuPiao
         private bool ChkQushi(string stockCdData, QushiBase chkQushi)
         {
             // 获得数据信息
-            this.subFolder = DAY_FOLDER;
+            this.subFolder = Consts.DAY_FOLDER;
             Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdData, this.subFolder, "./");
             if (dataInfo == null)
             {
@@ -814,7 +789,7 @@ namespace GuPiao
             this.dataDate = this.GetDataDate(this.subFolder);
 
             // 取得已经存在的所有趋势图
-            List<FilePosInfo> allImg = Util.GetAllFiles(IMG_FOLDER + this.subFolder);
+            List<FilePosInfo> allImg = Util.GetAllFiles(Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder);
 
             this.allStock.Clear();
 
@@ -839,7 +814,7 @@ namespace GuPiao
 
             // 重置下拉框选中项
             this.needRaiseEvent = false;
-            if (this.subFolder.Equals(DAY_FOLDER))
+            if (this.subFolder.Equals(Consts.DAY_FOLDER))
             {
                 this.cmbCon.SelectedIndex = 0;
             }
@@ -920,7 +895,7 @@ namespace GuPiao
             // 显示当前位置的走势图片
             if (this.curIdx >= 0 && this.curIdx <= this.allStock.Count - 1)
             {
-                string stockImg = IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                string stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
                 this.posFromRight = 0;
                 this.RedrawQushiImg(stockImg);
 
@@ -990,7 +965,7 @@ namespace GuPiao
             // 基础数据信息
             this.curStockData = (List<BaseDataInfo>)dataInfo["stockInfos"];
 
-            if (this.subFolder == DAY_FOLDER)
+            if (this.subFolder == Consts.DAY_FOLDER)
             {
                 // 取得5日级别信息
                 this.curStockJibie5Data = DayBatchProcess.GetAverageLineInfo(this.curStockData, 5);
@@ -1093,7 +1068,7 @@ namespace GuPiao
 
             if (this.posFromRight % IMG_X_STEP == 0)
             {
-                this.RedrawQushiImg(IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
+                this.RedrawQushiImg(Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
             }
         }
 
@@ -1111,7 +1086,7 @@ namespace GuPiao
             FilePosInfo fileInfo = null;
 
             // 取得已经存在的所有数据信息
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + subFolder).Where(p => !p.IsFolder).ToList();
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + subFolder).Where(p => !p.IsFolder).ToList();
             if (allCsv.Count > 0)
             {
                 fileInfo = allCsv[0];
@@ -1225,7 +1200,7 @@ namespace GuPiao
         /// <returns></returns>
         private string[] GetStockFileContent(string stockCd)
         {
-            string csvFile = CSV_FOLDER + DAY_FOLDER + stockCd + "_" + this.dataDate + ".csv";
+            string csvFile = Consts.BASE_PATH + Consts.CSV_FOLDER + Consts.DAY_FOLDER + stockCd + "_" + this.dataDate + ".csv";
             if (File.Exists(csvFile))
             {
                 return File.ReadAllLines(csvFile, Encoding.UTF8);
@@ -1259,7 +1234,7 @@ namespace GuPiao
                 }
             }
 
-            File.WriteAllText(RESULT_FOLDER + fileName + ".txt", sb.ToString(), Encoding.UTF8);
+            File.WriteAllText(Consts.BASE_PATH + Consts.RESULT_FOLDER + fileName + ".txt", sb.ToString(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -1267,7 +1242,7 @@ namespace GuPiao
         /// </summary>
         private void LoadHasBuyPointsInfo()
         {
-            string file = RESULT_FOLDER + "BuyPoints.txt";
+            string file = Consts.BASE_PATH + Consts.RESULT_FOLDER + "BuyPoints.txt";
             this.hasBuyPointsStock.Clear();
             if (File.Exists(file))
             {
@@ -1299,7 +1274,7 @@ namespace GuPiao
             List<string> tmpList = new List<string>();
             this.hasBuyPointsStock.ForEach(p => tmpList.Add(p.Key + " " + p.Value));
 
-            File.WriteAllLines(RESULT_FOLDER + "BuyPoints.txt", tmpList.ToArray(), Encoding.UTF8);
+            File.WriteAllLines(Consts.BASE_PATH + Consts.RESULT_FOLDER + "BuyPoints.txt", tmpList.ToArray(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -1364,7 +1339,7 @@ namespace GuPiao
             List<string> allCd = new List<string>();
             this.allStockCdName.Clear();
 
-            string[] allLine = File.ReadAllLines(CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
+            string[] allLine = File.ReadAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
             if (allLine != null && allLine.Length > 0)
             {
                 foreach (string codeName in allLine)
@@ -1424,7 +1399,7 @@ namespace GuPiao
         {
             // 取得已经存在的所有数据信息
             this.subFolder = TimeRange.Day.ToString() + "/";
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + this.subFolder);
 
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
@@ -1467,7 +1442,7 @@ namespace GuPiao
 
             this.CheckRightCd(TimeRange.Day, errorInfo);
 
-            File.WriteAllLines(CSV_FOLDER + "ErrorCdFile.txt", errorInfo.ToArray(), Encoding.UTF8);
+            File.WriteAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "ErrorCdFile.txt", errorInfo.ToArray(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -1477,7 +1452,7 @@ namespace GuPiao
         {
             // 取得已经存在的所有数据信息
             this.subFolder = timeRange.ToString() + "/";
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + this.subFolder);
 
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
@@ -1537,7 +1512,7 @@ namespace GuPiao
                 this.CheckAvailableCd163(i, allAvailableCd, endDay);
             }
 
-            File.WriteAllLines(CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
+            File.WriteAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
         }
 
         /// <summary>
@@ -1683,7 +1658,7 @@ namespace GuPiao
         {
             // 取得已经存在的所有数据信息
             this.subFolder = timeRange.ToString() + "/";
-            List<FilePosInfo> allCsv = Util.GetAllFiles(CSV_FOLDER + this.subFolder);
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + this.subFolder);
 
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
