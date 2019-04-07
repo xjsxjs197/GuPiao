@@ -714,7 +714,7 @@ namespace DayBatch
             // 画15分钟趋势图
             if (hasM15)
             {
-                //this.DrawQushiImg(TimeRange.M15);
+                this.DrawQushiImg(TimeRange.M15);
             }
 
             // 画30分钟趋势图
@@ -757,6 +757,7 @@ namespace DayBatch
 
                 foreach (FilePosInfo fileItem in allCsv)
                 {
+                    idx++;
                     if (fileItem.IsFolder)
                     {
                         continue;
@@ -768,7 +769,7 @@ namespace DayBatch
                     {
                         this.CreateQushiImg(Util.GetShortNameWithoutType(fileItem.File), timeRange);
                         
-                        dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
+                        dosProgressBar.Dispaly((int)((idx / (totalLen * 1.0)) * 100));
                     }
                     catch (Exception e)
                     {
@@ -858,16 +859,26 @@ namespace DayBatch
             }
 
             // 开始画分型、笔的线段
-            if (timeRange == TimeRange.M30)
+            List<BaseDataInfo> fenXingInfo;
+            switch (timeRange)
             {
-                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingM30(stockInfos, this.configInfo.AvgDataLen);
-                this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
+                case TimeRange.M30:
+                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo.AvgDataLen, "100000");
+                    break;
+
+                case TimeRange.M15:
+                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo.AvgDataLen, "094500");
+                    break;
+
+                case TimeRange.M5:
+                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo.AvgDataLen, "093500");
+                    break;
+
+                default:
+                    fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
+                    break;
             }
-            else
-            {
-                List<BaseDataInfo> fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
-                this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
-            }
+            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
 
             // 在5,15分钟的分型图上画天的分型信息
             //if (timeRange == TimeRange.M5 || timeRange == TimeRange.M15)
@@ -1085,6 +1096,7 @@ namespace DayBatch
         {
             // 取得已经存在的所有数据信息
             this.subFolder = TimeRange.M30.ToString() + "/";
+            string startTime = "100000";
             List<FilePosInfo> allCsv = this.FilterRongziRongQuan(Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + this.subFolder));
             Dictionary<string, List<string>[]> buySellInfo = new Dictionary<string, List<string>[]>();
             StringBuilder notGoodSb = new StringBuilder();
@@ -1107,13 +1119,13 @@ namespace DayBatch
                 }
 
                 string stockCdDate = Util.GetShortNameWithoutType(fileItem.File);
-                if (NO_CHUANGYE && stockCdDate.StartsWith("300"))
+                if (NO_CHUANGYE && Util.IsChuangyeStock(stockCdDate))
                 {
                     continue;
                 }
 
                 // 测试BuySell的逻辑
-                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb, emuInfo.BefDay, emuInfo.AvgDataLen);
+                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb, emuInfo.BefDay, emuInfo.AvgDataLen, startTime);
 
                 // 更新进度条
                 dosProgressBar.Dispaly((int)((idx / (totalLen * 1.0)) * 100));
@@ -1127,7 +1139,7 @@ namespace DayBatch
         /// </summary>
         /// <param name="stockCdDate"></param>
         private void CheckBuySellPoint(string stockCdDate, Dictionary<string, List<string>[]> buySellInfo,
-            StringBuilder notGoodSb, StringBuilder goodSb, int befDay, int avgDataLen)
+            StringBuilder notGoodSb, StringBuilder goodSb, int befDay, int avgDataLen, string startTime)
         {
             // 获得数据信息
             Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdDate, this.subFolder, "./");
@@ -1155,7 +1167,7 @@ namespace DayBatch
             }
 
             // 取得分型的数据
-            List<BaseDataInfo> fenxingInfo = this.fenXing.DoFenXingM30(stockInfos, avgDataLen);
+            List<BaseDataInfo> fenxingInfo = this.fenXing.DoFenXingSp(stockInfos, avgDataLen, startTime);
             for (int i = 0; i < fenxingInfo.Count; i++)
             {
                 if (string.Compare(fenxingInfo[i].Day, startDate) < 0)

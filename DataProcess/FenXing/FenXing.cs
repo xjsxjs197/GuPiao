@@ -41,11 +41,11 @@ namespace DataProcess.FenXing
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public int DoRealTimeFenXingM30(BaseDataInfo data, int avgDataLen)
+        public int DoRealTimeFenXingSp(BaseDataInfo data, int avgDataLen, string startTime)
         {
             hstData.Add(data);
 
-            this.DoFenXingM30(avgDataLen);
+            this.DoFenXingSp(avgDataLen, startTime);
 
             return data.BuySellFlg;
         }
@@ -68,17 +68,17 @@ namespace DataProcess.FenXing
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public List<BaseDataInfo> DoFenXingM30(List<BaseDataInfo> data, int avgDataLen)
+        public List<BaseDataInfo> DoFenXingSp(List<BaseDataInfo> data, int avgDataLen, string startTime)
         {
             hstData.Clear();
             hstData.AddRange(data);
 
-            return this.DoFenXingM30(avgDataLen);
+            return this.DoFenXingSp(avgDataLen, startTime);
         }
 
         #endregion
 
-        #region " 公有方法 "
+        #region " 私有方法 "
 
         /// <summary>
         /// 分型处理(共通)
@@ -149,14 +149,14 @@ namespace DataProcess.FenXing
         /// 分型处理(30分钟)
         /// </summary>
         /// <returns></returns>
-        private List<BaseDataInfo> DoFenXingM30(int avgDataLen)
+        private List<BaseDataInfo> DoFenXingSp(int avgDataLen, string startTime)
         {
             // 设置第一个点
             BaseDataInfo lastPoint = new BaseDataInfo();
             while (this.hstData.Count > 0)
             {
                 lastPoint = this.hstData[this.hstData.Count - 1];
-                if (lastPoint.Day.IndexOf("100000") > 0)
+                if (lastPoint.Day.EndsWith(startTime))
                 {
                     break;
                 }
@@ -171,7 +171,7 @@ namespace DataProcess.FenXing
                 return this.hstData;
             }
 
-            // 特殊处理30分钟数据
+            // 特殊处理分钟数据
             BaseDataInfo tmpPoint = new BaseDataInfo();
             tmpPoint.DayMaxVal = lastPoint.DayMaxVal;
             tmpPoint.DayMinVal = lastPoint.DayMinVal;
@@ -188,7 +188,7 @@ namespace DataProcess.FenXing
                     tmpPoint.DayMinVal = this.hstData[i].DayMinVal;
                 }
 
-                if (this.hstData[i].Day.IndexOf("100000") > 0)
+                if (this.hstData[i].Day.EndsWith(startTime))
                 {
                     tmpPoint.DayMaxVal = this.hstData[i].DayMaxVal;
                     tmpPoint.DayMinVal = this.hstData[i].DayMinVal;
@@ -225,12 +225,11 @@ namespace DataProcess.FenXing
                     lastPoint.CurPointType = PointType.Bottom;
 
                     if (!buyed && this.hstData[i].DayVal > this.hstData[i].DayAvgVal
-                        && !this.hstData[i].Day.EndsWith("100000") && !this.hstData[i].Day.EndsWith("150000"))
+                        && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
                     {
                         // 大于日线，并且未买过，判断是否是第二类买点
                         lastBottomPos = this.GeBefBottomPos(this.hstData, lastIdx, maxCnt);
-                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL
-                            && !this.hasMoreLowBottom(this.hstData, lastBottomPos, maxCnt))
+                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
                         {
                             // 当前低点高于上一个低点，设置第二类买点
                             this.hstData[i].BuySellFlg = 2;
@@ -269,18 +268,12 @@ namespace DataProcess.FenXing
                     }
 
                     // 已经买过，只要下降到买入价，或者下降到日线一下，并且不是当天，开始卖的准备
-                    if (buyed && (this.hstData[i].DayVal < buyPrice * Consts.LIMIT_VAL || this.hstData[i].DayVal < this.hstData[i].DayAvgVal)
+                    if (buyed && (this.hstData[i].DayVal < buyPrice || this.hstData[i].DayVal < this.hstData[i].DayAvgVal)
                         && !this.hstData[i].Day.StartsWith(buyDate))
                     {
                         startingSell = true;
                     }
                 }
-
-                //if (chkVal >= 0 && startingSell && (this.hstData[i].DayVal > buyPrice * LIMIT_VAL || this.hstData[i].DayVal > this.hstData[i].DayAvgVal))
-                //{
-                //    // 已经开始卖的准备，但是趋势开始上升，清除标志位
-                //    startingSell = false;
-                //}
 
                 // 更新当前的点
                 if (chkVal != 0)
