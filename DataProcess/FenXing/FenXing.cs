@@ -41,11 +41,13 @@ namespace DataProcess.FenXing
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public int DoRealTimeFenXingSp(BaseDataInfo data, int avgDataLen, string startTime)
+        public int DoRealTimeFenXingSp(BaseDataInfo data, BuySellSetting emuInfo, string startTime)
         {
             hstData.Add(data);
 
-            this.DoFenXingSp(avgDataLen, startTime);
+            decimal[] minMaxInfo = Util.GetMaxMinStock(this.hstData);
+
+            this.DoFenXingSp(emuInfo, startTime, minMaxInfo);
 
             return data.BuySellFlg;
         }
@@ -68,12 +70,17 @@ namespace DataProcess.FenXing
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public List<BaseDataInfo> DoFenXingSp(List<BaseDataInfo> data, int avgDataLen, string startTime)
+        public List<BaseDataInfo> DoFenXingSp(List<BaseDataInfo> data, BuySellSetting emuInfo, string startTime, decimal[] minMaxInfo)
         {
             hstData.Clear();
             hstData.AddRange(data);
 
-            return this.DoFenXingSp(avgDataLen, startTime);
+            if (minMaxInfo == null)
+            {
+                minMaxInfo = Util.GetMaxMinStock(this.hstData);
+            }
+
+            return this.DoFenXingSp(emuInfo, startTime, minMaxInfo);
         }
 
         #endregion
@@ -115,7 +122,7 @@ namespace DataProcess.FenXing
                     lastPoint.CurPointType = PointType.Bottom;
 
                     // 判断是否是第二类买点
-                    lastBottomPos = this.GeBefBottomPos(this.hstData, lastIdx, maxCnt);
+                    lastBottomPos = this.GeBefBottomPos(lastIdx, maxCnt);
                     if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
                     {
                         // 当前低点高于上一个低点，设置第二类买点
@@ -149,7 +156,7 @@ namespace DataProcess.FenXing
         /// 分型处理(30分钟)
         /// </summary>
         /// <returns></returns>
-        private List<BaseDataInfo> DoFenXingSp(int avgDataLen, string startTime)
+        private List<BaseDataInfo> DoFenXingSp(BuySellSetting emuInfo, string startTime, decimal[] minMaxInfo)
         {
             // 设置第一个点
             BaseDataInfo lastPoint = new BaseDataInfo();
@@ -170,6 +177,9 @@ namespace DataProcess.FenXing
             {
                 return this.hstData;
             }
+
+            int avgDataLen = emuInfo.AvgDataLen;
+            int buyStrongth = emuInfo.ButStrongth;
 
             // 特殊处理分钟数据
             BaseDataInfo tmpPoint = new BaseDataInfo();
@@ -228,8 +238,9 @@ namespace DataProcess.FenXing
                         && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
                     {
                         // 大于日线，并且未买过，判断是否是第二类买点
-                        lastBottomPos = this.GeBefBottomPos(this.hstData, lastIdx, maxCnt);
-                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
+                        lastBottomPos = this.GeBefBottomPos(lastIdx, maxCnt);
+                        if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL
+                            && this.GetQushiStrongth(lastBottomPos, lastIdx, maxCnt, minMaxInfo) >= buyStrongth)
                         {
                             // 当前低点高于上一个低点，设置第二类买点
                             this.hstData[i].BuySellFlg = 2;
@@ -249,7 +260,7 @@ namespace DataProcess.FenXing
                         if (!startingSell && buyed && !this.hstData[i].Day.StartsWith(buyDate))
                         {
                             // 已经买过，并且不是当天，判断是否设置第一类卖点
-                            lastTopPos = this.GeBefTopVal(this.hstData, lastIdx, maxCnt);
+                            lastTopPos = this.GeBefTopVal(lastIdx, maxCnt);
                             if (lastTopPos > 0 && this.hstData[i].DayVal * Consts.LIMIT_VAL < this.hstData[lastTopPos].DayMaxVal)
                             {
                                 // 当前高点比前一个高点底，设置第一类卖点
@@ -296,11 +307,11 @@ namespace DataProcess.FenXing
         /// <param name="idx"></param>
         /// <param name="maxCnt"></param>
         /// <returns></returns>
-        private int GeBefTopVal(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
+        private int GeBefTopVal(int idx, int maxCnt)
         {
             for (int i = idx + 1; i < maxCnt; i++)
             {
-                if (fenXingInfo[i].CurPointType == PointType.Top)
+                if (this.hstData[i].CurPointType == PointType.Top)
                 {
                     return i;
                 }
@@ -316,11 +327,11 @@ namespace DataProcess.FenXing
         /// <param name="idx"></param>
         /// <param name="maxCnt"></param>
         /// <returns></returns>
-        private int GeBefBottomPos(List<BaseDataInfo> fenXingInfo, int idx, int maxCnt)
+        private int GeBefBottomPos(int idx, int maxCnt)
         {
             for (int i = idx + 1; i < maxCnt; i++)
             {
-                if (fenXingInfo[i].CurPointType == PointType.Bottom)
+                if (this.hstData[i].CurPointType == PointType.Bottom)
                 {
                     return i;
                 }
@@ -363,13 +374,13 @@ namespace DataProcess.FenXing
         /// <param name="lastBottomPos"></param>
         /// <param name="maxCnt"></param>
         /// <returns></returns>
-        private bool hasMoreLowBottom(List<BaseDataInfo> fenXingInfo, int lastBottomPos, int maxCnt)
+        private bool hasMoreLowBottom(int lastBottomPos, int maxCnt)
         {
             for (int i = lastBottomPos + 1; i < maxCnt; i++)
             {
-                if (fenXingInfo[i].CurPointType == PointType.Bottom)
+                if (this.hstData[i].CurPointType == PointType.Bottom)
                 {
-                    if (fenXingInfo[i].DayMinVal * Consts.LIMIT_VAL < fenXingInfo[lastBottomPos].DayMinVal)
+                    if (this.hstData[i].DayMinVal * Consts.LIMIT_VAL < this.hstData[lastBottomPos].DayMinVal)
                     {
                         return true;
                     }
@@ -406,6 +417,34 @@ namespace DataProcess.FenXing
 
                 index++;
             }
+        }
+
+        /// <summary>
+        /// 取得当前点时，趋势的强度（角度）
+        /// </summary>
+        /// <param name="fenXingInfo"></param>
+        /// <param name="lastBottomPos"></param>
+        /// <param name="idx"></param>
+        /// <param name="maxCnt"></param>
+        /// <returns></returns>
+        private int GetQushiStrongth(int lastBottomPos, int idx, int maxCnt, decimal[] minMaxInfo)
+        {
+            int lastTopPos = this.GeBefTopVal(idx, maxCnt);
+            if (lastBottomPos == -1 || lastTopPos == -1)
+            {
+                return 0;
+            }
+
+            int imgWidth = (this.hstData.Count + 2) * Consts.IMG_X_STEP;
+            int x1 = imgWidth - (lastBottomPos * Consts.IMG_X_STEP + Consts.IMG_X_STEP);
+            int x2 = imgWidth - (lastTopPos * Consts.IMG_X_STEP + Consts.IMG_X_STEP);
+            decimal step = Util.GetYstep(minMaxInfo);
+            int y1 = (int)((this.hstData[lastBottomPos].DayMaxVal - minMaxInfo[0]) * step);
+            int y2 = (int)((this.hstData[lastTopPos].DayMinVal - minMaxInfo[0]) * step);
+
+            int retVal = (int)(Math.Atan2((y2 - y1), (x2 - x1)) * 180 / Math.PI);
+
+            return retVal;
         }
 
         #endregion

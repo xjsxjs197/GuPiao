@@ -1187,6 +1187,8 @@ namespace Common
                 emuInfo.NeedRongZiRongQuan = Convert.ToBoolean(emuSetting[13]);
                 emuInfo.DataCntPerSecond = Convert.ToInt32(emuSetting[15]);
                 emuInfo.SystemTitle = emuSetting[17];
+                emuInfo.ButStrongth = Convert.ToInt32(emuSetting[19]);
+                emuInfo.AutoTradeLevel = emuSetting[21];
             }
             catch (Exception e)
             {
@@ -1231,6 +1233,81 @@ namespace Common
             }
 
             return allRongzi;
+        }
+
+        /// <summary>
+        /// 取得最大、最小值
+        /// </summary>
+        /// <param name="stockInfos"></param>
+        /// <returns></returns>
+        public static decimal[] GetMaxMinStock(List<BaseDataInfo> stockInfos)
+        {
+            decimal[] minMaxInfo = new decimal[2];
+            decimal minVal = decimal.MaxValue;
+            decimal maxVal = 0;
+
+            for (int i = stockInfos.Count - 1; i >= 0; i--)
+            {
+                if (stockInfos[i].DayVal == 0)
+                {
+                    stockInfos.RemoveAt(i);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            for (int i = stockInfos.Count - 1; i >= 0; i--)
+            {
+                decimal curVal = stockInfos[i].DayVal;
+                if (curVal > maxVal)
+                {
+                    maxVal = curVal;
+                }
+
+                if (curVal > 0 && curVal < minVal)
+                {
+                    minVal = curVal;
+                }
+
+                if (curVal == 0)
+                {
+                    BaseDataInfo item = new BaseDataInfo();
+                    item.Day = stockInfos[i].Day;
+                    item.DayVal = stockInfos[i + 1].DayVal;
+                    item.DayMaxVal = stockInfos[i + 1].DayMaxVal;
+                    item.DayMinVal = stockInfos[i + 1].DayMinVal;
+
+                    stockInfos[i] = item;
+                }
+            }
+
+            minMaxInfo[0] = minVal;
+            minMaxInfo[1] = maxVal;
+
+            return minMaxInfo;
+        }
+
+        /// <summary>
+        /// 取得画图Y轴的差值
+        /// </summary>
+        /// <param name="minMaxInfo"></param>
+        /// <returns></returns>
+        public static decimal GetYstep(decimal[] minMaxInfo)
+        {
+            return 370 / (minMaxInfo[1] - minMaxInfo[0]);
+        }
+
+        /// <summary>
+        /// 可以买多少数量的取得
+        /// </summary>
+        /// <param name="money"></param>
+        /// <param name="price"></param>
+        /// <returns></returns>
+        public static int CanBuyCount(decimal money, decimal price)
+        {
+            return (int)((money - 5) / (price * 100));
         }
 
         #endregion

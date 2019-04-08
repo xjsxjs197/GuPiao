@@ -54,5 +54,15 @@ namespace Common
         /// 系统名称以及版本号
         /// </summary>
         public string SystemTitle { get; set; }
+
+        /// <summary>
+        /// 趋势图角度达到多少可以买
+        /// </summary>
+        public int ButStrongth { get; set; }
+
+        /// <summary>
+        /// 自动买卖的级别
+        /// </summary>
+        public string AutoTradeLevel { get; set; }
     }
 }

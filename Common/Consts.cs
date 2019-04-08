@@ -84,5 +84,15 @@ namespace Common
         /// 当前目录
         /// </summary>
         public const string BASE_PATH = @"./";
+
+        /// <summary>
+        /// 趋势图X轴间隔的像素
+        /// </summary>
+        public const int IMG_X_STEP = 5;
+
+        /// <summary>
+        /// 趋势图高度
+        /// </summary>
+        public const int IMG_H = 400;
     }
 }

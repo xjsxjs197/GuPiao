@@ -26,11 +26,6 @@ namespace DayBatch
         private const int MAX_POINTS = 118;
 
         /// <summary>
-        /// 趋势图X轴间隔的像素
-        /// </summary>
-        private const int IMG_X_STEP = 5;
-
-        /// <summary>
         /// 不要创业数据
         /// </summary>
         private const bool NO_CHUANGYE = true;
@@ -251,7 +246,7 @@ namespace DayBatch
 
             // 取得最大、最小值
             // 期间还处理了一下0，等于前一天的值
-            decimal[] minMaxInfo = GetMaxMinStock(stockInfos);
+            decimal[] minMaxInfo = Util.GetMaxMinStock(stockInfos);
             if (minMaxInfo[0] == 0 || minMaxInfo[1] == 0 || (minMaxInfo[1] - minMaxInfo[0]) == 0 || stockInfos.Count == 0)
             {
                 return null;
@@ -262,60 +257,6 @@ namespace DayBatch
             dicRet.Add("minMaxInfo", minMaxInfo);
 
             return dicRet;
-        }
-
-        /// <summary>
-        /// 取得最大、最小值
-        /// </summary>
-        /// <param name="stockInfos"></param>
-        /// <returns></returns>
-        public static decimal[] GetMaxMinStock(List<BaseDataInfo> stockInfos)
-        {
-            decimal[] minMaxInfo = new decimal[2];
-            decimal minVal = decimal.MaxValue;
-            decimal maxVal = 0;
-
-            for (int i = stockInfos.Count - 1; i >= 0; i--)
-            {
-                if (stockInfos[i].DayVal == 0)
-                {
-                    stockInfos.RemoveAt(i);
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            for (int i = stockInfos.Count - 1; i >= 0; i--)
-            {
-                decimal curVal = stockInfos[i].DayVal;
-                if (curVal > maxVal)
-                {
-                    maxVal = curVal;
-                }
-
-                if (curVal > 0 && curVal < minVal)
-                {
-                    minVal = curVal;
-                }
-
-                if (curVal == 0)
-                {
-                    BaseDataInfo item = new BaseDataInfo();
-                    item.Day = stockInfos[i].Day;
-                    item.DayVal = stockInfos[i + 1].DayVal;
-                    item.DayMaxVal = stockInfos[i + 1].DayMaxVal;
-                    item.DayMinVal = stockInfos[i + 1].DayMinVal;
-
-                    stockInfos[i] = item;
-                }
-            }
-
-            minMaxInfo[0] = minVal;
-            minMaxInfo[1] = maxVal;
-
-            return minMaxInfo;
         }
 
         /// <summary>
@@ -824,10 +765,10 @@ namespace DayBatch
 
             // 最大、最小值信息
             decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
-            decimal step = 370 / (minMaxInfo[1] - minMaxInfo[0]);
+            decimal step = Util.GetYstep(minMaxInfo);
 
             // 设定图片
-            Bitmap imgQushi = new Bitmap((stockInfos.Count + 2) * IMG_X_STEP, 400);
+            Bitmap imgQushi = new Bitmap((stockInfos.Count + 2) * Consts.IMG_X_STEP, Consts.IMG_H);
             Graphics grp = Graphics.FromImage(imgQushi);
             grp.SmoothingMode = SmoothingMode.AntiAlias;
             grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
@@ -863,22 +804,22 @@ namespace DayBatch
             switch (timeRange)
             {
                 case TimeRange.M30:
-                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo.AvgDataLen, "100000");
+                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo, "100000", minMaxInfo);
                     break;
 
                 case TimeRange.M15:
-                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo.AvgDataLen, "094500");
+                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo, "094500", minMaxInfo);
                     break;
 
                 case TimeRange.M5:
-                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo.AvgDataLen, "093500");
+                    fenXingInfo = this.fenXing.DoFenXingSp(stockInfos, this.configInfo, "093500", minMaxInfo);
                     break;
 
                 default:
                     fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
                     break;
             }
-            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp, IMG_X_STEP);
+            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp);
 
             // 在5,15分钟的分型图上画天的分型信息
             //if (timeRange == TimeRange.M5 || timeRange == TimeRange.M15)
@@ -916,7 +857,7 @@ namespace DayBatch
         /// <param name="step"></param>
         private void DrawStockQushi(List<BaseDataInfo> stockInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
         {
-            int startX = img.Width - IMG_X_STEP;
+            int startX = img.Width - Consts.IMG_X_STEP;
             int x1 = startX;
             int y1 = this.GetYPos(img.Height, stockInfo[0].DayVal, minVal, step);
             int x2 = 0;
@@ -924,7 +865,7 @@ namespace DayBatch
             int index = 1;
             while (index <= stockInfo.Count - 1)
             {
-                x2 = startX - IMG_X_STEP;
+                x2 = startX - Consts.IMG_X_STEP;
                 y2 = this.GetYPos(img.Height, stockInfo[index].DayVal, minVal, step);
 
                 grp.DrawLine(pen, x1, y1, x2, y2);
@@ -932,7 +873,7 @@ namespace DayBatch
                 y1 = y2;
 
                 index++;
-                startX -= IMG_X_STEP;
+                startX -= Consts.IMG_X_STEP;
             }
 
             // 释放资源
@@ -1018,14 +959,14 @@ namespace DayBatch
         /// </summary>
         /// <param name="stockInfo"></param>
         /// <param name="step"></param>
-        private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp, int imgXStep)
+        private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
         {
             if (fenXingInfo.Count == 0)
             {
                 return false;
             }
 
-            int x1 = img.Width - ((fenXingInfo.Count - 1) * imgXStep + IMG_X_STEP);
+            int x1 = img.Width - ((fenXingInfo.Count - 1) * Consts.IMG_X_STEP + Consts.IMG_X_STEP);
             int y1 = this.GetYPos(img.Height, fenXingInfo[fenXingInfo.Count - 1].DayVal, minVal, step);
             int x2 = 0;
             int y2 = 0;
@@ -1039,7 +980,7 @@ namespace DayBatch
 
             for (int index = maxCnt; index >= 0; index--)
             {
-                x2 = img.Width - (index * imgXStep + IMG_X_STEP);
+                x2 = img.Width - (index * Consts.IMG_X_STEP + Consts.IMG_X_STEP);
 
                 if (fenXingInfo[index].CurPointType != PointType.Changing || index == 0)
                 {
@@ -1125,7 +1066,7 @@ namespace DayBatch
                 }
 
                 // 测试BuySell的逻辑
-                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb, emuInfo.BefDay, emuInfo.AvgDataLen, startTime);
+                this.CheckBuySellPoint(stockCdDate, buySellInfo, notGoodSb, goodSb, emuInfo, startTime);
 
                 // 更新进度条
                 dosProgressBar.Dispaly((int)((idx / (totalLen * 1.0)) * 100));
@@ -1139,7 +1080,7 @@ namespace DayBatch
         /// </summary>
         /// <param name="stockCdDate"></param>
         private void CheckBuySellPoint(string stockCdDate, Dictionary<string, List<string>[]> buySellInfo,
-            StringBuilder notGoodSb, StringBuilder goodSb, int befDay, int avgDataLen, string startTime)
+            StringBuilder notGoodSb, StringBuilder goodSb, BuySellSetting emuInfo, string startTime)
         {
             // 获得数据信息
             Dictionary<string, object> dataInfo = DayBatchProcess.GetStockInfo(stockCdDate, this.subFolder, "./");
@@ -1154,6 +1095,9 @@ namespace DayBatch
                 return;
             }
 
+            decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
+            int befDay = emuInfo.BefDay;
+
             // 设置测试的开始时间
             string startDate;
             int startIdx = -1;
@@ -1167,7 +1111,7 @@ namespace DayBatch
             }
 
             // 取得分型的数据
-            List<BaseDataInfo> fenxingInfo = this.fenXing.DoFenXingSp(stockInfos, avgDataLen, startTime);
+            List<BaseDataInfo> fenxingInfo = this.fenXing.DoFenXingSp(stockInfos, emuInfo, startTime, minMaxInfo);
             for (int i = 0; i < fenxingInfo.Count; i++)
             {
                 if (string.Compare(fenxingInfo[i].Day, startDate) < 0)
@@ -1201,12 +1145,12 @@ namespace DayBatch
                     if (diff < -1)
                     {
                         string[] tmp = sb.ToString().Split('\r');
-                        notGoodSb.Append(tmp[tmp.Length - 2]).Append("\r\n");
+                        notGoodSb.Append(stockCd).Append(" ").Append(tmp[tmp.Length - 2]).Append("\r\n");
                     }
                     else if (diff > 1)
                     {
                         string[] tmp = sb.ToString().Split('\r');
-                        goodSb.Append(tmp[tmp.Length - 2]).Append("\r\n");
+                        goodSb.Append(stockCd).Append(" ").Append(tmp[tmp.Length - 2]).Append("\r\n");
                     }
 
                     if (!buySellInfo.ContainsKey(fenxingInfo[i].Day))
@@ -1322,7 +1266,7 @@ namespace DayBatch
                             if (!buyedStock.Contains(tmp[0]))
                             {
                                 decimal totalMoney = (decimal)bsp["TotalMoney"];
-                                int canBuyCnt = this.CanBuyCount(totalMoney, price);
+                                int canBuyCnt = Util.CanBuyCount(totalMoney, price);
                                 if (canBuyCnt > 0)
                                 {
                                     buyedStock.Add(tmp[0]);
@@ -1414,17 +1358,6 @@ namespace DayBatch
             File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + "BadBuySellPoint.txt", notGoodSb.ToString(), Encoding.UTF8);
 
             File.WriteAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + "GoodBuySellPoint.txt", goodSb.ToString(), Encoding.UTF8);
-        }
-
-        /// <summary>
-        /// 可以买多少数量的取得
-        /// </summary>
-        /// <param name="money"></param>
-        /// <param name="price"></param>
-        /// <returns></returns>
-        private int CanBuyCount(decimal money, decimal price)
-        {
-            return (int)((money - 5) / (price * 100));
         }
 
         /// <summary>
