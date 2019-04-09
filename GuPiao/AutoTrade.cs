@@ -573,10 +573,15 @@ namespace GuPiao
                     break;
 
                 case CurOpt.OrderOKEvent:
+                    this.ThreadWriteTradeLog("订单成功");
                     break;
 
                 case CurOpt.OrderSuccessEvent:
+                    this.ThreadWriteTradeLog("交易成功");
+                    break;
+
                 case CurOpt.CancelOrder:
+                    
                     break;
             }
         }
@@ -593,6 +598,24 @@ namespace GuPiao
             string logFile = System.AppDomain.CurrentDomain.BaseDirectory + @"Log/AutoTradeLog" + this.sysDate.ToString("yyyyMMdd") + ".txt";
 
             File.AppendAllText(logFile, msg + "\r\n", Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 写交易的log
+        /// </summary>
+        /// <param name="msg"></param>
+        private void ThreadWriteTradeLog(string msg)
+        {
+ 
+        }
+
+        /// <summary>
+        /// 取消交易
+        /// </summary>
+        /// <param name="cd"></param>
+        private void ThreadCanceOrder(string cd)
+        {
+            this.ThreadWriteTradeLog("交易取消");
         }
 
         /// <summary>
@@ -683,6 +706,23 @@ namespace GuPiao
                                     buySell["buyMoney"] = (decimal)buySell["buyCount"] * price + 5;
                                     buySell["TotalMoney"] = (decimal)buySell["TotalMoney"] - (decimal)buySell["buyMoney"];
 
+                                    if (this.rdoReal.Checked)
+                                    {
+                                        // 实时交易
+                                        this.ThreadRealBuy(lastItem.Code, canBuyCnt * 100, price);
+                                    }
+                                    else
+                                    { 
+                                        // 模拟交易
+                                        this.tradeUtil.RetMsg = "模拟买 订单成功...";
+                                        this.tradeUtil.CurOpt = CurOpt.OrderOKEvent;
+                                        this.AsyncCallBack(null);
+                                        
+                                        this.tradeUtil.RetMsg = "模拟买 交易成功...";
+                                        this.tradeUtil.CurOpt = CurOpt.OrderSuccessEvent;
+                                        this.AsyncCallBack(null);
+                                    }
+
                                     break;
                                 }
                             }
@@ -702,6 +742,24 @@ namespace GuPiao
                                 decimal sellMoney = (decimal)buySell["buyCount"] * price;
                                 buySell["status"] = "S";
                                 buySell["TotalMoney"] = (decimal)buySell["TotalMoney"] + sellMoney;
+
+                                if (this.rdoReal.Checked)
+                                {
+                                    // 实时交易
+                                    this.ThreadRealSell(lastItem.Code, (int)buySell["buyCount"], price);
+                                }
+                                else
+                                {
+                                    // 模拟交易
+                                    this.tradeUtil.RetMsg = "模拟卖 订单成功...";
+                                    this.tradeUtil.CurOpt = CurOpt.OrderOKEvent;
+                                    this.AsyncCallBack(null);
+
+                                    this.tradeUtil.RetMsg = "模拟卖 交易成功...";
+                                    this.tradeUtil.CurOpt = CurOpt.OrderSuccessEvent;
+                                    this.AsyncCallBack(null);
+                                }
+
                                 break;
                             }
                         }
@@ -712,6 +770,32 @@ namespace GuPiao
             {
                 this.ThreadWriteLog(e.Message + "\r\n" + e.StackTrace);
             }
+        }
+
+        /// <summary>
+        /// 开始实时的买操作
+        /// </summary>
+        /// <param name="cd"></param>
+        /// <param name="buyCnt"></param>
+        /// <param name="price"></param>
+        /// <returns></returns>
+        private bool ThreadRealBuy(string cd, int buyCnt, decimal price)
+        {
+            this.tradeUtil.BuyStock(cd, (uint)buyCnt, (float)price, BuySellType.QuickBuy);
+            return true;
+        }
+
+        /// <summary>
+        /// 开始实时的卖操作
+        /// </summary>
+        /// <param name="cd"></param>
+        /// <param name="sellCnt"></param>
+        /// <param name="price"></param>
+        /// <returns></returns>
+        private bool ThreadRealSell(string cd, int sellCnt, decimal price)
+        {
+            this.tradeUtil.SellStock(cd, (uint)sellCnt, (float)price, BuySellType.QuickSell);
+            return true;
         }
 
         #endregion
