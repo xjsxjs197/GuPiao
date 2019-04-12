@@ -84,7 +84,12 @@ namespace GuPiao
         /// <summary>
         /// 买卖的历史
         /// </summary>
-        private List<Dictionary<string, object>> buySellHst = new List<Dictionary<string, object>>();
+        private List<BuySellItem> buySellHst = new List<BuySellItem>();
+
+        /// <summary>
+        /// 当天的交易信息
+        /// </summary>
+        List<OrderInfo> todayGuPiao = new List<OrderInfo>();
 
         #endregion
 
@@ -104,6 +109,16 @@ namespace GuPiao
         #endregion
 
         #region 页面事件
+
+        /// <summary>
+        /// 开始运行
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnRun_Click(object sender, EventArgs e)
+        {
+
+        }
 
         /// <summary>
         /// 关闭窗口
@@ -201,9 +216,9 @@ namespace GuPiao
             this.timer.Enabled = true;
             this.timer.Interval = 1000; // 每1秒更新数据
             this.timer.AutoReset = true;
+            this.timer.Stop();
             this.timer.Elapsed += new System.Timers.ElapsedEventHandler(this.timer_Elapsed);
             this.timer.SynchronizingObject = this;
-            this.timer.Stop();
         }
 
         /// <summary>
@@ -366,51 +381,32 @@ namespace GuPiao
             // 读取设定文件内容
             int buyThread = this.configInfo.ThreadCnt;
             decimal threadMoney = this.configInfo.ThreadMoney;
-            while (buyThread-- > 0)
+            while (buyThread > 0)
             {
-                Dictionary<string, object> buySellItem = new Dictionary<string, object>();
-                buySellItem.Add("stockCd", string.Empty);
-                buySellItem.Add("status", string.Empty);
-                buySellItem.Add("price", (decimal)0);
-                buySellItem.Add("buyCount", (decimal)0);
-                buySellItem.Add("buyMoney", (decimal)0);
-                buySellItem.Add("TotalMoney", threadMoney);
+                BuySellItem buySellItem = new BuySellItem();
+                buySellItem.Id = buyThread.ToString().PadLeft(2, '0');
+                buySellItem.TotalMoney = threadMoney;
 
                 this.buySellHst.Add(buySellItem);
+
+                buyThread--;
             }
 
-            // 读取历史BuySell信息
-            List<FilePosInfo> allHstData = Util.GetAllFiles(Consts.BASE_PATH + Consts.BUY_SELL_POINT_REAL);
-            foreach (FilePosInfo item in allHstData)
+            // 读取汇总的信息
+            string[] allTotalInfo = File.ReadAllLines(this.GetTradeHstLogFile(), Encoding.UTF8);
+            for (int i = 2; i < allTotalInfo.Length; i++)
             {
-                if (item.IsFolder)
+                // 格式说明
+                // 线程ID（2）、空格、原始金额（8）、空格、买入的代码（6）、空格、买入的价格（7）、空格、买入的数量（5）、空格、剩余的金额（8）、空格、盈亏比（7）
+                BuySellItem buySellItem = this.buySellHst[i - 2];
+                string buyedInfo = allTotalInfo[i].Substring(2 + 1 + 8 + 1, 6 + 1 + 7 + 1 + 5);
+                if (!string.IsNullOrEmpty(buyedInfo.Trim()))
                 {
-                    continue;
+                    buySellItem.StockCd = buyedInfo.Substring(0, 6);
+                    buySellItem.BuyPrice = Convert.ToDecimal(buyedInfo.Substring(6 + 1, 7));
+                    buySellItem.BuyCnt = Convert.ToInt32(buyedInfo.Substring(6 + 1 + 7 + 1, 5));
                 }
-
-                string[] allLine = File.ReadAllLines(item.File, Encoding.UTF8);
-                if (allLine.Length > 0)
-                {
-                    // 20190328103000 1234   19.180
-                    // 设置有Buy点的信息
-                    string lastBuySellInfo = allLine[allLine.Length - 1];
-                    if (lastBuySellInfo.Length == 28)
-                    {
-                        Dictionary<string, object> buySellItem = this.buySellHst[buyThread];
-                        buySellItem["stockCd"] = Util.GetShortNameWithoutType(item.File);
-                        buySellItem["status"] = "B";
-                        buySellItem["price"] = Convert.ToDecimal(lastBuySellInfo.Substring(20));
-                        buySellItem["buyCount"] = Convert.ToDecimal(lastBuySellInfo.Substring(15, 4));
-                        buySellItem["buyMoney"] = (decimal)buySellItem["price"] * (decimal)buySellItem["buyCount"];
-                        buySellItem["TotalMoney"] = threadMoney - (decimal)buySellItem["buyMoney"];
-
-                        buyThread++;
-                        if (buyThread >= this.configInfo.ThreadCnt)
-                        {
-                            return;
-                        }
-                    }
-                }
+                buySellItem.TotalMoney = Convert.ToDecimal(allTotalInfo[i].Substring(2 + 1 + 8 + 1 + 6 + 1 + 7 + 1 + 5 + 1, 8));
             }
         }
 
@@ -529,64 +525,88 @@ namespace GuPiao
             return dataLst;
         }
 
-        #region 实时处理相关
+        #region 写交易Log
 
         /// <summary>
-        /// 异步的回调方法（多线程内调用）
+        /// 取得Log文件
         /// </summary>
-        /// <param name="param"></param>
-        private void ThreadAsyncCallBack(params object[] param)
+        /// <returns></returns>
+        private string GetAllTradeLogFile()
         {
-            // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
-            mSyncContext.Post(this.AsyncCallBack, param);
+            return System.AppDomain.CurrentDomain.BaseDirectory + @"Log/AutoTradeLog" + this.sysDate.ToString("yyyyMMdd") + ".txt";
         }
 
         /// <summary>
-        /// 异步的回调方法
+        /// 取得Log文件
         /// </summary>
-        /// <param name="param"></param>
-        private void AsyncCallBack(object threadParam)
+        /// <returns></returns>
+        private string GetTradeHstLogFile()
         {
-            object[] param = (object[])threadParam;
+            return Consts.BASE_PATH + Consts.BUY_SELL_POINT_REAL + @"TotalBuySellInfo.txt";
+        }
 
-            // 第一步都是显示返回的信息
-            this.DispMsg(this.tradeUtil.RetMsg);
-
-            switch (this.tradeUtil.CurOpt)
+        /// <summary>
+        /// 写交易的Log
+        /// </summary>
+        /// <param name="orderType"></param>
+        /// <returns></returns>
+        private void WriteStockLog(OrderType orderType, BuySellItem buySell)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(buySell.Id).Append(" ");
+            sb.Append(this.sysDate.ToString("yyyy/MM/dd")).Append(" ");
+            sb.Append(DateTime.Now.ToString("HH:mm:ss")).Append(" ");
+            if (orderType == OrderType.Buy)
             {
-                case CurOpt.InitEvent:
-                    if (this.tradeUtil.IsSuccess)
-                    {
-                        this.btnRun.Enabled = true;
-                    }
-                    break;
+                sb.Append("B ");
+                sb.Append(buySell.BuyPrice.ToString().PadLeft(7, ' ')).Append(" ");
+                sb.Append(buySell.BuyCnt.ToString().PadLeft(5, ' ')).Append(" ");
+                sb.Append(buySell.TotalMoney.ToString().PadLeft(8, ' '));
+            }
+            else
+            {
+                sb.Append("S ");
+                sb.Append(buySell.SellPrice.ToString().PadLeft(7, ' ')).Append(" ");
+                sb.Append(buySell.SellCnt.ToString().PadLeft(5, ' ')).Append(" ");
+                sb.Append(buySell.TotalMoney.ToString().PadLeft(8, ' ')).Append(" ");
+                decimal diff = (buySell.TotalMoney / this.configInfo.ThreadMoney - 1) * 100;
+                sb.Append(diff.ToString("0.00").PadLeft(6, ' ')).Append("%");
+            }
 
-                case CurOpt.LoginEvent:
-                    if (this.tradeUtil.isLoginOk)
-                    {
-                        this.btnRun.Enabled = false;
-                        this.btnRun.Text = "运行中...";
+            // 写总的Log文件
+            this.ThreadWriteLog(sb.ToString());
 
-                        // 初始化定时器
-                        this.InitTimer();
-                    }
-                    break;
+            // 写单个代码的Log文件
+            File.AppendAllText(Consts.BASE_PATH + Consts.BUY_SELL_POINT_REAL + buySell.StockCd + @".txt", sb.Append("\r\n").ToString(), Encoding.UTF8);
 
-                case CurOpt.OrderOKEvent:
-                    this.ThreadWriteTradeLog("订单成功");
-                    break;
-
-                case CurOpt.OrderSuccessEvent:
-                    this.ThreadWriteTradeLog("交易成功");
-                    break;
-
-                case CurOpt.CancelOrder:
-                    
-                    break;
+            // 更新交易历史文件
+            string[] allHstInfo = File.ReadAllLines(this.GetTradeHstLogFile(), Encoding.UTF8);
+            int idx = this.configInfo.ThreadCnt - Convert.ToInt32(buySell.Id) + 2;
+            if (idx >= 2 && idx < allHstInfo.Length)
+            {
+                // 格式说明
+                // 线程ID（2）、空格、原始金额（8）、空格、买入的代码（6）、空格、买入的价格（7）、空格、买入的数量（5）、空格、剩余的金额（8）、空格、盈亏比（7）
+                sb.Length = 0;
+                sb.Append(buySell.Id).Append(" ");
+                sb.Append(this.configInfo.ThreadMoney.ToString().PadLeft(8, ' ')).Append(" ");
+                if (orderType == OrderType.Buy)
+                {
+                    sb.Append(buySell.BuyPrice.ToString().PadLeft(7, ' ')).Append(" ");
+                    sb.Append(buySell.BuyCnt.ToString().PadLeft(5, ' ')).Append(" ");
+                    sb.Append(buySell.TotalMoney.ToString().PadLeft(8, ' '));
+                }
+                else
+                {
+                    sb.Append(string.Empty.PadLeft(7, ' ')).Append(" ");
+                    sb.Append(string.Empty.PadLeft(5, ' ')).Append(" ");
+                    sb.Append(buySell.TotalMoney.ToString().PadLeft(8, ' ')).Append(" ");
+                    decimal diff = (buySell.TotalMoney / this.configInfo.ThreadMoney - 1) * 100;
+                    sb.Append(diff.ToString("0.00").PadLeft(6, ' ')).Append("%");
+                }
+                allHstInfo[idx] = sb.ToString();
+                File.WriteAllLines(this.GetTradeHstLogFile(), allHstInfo, Encoding.UTF8);
             }
         }
-
-        #endregion
 
         /// <summary>
         /// 写Log
@@ -595,9 +615,7 @@ namespace GuPiao
         private void ThreadWriteLog(object state)
         {
             string msg = state as string;
-            string logFile = System.AppDomain.CurrentDomain.BaseDirectory + @"Log/AutoTradeLog" + this.sysDate.ToString("yyyyMMdd") + ".txt";
-
-            File.AppendAllText(logFile, msg + "\r\n", Encoding.UTF8);
+            File.AppendAllText(this.GetAllTradeLogFile(), msg + "\r\n", Encoding.UTF8);
         }
 
         /// <summary>
@@ -606,17 +624,58 @@ namespace GuPiao
         /// <param name="msg"></param>
         private void ThreadWriteTradeLog(string msg)
         {
- 
+            // 取得当天交易的最后一条交易信息
+            if (this.rdoReal.Checked)
+            {
+                this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
+            }
+            if (this.todayGuPiao.Count > 0)
+            {
+                OrderInfo lastItem = this.todayGuPiao[0];
+                foreach (BuySellItem buySell in this.buySellHst)
+                {
+                    lock (buySell)
+                    {
+                        if (buySell.StockCd.Equals(lastItem.StockCd))
+                        {
+                            if (lastItem.OrderType == OrderType.Buy && lastItem.OrderStatus == OrderStatus.OrderOk
+                                && buySell.Status == BuySellStatus.Buying)
+                            {
+                                // 交易成功
+                                buySell.Status = BuySellStatus.Buyed;
+                                this.WriteStockLog(lastItem.OrderType, buySell);
+                            }
+                            else if (lastItem.OrderType == OrderType.Buy && lastItem.OrderStatus == OrderStatus.OrderCancel
+                                && buySell.Status == BuySellStatus.Buying)
+                            {
+                                // 交易取消
+                                buySell.Status = BuySellStatus.Waiting;
+                                buySell.TotalMoney += (buySell.BuyCnt * buySell.BuyPrice + 5);
+                            }
+                            else if (lastItem.OrderType == OrderType.Sell && lastItem.OrderStatus == OrderStatus.OrderOk
+                                && buySell.Status == BuySellStatus.Selling)
+                            {
+                                // 交易成功
+                                buySell.Status = BuySellStatus.Selled;
+                                this.WriteStockLog(lastItem.OrderType, buySell);
+                            }
+                            else if (lastItem.OrderType == OrderType.Sell && lastItem.OrderStatus == OrderStatus.OrderCancel
+                                && buySell.Status == BuySellStatus.Selling)
+                            {
+                                // 交易取消
+                                buySell.Status = BuySellStatus.Buyed;
+                                buySell.TotalMoney -= buySell.SellCnt * buySell.SellPrice;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
-        /// <summary>
-        /// 取消交易
-        /// </summary>
-        /// <param name="cd"></param>
-        private void ThreadCanceOrder(string cd)
-        {
-            this.ThreadWriteTradeLog("交易取消");
-        }
+        #endregion
+
+        #region 实时交易相关
 
         /// <summary>
         /// 处理实时数据
@@ -688,38 +747,44 @@ namespace GuPiao
             {
                 if (lastItem.BuySellFlg > 0)
                 {
-                    foreach (Dictionary<string, object> buySell in this.buySellHst)
+                    foreach (BuySellItem buySell in this.buySellHst)
                     {
                         lock (buySell)
                         {
-                            if (!"B".Equals(buySell["status"]))
+                            if (buySell.Status == BuySellStatus.Waiting || buySell.Status == BuySellStatus.Selled)
                             {
-                                decimal totalMoney = (decimal)buySell["TotalMoney"];
                                 decimal price = Convert.ToDecimal(realTimeData.valOut2);
-                                int canBuyCnt = Util.CanBuyCount(totalMoney, price);
+                                int canBuyCnt = Util.CanBuyCount(buySell.TotalMoney, price);
                                 if (canBuyCnt > 0)
                                 {
-                                    buySell["stockCd"] = lastItem.Code;
-                                    buySell["status"] = "B";
-                                    buySell["price"] = price;
-                                    buySell["buyCount"] = (decimal)(canBuyCnt * 100);
-                                    buySell["buyMoney"] = (decimal)buySell["buyCount"] * price + 5;
-                                    buySell["TotalMoney"] = (decimal)buySell["TotalMoney"] - (decimal)buySell["buyMoney"];
+                                    buySell.StockCd = lastItem.Code;
+                                    buySell.Status = BuySellStatus.Buying;
+                                    buySell.BuyPrice = price;
+                                    buySell.BuyCnt = canBuyCnt * 100;
+                                    buySell.TotalMoney -= (buySell.BuyCnt * price + 5);
 
                                     if (this.rdoReal.Checked)
                                     {
                                         // 实时交易
-                                        this.ThreadRealBuy(lastItem.Code, canBuyCnt * 100, price);
+                                        this.ThreadRealBuy(lastItem.Code, buySell.BuyCnt, price);
                                     }
                                     else
                                     { 
                                         // 模拟交易
+                                        OrderInfo order = new OrderInfo();
+                                        order.StockCd = lastItem.Code;
+                                        order.OrderType = OrderType.Buy;
+                                        order.OrderStatus = OrderStatus.Waiting;
+
                                         this.tradeUtil.RetMsg = "模拟买 订单成功...";
                                         this.tradeUtil.CurOpt = CurOpt.OrderOKEvent;
+                                        this.todayGuPiao.Insert(0, order);
                                         this.AsyncCallBack(null);
                                         
                                         this.tradeUtil.RetMsg = "模拟买 交易成功...";
                                         this.tradeUtil.CurOpt = CurOpt.OrderSuccessEvent;
+                                        order.OrderStatus = OrderStatus.OrderOk;
+                                        this.todayGuPiao.Insert(0, order);
                                         this.AsyncCallBack(null);
                                     }
 
@@ -731,32 +796,40 @@ namespace GuPiao
                 }
                 else if (lastItem.BuySellFlg < 0)
                 {
-                    foreach (Dictionary<string, object> buySell in this.buySellHst)
+                    foreach (BuySellItem buySell in this.buySellHst)
                     {
                         lock (buySell)
                         {
-                            if (lastItem.Code.Equals(buySell["stockCd"])
-                                && "B".Equals(buySell["status"]))
+                            if (lastItem.Code.Equals(buySell.StockCd)
+                                && buySell.Status == BuySellStatus.Buyed)
                             {
-                                decimal price = Convert.ToDecimal(realTimeData.valIn2);
-                                decimal sellMoney = (decimal)buySell["buyCount"] * price;
-                                buySell["status"] = "S";
-                                buySell["TotalMoney"] = (decimal)buySell["TotalMoney"] + sellMoney;
+                                buySell.SellCnt = buySell.BuyCnt;
+                                buySell.SellPrice = Convert.ToDecimal(realTimeData.valIn2);
+                                buySell.Status = BuySellStatus.Selling;
+                                buySell.TotalMoney += buySell.SellCnt * buySell.SellPrice;
 
                                 if (this.rdoReal.Checked)
                                 {
                                     // 实时交易
-                                    this.ThreadRealSell(lastItem.Code, (int)buySell["buyCount"], price);
+                                    this.ThreadRealSell(lastItem.Code, buySell.SellCnt, buySell.SellPrice);
                                 }
                                 else
                                 {
                                     // 模拟交易
+                                    OrderInfo order = new OrderInfo();
+                                    order.StockCd = lastItem.Code;
+                                    order.OrderType = OrderType.Sell;
+                                    order.OrderStatus = OrderStatus.Waiting;
+
                                     this.tradeUtil.RetMsg = "模拟卖 订单成功...";
                                     this.tradeUtil.CurOpt = CurOpt.OrderOKEvent;
+                                    this.todayGuPiao.Insert(0, order);
                                     this.AsyncCallBack(null);
 
                                     this.tradeUtil.RetMsg = "模拟卖 交易成功...";
                                     this.tradeUtil.CurOpt = CurOpt.OrderSuccessEvent;
+                                    order.OrderStatus = OrderStatus.OrderOk;
+                                    this.todayGuPiao.Insert(0, order);
                                     this.AsyncCallBack(null);
                                 }
 
@@ -797,6 +870,67 @@ namespace GuPiao
             this.tradeUtil.SellStock(cd, (uint)sellCnt, (float)price, BuySellType.QuickSell);
             return true;
         }
+
+        #endregion
+
+        #region 异步交易接口的事件处理
+
+        /// <summary>
+        /// 异步的回调方法（多线程内调用）
+        /// </summary>
+        /// <param name="param"></param>
+        private void ThreadAsyncCallBack(params object[] param)
+        {
+            // 在线程中更新UI（通过UI线程同步上下文mSyncContext）
+            mSyncContext.Post(this.AsyncCallBack, param);
+        }
+
+        /// <summary>
+        /// 异步的回调方法
+        /// </summary>
+        /// <param name="param"></param>
+        private void AsyncCallBack(object threadParam)
+        {
+            object[] param = (object[])threadParam;
+
+            // 第一步都是显示返回的信息
+            this.DispMsg(this.tradeUtil.RetMsg);
+
+            switch (this.tradeUtil.CurOpt)
+            {
+                case CurOpt.InitEvent:
+                    if (this.tradeUtil.IsSuccess)
+                    {
+                        this.btnRun.Enabled = true;
+                    }
+                    break;
+
+                case CurOpt.LoginEvent:
+                    if (this.tradeUtil.isLoginOk)
+                    {
+                        this.btnRun.Enabled = false;
+                        this.btnRun.Text = "运行中...";
+
+                        // 初始化定时器
+                        this.InitTimer();
+                    }
+                    break;
+
+                case CurOpt.OrderOKEvent:
+                    this.ThreadWriteTradeLog("订单成功");
+                    break;
+
+                case CurOpt.OrderSuccessEvent:
+                    this.ThreadWriteTradeLog("交易成功");
+                    break;
+
+                case CurOpt.CancelOrder:
+                    this.ThreadWriteTradeLog("交易取消");
+                    break;
+            }
+        }
+
+        #endregion
 
         #endregion
     }

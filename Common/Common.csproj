@@ -62,6 +62,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enum\BuySellStatus.cs" />
     <Compile Include="Object\BaseDataInfo.cs" />
     <Compile Include="BaseModule\BaseForm.cs">
       <SubType>Form</SubType>
@@ -75,7 +76,7 @@
     <Compile Include="Enum\CurOpt.cs" />
     <Compile Include="Enum\OrderStatus.cs" />
     <Compile Include="Enum\OrderType.cs" />
-    <Compile Include="Object\BuySellPoint.cs" />
+    <Compile Include="Object\BuySellItem.cs" />
     <Compile Include="Object\BuySellSetting.cs" />
     <Compile Include="Object\FilePosInfo.cs" />
     <Compile Include="Enum\PointType.cs" />

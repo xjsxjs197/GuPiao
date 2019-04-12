@@ -58,6 +58,7 @@
             this.btnRun.TabIndex = 0;
             this.btnRun.Text = "开始运行";
             this.btnRun.UseVisualStyleBackColor = true;
+            this.btnRun.Click += new System.EventHandler(this.btnRun_Click);
             // 
             // chkChuangYe
             // 
