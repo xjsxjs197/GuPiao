@@ -113,12 +113,7 @@ namespace GuPiao
         /// <param name="e"></param>
         private void AutoTrade_FormClosing(object sender, FormClosingEventArgs e)
         {
-            this.timer.Stop();
-
-            if (this.autoTradeUtil != null)
-            {
-                this.autoTradeUtil.TradeRelease();
-            }
+            this.StopAutoTrade();
         }
 
         /// <summary>
@@ -187,6 +182,25 @@ namespace GuPiao
             this.Text = this.configInfo.SystemTitle + " " + retMsg;
         }
 
+        /// <summary>
+        /// 停止程序
+        /// </summary>
+        private void StopAutoTrade()
+        {
+            if (this.timer != null)
+            {
+                this.timer.Stop();
+            }
+
+            if (this.autoTradeUtil != null)
+            {
+                this.autoTradeUtil.TradeRelease();
+            }
+
+            this.btnRun.Enabled = true;
+            this.btnRun.Text = "重新开始";
+        }
+
         #region 定时交易相关
 
         /// <summary>
@@ -194,11 +208,8 @@ namespace GuPiao
         /// </summary>
         private void TimerProcess()
         {
-            // 定时取得数据
-            List<GuPiaoInfo> dataLst = this.autoTradeUtil.TimerGetData();
-
             // 开线程，处理实时数据
-            ThreadPool.QueueUserWorkItem(new WaitCallback(this.ThreadCheckRealTimeData), dataLst);
+            ThreadPool.QueueUserWorkItem(new WaitCallback(this.ThreadCheckRealTimeData));
         }
 
         /// <summary>
@@ -207,7 +218,8 @@ namespace GuPiao
         /// <param name="data"></param>
         private void ThreadCheckRealTimeData(object data)
         {
-            List<GuPiaoInfo> dataLst = data as List<GuPiaoInfo>;
+            // 定时取得数据
+            List<GuPiaoInfo> dataLst = this.autoTradeUtil.TimerGetData();
             if (dataLst == null || dataLst.Count == 0)
             {
                 return;
@@ -300,7 +312,7 @@ namespace GuPiao
                         break;
 
                     case CurOpt.EmuTradeEnd:
-                        this.timer.Stop();
+                        this.StopAutoTrade();
                         break;
                 }
             }

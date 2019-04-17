@@ -130,7 +130,7 @@
             this.dtEmu.Name = "dtEmu";
             this.dtEmu.Size = new System.Drawing.Size(104, 19);
             this.dtEmu.TabIndex = 7;
-            this.dtEmu.Value = new System.DateTime(2019, 3, 18, 17, 11, 0, 0);
+            this.dtEmu.Value = new System.DateTime(2019, 4, 17, 17, 11, 0, 0);
             // 
             // rdoRealEmu
             // 

@@ -32,15 +32,26 @@ namespace GuPiao
         /// </summary>
         protected override void InitOther()
         {
-            // 修改系统时间
-            this.ChangeSystemTime();
+            if (this.isRealEmu)
+            {
+                TradeEventParam param = new TradeEventParam();
+                param.CurOpt = CurOpt.InitEvent;
+                param.IsSuccess = true;
+                param.Msg = "实时模拟处理：初始化成功";
+                this.callBackF(param);
+            }
+            else
+            {
+                // 修改系统时间，证书的有效时间是从2018/4/23开始的一周
+                this.ChangeSystemTime();
 
-            // 设置异步关联信息
-            this.tradeUtil.SetCallBack(this.callBackF);
-            this.tradeUtil.SetGuPiaoInfo(this.guPiaoBaseInfo);
+                // 设置异步关联信息
+                this.tradeUtil.SetCallBack(this.callBackF);
+                this.tradeUtil.SetGuPiaoInfo(this.guPiaoBaseInfo);
 
-            // 设置交易的基础配置信息
-            this.tradeUtil.Init(this.cmbAccountType, this.cmbBrokerType);
+                // 设置交易的基础配置信息
+                this.tradeUtil.Init(this.cmbAccountType, this.cmbBrokerType);
+            }
         }
 
         /// <summary>
@@ -58,9 +69,20 @@ namespace GuPiao
         /// </summary>
         protected override void LoginServerSub()
         {
-            // 链接服务器
-            this.tradeUtil.ConnServer(this.cmbAccountType.SelectedIndex, this.cmbBrokerType.SelectedIndex);
-            this.callBackF(this.tradeUtil.eventParam);
+            if (this.isRealEmu)
+            {
+                TradeEventParam param = new TradeEventParam();
+                param.CurOpt = CurOpt.LoginEvent;
+                param.IsSuccess = true;
+                param.Msg = "实时模拟处理：登陆服务器成功";
+                this.callBackF(param);
+            }
+            else
+            {
+                // 链接服务器
+                this.tradeUtil.ConnServer(this.cmbAccountType.SelectedIndex, this.cmbBrokerType.SelectedIndex);
+                this.callBackF(this.tradeUtil.eventParam);
+            }
         }
 
         /// <summary>
@@ -68,7 +90,11 @@ namespace GuPiao
         /// </summary>
         protected override void TradeReleaseSub()
         {
-            this.tradeUtil.TradeRelease();
+            if (!this.isRealEmu)
+            {
+                // 实时真实处理时，需要释放链接资源
+                this.tradeUtil.TradeRelease();
+            }
         }
 
         /// <summary>

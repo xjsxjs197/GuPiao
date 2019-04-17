@@ -76,6 +76,8 @@ namespace GuPiao
         /// </summary>
         protected List<OrderInfo> todayGuPiao = new List<OrderInfo>();
 
+        private readonly object Locker = new object();
+
         #endregion
 
         #region 公共方法
@@ -137,44 +139,52 @@ namespace GuPiao
         /// <returns></returns>
         public List<GuPiaoInfo> TimerGetData()
         {
-            int maxCnt = (this.getDataGrpIdx + 1) * this.configInfo.DataCntPerSecond;
-            if (maxCnt > this.allStockCd.Count)
-            {
-                maxCnt = this.allStockCd.Count;
-            }
-
             List<GuPiaoInfo> dataLst = new List<GuPiaoInfo>();
 
-            // 每次按照设定文件，取多个数据
-            try
+            lock (Locker)
             {
-                List<string> noList = new List<string>();
-                while (this.getDataGrpIdx < maxCnt)
+                int maxCnt = this.getDataGrpIdx + this.configInfo.DataCntPerSecond;
+                if (maxCnt > this.allStockCd.Count)
                 {
-                    string stockCd = this.allStockCd[this.getDataGrpIdx];
-                    noList.Add(this.GetStockCdBefChar(stockCd) + stockCd);
-
-                    this.getDataGrpIdx++;
+                    maxCnt = this.allStockCd.Count;
                 }
 
-                // 通过代码列表取得数据
-                this.GetDataByCdList(noList, dataLst);
-            }
-            catch (Exception e)
-            {
-                TradeEventParam eventParam = new TradeEventParam();
-                eventParam.CurOpt = CurOpt.GetStockData;
-                eventParam.IsSuccess = false;
-                eventParam.Msg = e.Message + "\r\n" + e.StackTrace;
-                this.callBackF(eventParam);
-            }
+                // 每次按照设定文件，取多个数据
+                try
+                {
+                    List<string> noList = new List<string>();
+                    while (this.getDataGrpIdx < maxCnt)
+                    {
+                        string stockCd = this.allStockCd[this.getDataGrpIdx];
+                        noList.Add(this.GetStockCdBefChar(stockCd) + stockCd);
 
-            if (this.getDataGrpIdx >= this.allStockCd.Count)
-            {
-                this.getDataGrpIdx = 0;
+                        this.getDataGrpIdx++;
+                    }
 
-                // 当前时间点，这一轮数据取得完成
-                this.GetDataOneLoopEnd();
+                    //this.WriteComnLog("取数据 ： " + noList.Count);
+
+                    // 通过代码列表取得数据
+                    this.GetDataByCdList(noList, dataLst);
+                }
+                catch (Exception e)
+                {
+                    TradeEventParam eventParam = new TradeEventParam();
+                    eventParam.CurOpt = CurOpt.GetStockData;
+                    eventParam.IsSuccess = false;
+                    eventParam.Msg = e.Message + "\r\n" + e.StackTrace;
+
+                    this.WriteComnLog(eventParam.Msg);
+
+                    this.callBackF(eventParam);
+                }
+
+                if (this.getDataGrpIdx >= this.allStockCd.Count)
+                {
+                    this.getDataGrpIdx = 0;
+
+                    // 当前时间点，这一轮数据取得完成
+                    this.GetDataOneLoopEnd();
+                }
             }
 
             return dataLst;
@@ -437,7 +447,8 @@ namespace GuPiao
         /// 所有代码的数据取得完成
         /// </summary>
         protected virtual void GetDataOneLoopEnd()
-        { 
+        {
+            //this.WriteComnLog(this.tradeDate.ToString("yyyy/MM/dd HH:mm:ss") + " 一轮数据取得完成");
         }
 
         /// <summary>

@@ -114,8 +114,6 @@ namespace GuPiao
         /// </summary>
         protected override void GetDataOneLoopEnd()
         {
-            //this.WriteComnLog("取得" + this.tradeDate.ToString("yyyy/MM/dd ") + this.dataFilter[this.dataFilterIdx].ToString().PadLeft(6, '0') + "的数据");
-
             this.dataFilterIdx++;
             if (this.dataFilterIdx >= this.dataFilter.Count)
             {
