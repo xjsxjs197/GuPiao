@@ -26,6 +26,13 @@ namespace Common
         StockQuoteEvent = 13,
         ServerErrEvent = 14,
         CancelOrder = 15,
-        GetTodayPiaoInfo = 16
+        GetTodayPiaoInfo = 16,
+
+        GetStockData = 17,
+        ResetProcessBar = 18,
+        ProcessBarStep = 19,
+        CloseProcessBar = 20,
+
+        EmuTradeEnd = 21
     }
 }

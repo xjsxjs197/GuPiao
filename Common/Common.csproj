@@ -83,6 +83,7 @@
     <Compile Include="BaseModule\DosProgressBar.cs" />
     <Compile Include="Object\GuPiaoInfo.cs" />
     <Compile Include="Object\OrderInfo.cs" />
+    <Compile Include="Object\TradeEventParam.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="BaseModule\RichTextBoxEx .cs">
       <SubType>Component</SubType>

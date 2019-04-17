@@ -40,7 +40,7 @@ namespace GuPiao
         /// <param name="bLoginOK" Desc="是否登录成功标记"></param>
         public void InitEvent(object vTrade, bool bLoginOK)
         {
-            this.tradeUtil.CurOpt = CurOpt.InitEvent;
+            this.tradeUtil.eventParam.CurOpt = CurOpt.InitEvent;
 
             /// 获得接口对象
             if (null == m_spiTrade)
@@ -48,14 +48,14 @@ namespace GuPiao
                 m_spiTrade = (IStockTrade)vTrade;
             }
 
-            this.tradeUtil.IsSuccess = bLoginOK;
+            this.tradeUtil.eventParam.IsSuccess = bLoginOK;
             if (bLoginOK)
             {
-                this.tradeUtil.RetMsg = "初始化成功";
+                this.tradeUtil.eventParam.Msg = "初始化成功";
             }
             else
             {
-                this.tradeUtil.RetMsg = m_spiTrade.LastErrDesc;
+                this.tradeUtil.eventParam.Msg = m_spiTrade.LastErrDesc;
             }
             
             this.tradeUtil.DoCallBack(null);
@@ -71,7 +71,7 @@ namespace GuPiao
         /// <param name="bLoginOK" Desc="是否登录成功标记"></param>
         public void LoginEvent(object vTrade, ushort nTradeID, string strHost, ushort nPort, bool bLoginOK)
         {
-            this.tradeUtil.CurOpt = CurOpt.LoginEvent;
+            this.tradeUtil.eventParam.CurOpt = CurOpt.LoginEvent;
 
             if (null == m_spiTrade)
             {
@@ -83,11 +83,9 @@ namespace GuPiao
                 /// 异步事件处理中，请尽量不要有阻塞操作，避免影响底层流程正常处理。弹出消息框仅限于调试程序
                 if (1 == m_nTradeIndex)
                 {
-                    this.tradeUtil.isLoginOk = true;
-
-                    this.tradeUtil.IsSuccess = true;
-                    this.tradeUtil.RetMsg = "异步：连接成功！";
-                    //this.tradeUtil.RetMsg = "链接速度（" + m_spiTrade.CurServerHost + "）： " + m_spiTrade.ConnSpeed.ToString();
+                    this.tradeUtil.eventParam.IsSuccess = true;
+                    this.tradeUtil.eventParam.Msg = "异步：连接成功！";
+                    //this.tradeUtil.eventParam.Msg = "链接速度（" + m_spiTrade.CurServerHost + "）： " + m_spiTrade.ConnSpeed.ToString();
                 }
                 //else if (2 == m_nTradeIndex)
                 //{
@@ -113,8 +111,8 @@ namespace GuPiao
             else
             {
                 /// 弹出登录错误提示
-                this.tradeUtil.IsSuccess = false;
-                this.tradeUtil.RetMsg = "异步：" + m_spiTrade.LastErrDesc;
+                this.tradeUtil.eventParam.IsSuccess = false;
+                this.tradeUtil.eventParam.Msg = "异步：" + m_spiTrade.LastErrDesc;
             }
 
             this.tradeUtil.DoCallBack(null);
@@ -128,7 +126,7 @@ namespace GuPiao
         /// <param name="vRecord" Desc="交易结果对象"></param>
         public void OrderOKEvent(uint nReqID, EZMExchangeType eExchangeType, object vRecord)
         {
-            this.tradeUtil.CurOpt = CurOpt.OrderOKEvent;
+            this.tradeUtil.eventParam.CurOpt = CurOpt.OrderOKEvent;
             this.tradeUtil.DoCallBack(new object[] { nReqID, (ITradeRecord)vRecord });
         }
 
@@ -139,7 +137,7 @@ namespace GuPiao
         /// <param name="strSuccessJson" Desc="成功的JSON数据包"></param>
         public void OrderSuccessEvent(string strOrderID, string strSuccessJson)
         {
-            this.tradeUtil.CurOpt = CurOpt.OrderSuccessEvent;
+            this.tradeUtil.eventParam.CurOpt = CurOpt.OrderSuccessEvent;
             this.tradeUtil.DoCallBack(new object[] { strOrderID, strSuccessJson });
         }
 
@@ -150,7 +148,7 @@ namespace GuPiao
         /// <param name="ErrInfo"></param>
         public void OrderErrEvent(uint nReqID, string ErrInfo)
         {
-            this.tradeUtil.CurOpt = CurOpt.OrderErrEvent;
+            this.tradeUtil.eventParam.CurOpt = CurOpt.OrderErrEvent;
             this.tradeUtil.DoCallBack(new object[] { nReqID, ErrInfo });
         }
 
@@ -162,7 +160,7 @@ namespace GuPiao
         /// <param name="vRecord" Desc="行情数据包"></param>
         public void StockQuoteEvent(uint nReqID, string StockCode, object vRecord)
         {
-            this.tradeUtil.CurOpt = CurOpt.StockQuoteEvent;
+            this.tradeUtil.eventParam.CurOpt = CurOpt.StockQuoteEvent;
 
             ITradeRecord TradeRecord = (ITradeRecord)vRecord;
             if (null != TradeRecord)
@@ -194,8 +192,8 @@ namespace GuPiao
         /// <param name="nReqID" Desc="请求ID标识"></param>
         public void ServerErrEvent(ushort nTradeID, uint nReqID)
         {
-            this.tradeUtil.CurOpt = CurOpt.ServerErrEvent;
-            this.tradeUtil.RetMsg = "服务器错误：" + m_spiTrade.LastErrDesc;
+            this.tradeUtil.eventParam.CurOpt = CurOpt.ServerErrEvent;
+            this.tradeUtil.eventParam.Msg = "服务器错误：" + m_spiTrade.LastErrDesc;
             this.tradeUtil.DoCallBack(null);
         }
 

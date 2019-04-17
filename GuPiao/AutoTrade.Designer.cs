@@ -35,11 +35,15 @@
             this.btnQushi = new System.Windows.Forms.Button();
             this.rdoReal = new System.Windows.Forms.RadioButton();
             this.rdoEmu = new System.Windows.Forms.RadioButton();
+            this.dtEmu = new System.Windows.Forms.DateTimePicker();
+            this.rdoRealEmu = new System.Windows.Forms.RadioButton();
             this.pnlTopBody.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlTopBody
             // 
+            this.pnlTopBody.Controls.Add(this.rdoRealEmu);
+            this.pnlTopBody.Controls.Add(this.dtEmu);
             this.pnlTopBody.Controls.Add(this.rdoEmu);
             this.pnlTopBody.Controls.Add(this.rdoReal);
             this.pnlTopBody.Controls.Add(this.btnQushi);
@@ -47,11 +51,10 @@
             this.pnlTopBody.Controls.Add(this.chkLiangRong);
             this.pnlTopBody.Controls.Add(this.chkChuangYe);
             this.pnlTopBody.Controls.Add(this.btnRun);
-            this.pnlTopBody.Size = new System.Drawing.Size(347, 96);
+            this.pnlTopBody.Size = new System.Drawing.Size(347, 127);
             // 
             // btnRun
             // 
-            this.btnRun.Enabled = false;
             this.btnRun.Location = new System.Drawing.Point(12, 12);
             this.btnRun.Name = "btnRun";
             this.btnRun.Size = new System.Drawing.Size(83, 33);
@@ -102,30 +105,48 @@
             // rdoReal
             // 
             this.rdoReal.AutoSize = true;
-            this.rdoReal.Location = new System.Drawing.Point(139, 50);
+            this.rdoReal.Location = new System.Drawing.Point(148, 50);
             this.rdoReal.Name = "rdoReal";
-            this.rdoReal.Size = new System.Drawing.Size(71, 16);
+            this.rdoReal.Size = new System.Drawing.Size(95, 16);
             this.rdoReal.TabIndex = 5;
-            this.rdoReal.Text = "实时处理";
+            this.rdoReal.Text = "实时真实处理";
             this.rdoReal.UseVisualStyleBackColor = true;
             // 
             // rdoEmu
             // 
             this.rdoEmu.AutoSize = true;
             this.rdoEmu.Checked = true;
-            this.rdoEmu.Location = new System.Drawing.Point(139, 72);
+            this.rdoEmu.Location = new System.Drawing.Point(148, 95);
             this.rdoEmu.Name = "rdoEmu";
-            this.rdoEmu.Size = new System.Drawing.Size(71, 16);
+            this.rdoEmu.Size = new System.Drawing.Size(95, 16);
             this.rdoEmu.TabIndex = 6;
             this.rdoEmu.TabStop = true;
-            this.rdoEmu.Text = "模拟处理";
+            this.rdoEmu.Text = "历史模拟处理";
             this.rdoEmu.UseVisualStyleBackColor = true;
+            // 
+            // dtEmu
+            // 
+            this.dtEmu.Location = new System.Drawing.Point(22, 95);
+            this.dtEmu.Name = "dtEmu";
+            this.dtEmu.Size = new System.Drawing.Size(104, 19);
+            this.dtEmu.TabIndex = 7;
+            this.dtEmu.Value = new System.DateTime(2019, 3, 18, 17, 11, 0, 0);
+            // 
+            // rdoRealEmu
+            // 
+            this.rdoRealEmu.AutoSize = true;
+            this.rdoRealEmu.Location = new System.Drawing.Point(148, 72);
+            this.rdoRealEmu.Name = "rdoRealEmu";
+            this.rdoRealEmu.Size = new System.Drawing.Size(95, 16);
+            this.rdoRealEmu.TabIndex = 8;
+            this.rdoRealEmu.Text = "实时模拟处理";
+            this.rdoRealEmu.UseVisualStyleBackColor = true;
             // 
             // AutoTrade
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(347, 121);
+            this.ClientSize = new System.Drawing.Size(347, 152);
             this.MaximizeBox = false;
             this.Name = "AutoTrade";
             this.Text = "AutoTrade";
@@ -144,5 +165,7 @@
         private System.Windows.Forms.Button btnQushi;
         private System.Windows.Forms.RadioButton rdoEmu;
         private System.Windows.Forms.RadioButton rdoReal;
+        private System.Windows.Forms.DateTimePicker dtEmu;
+        private System.Windows.Forms.RadioButton rdoRealEmu;
     }
 }

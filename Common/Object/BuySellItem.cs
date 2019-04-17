@@ -49,5 +49,10 @@ namespace Common
         /// 剩余的金额
         /// </summary>
         public decimal TotalMoney { get; set; }
+
+        /// <summary>
+        /// 交易的时间
+        /// </summary>
+        public string Time { get; set; }
     }
 }
