@@ -141,6 +141,11 @@ namespace GuPiao
         {
             List<GuPiaoInfo> dataLst = new List<GuPiaoInfo>();
 
+            if (!this.CanGetData())
+            {
+                return dataLst;
+            }
+
             lock (Locker)
             {
                 int maxCnt = this.getDataGrpIdx + this.configInfo.DataCntPerSecond;
@@ -201,10 +206,10 @@ namespace GuPiao
             {
                 // 处理当前时间
                 int time = this.CheckTime(item.time);
-                if (!this.dataFilter.Contains(time))
-                {
-                    return 0;
-                }
+                //if (!this.dataFilter.Contains(time))
+                //{
+                //    return 0;
+                //}
 
                 // 获得数据信息
                 if (!this.stockCdData.ContainsKey(item.fundcode))
@@ -530,6 +535,15 @@ namespace GuPiao
         { 
         }
 
+        /// <summary>
+        /// 是否可以开始取数据
+        /// </summary>
+        /// <returns></returns>
+        protected virtual bool CanGetData()
+        {
+            return true;
+        }
+
         #endregion
 
         #region 私有方法
@@ -731,9 +745,9 @@ namespace GuPiao
         /// </summary>
         /// <param name="time"></param>
         /// <returns></returns>
-        private int CheckTime(string strTime)
+        protected int CheckTime(string strTime)
         {
-            int time = Convert.ToInt32(strTime);
+            int time = Convert.ToInt32(strTime) + 100;
             return (int)(time / 500) * 500;
         }
 

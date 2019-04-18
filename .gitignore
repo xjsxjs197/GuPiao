@@ -49,7 +49,7 @@ Common/obj/Debug/ResolveAssemblyReference.cache
 GuPiao/bin/Json100r3.zip
 GuPiao/bin/Interop.MSScriptControl.dll
 Bin/Common.dll
-Bin/Data.rar
+Bin/*.rar
 Bin/GuPiao.vshost.exe.manifest
 Bin/Common.dll
 GuPiao.suo

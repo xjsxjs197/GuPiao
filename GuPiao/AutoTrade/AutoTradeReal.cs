@@ -23,6 +23,8 @@ namespace GuPiao
         private ComboBox cmbAccountType = new ComboBox();
         private ComboBox cmbBrokerType = new ComboBox();
 
+        private string curDay = string.Empty;
+
         #endregion
 
         #region 子类重写父类的虚方法
@@ -52,6 +54,8 @@ namespace GuPiao
                 // 设置交易的基础配置信息
                 this.tradeUtil.Init(this.cmbAccountType, this.cmbBrokerType);
             }
+
+            this.curDay = this.tradeDate.ToString("yyyyMMdd");
         }
 
         /// <summary>
@@ -187,15 +191,17 @@ namespace GuPiao
             BaseDataInfo lastItem = stockInfos[0];
             string stockCd = lastItem.Code;
             string lastTime = time.ToString().PadLeft(6, '0');
-            if (lastItem.Day.EndsWith(lastTime))
+            if (lastItem.Day.Equals(this.curDay + lastTime))
             {
                 return null;
             }
 
+            //this.WriteComnLog(lastTime + " 检查分型：" + stockCd);
+
             // 处理最后的数据
             lastItem = new BaseDataInfo();
             lastItem.Code = stockCd;
-            lastItem.Day = this.tradeDate.ToString("yyyyMMdd") + lastTime;
+            lastItem.Day = this.curDay + lastTime;
             lastItem.DayVal = Convert.ToDecimal(item.currentVal);
             lastItem.DayMaxVal = Convert.ToDecimal(item.zuigaoVal);
             lastItem.DayMinVal = Convert.ToDecimal(item.zuidiVal);
@@ -260,6 +266,22 @@ namespace GuPiao
             if (!this.isRealEmu)
             {
                 this.tradeUtil.GetTodayPiaoInfo(this.todayGuPiao);
+            }
+        }
+
+        /// <summary>
+        /// 是否可以开始取数据
+        /// </summary>
+        /// <returns></returns>
+        protected override bool CanGetData()
+        {
+            if (!this.dataFilter.Contains(this.CheckTime(DateTime.Now.ToString("HHmmss"))))
+            {
+                return false;
+            }
+            else
+            {
+                return true;
             }
         }
 
