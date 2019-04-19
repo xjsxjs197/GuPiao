@@ -584,7 +584,7 @@ namespace GuPiao
         private void btnTestRun_Click(object sender, EventArgs e)
         {
             //this.Do(this.CheckData);
-            //this.Do(this.CheckAllCd);
+            this.Do(this.CheckAllCd);
             //this.Do(this.CheckRightCd);
             //this.Do(this.ReplaceDayData);
             //this.Do(this.SetRongziRongYuan);
@@ -1494,23 +1494,50 @@ namespace GuPiao
             DateTime dt = Util.GetAvailableDt();
             string endDay = dt.AddDays(-1).ToString("yyyyMMdd");
 
+            // 设置进度条
+            this.ResetProcessBar(3000);
+
             for (int i = 1; i <= 3000; i++)
             {
                 //this.CheckAvailableCdSina(i, allAvailableCd, endDay);
                 this.CheckAvailableCd163(i, allAvailableCd, endDay);
+
+                // 更新进度条
+                this.ProcessBarStep();
             }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+
+            // 设置进度条
+            this.ResetProcessBar(1000);
 
             for (int i = 300001; i <= 300999; i++)
             {
                 //this.CheckAvailableCdSina(i, allAvailableCd, endDay);
                 this.CheckAvailableCd163(i, allAvailableCd, endDay);
+
+                // 更新进度条
+                this.ProcessBarStep();
             }
+
+            // 关闭进度条
+            this.CloseProcessBar();
+
+            // 设置进度条
+            this.ResetProcessBar(4000);
 
             for (int i = 600000; i <= 603999; i++)
             {
                 //this.CheckAvailableCdSina(i, allAvailableCd, endDay);
                 this.CheckAvailableCd163(i, allAvailableCd, endDay);
+
+                // 更新进度条
+                this.ProcessBarStep();
             }
+
+            // 关闭进度条
+            this.CloseProcessBar();
 
             File.WriteAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
         }
