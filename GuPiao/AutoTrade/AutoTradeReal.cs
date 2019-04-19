@@ -143,7 +143,7 @@ namespace GuPiao
                     GuPiaoInfo item = new GuPiaoInfo();
                     dataLst.Add(item);
 
-                    item.fundcode = noList[i];
+                    item.fundcode = noList[i].Substring(2, 6);
                     item.jinriKaipanVal = details[1];
                     item.zuoriShoupanVal = details[2];
                     item.currentVal = details[3];

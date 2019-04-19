@@ -672,7 +672,8 @@ namespace GuPiao
             TradeEventParam eventParam = new TradeEventParam();
             eventParam.CurOpt = CurOpt.ResetProcessBar;
             eventParam.HstDataCount = allCsv.Count;
-            eventParam.Msg = "开始取历史数据";
+            string title = this.configInfo.SystemTitle + " 开始取历史数据";
+            eventParam.Msg = title;
             this.callBackF(eventParam);
 
             foreach (FilePosInfo item in allCsv)
@@ -685,12 +686,12 @@ namespace GuPiao
                 string stockCd = Util.GetShortNameWithoutType(item.File).Substring(0, 6);
                 if (this.allStockCd.Contains(stockCd))
                 {
-                    this.stockCdData.Add(this.GetStockCdBefChar(stockCd) + stockCd, DayBatchProcess.GetStockHistoryInfo(item.File));
+                    this.stockCdData.Add(stockCd, DayBatchProcess.GetStockHistoryInfo(item.File));
                 }
 
                 // 更新进度条
                 eventParam = new TradeEventParam();
-                eventParam.Msg = "开始取历史数据";
+                eventParam.Msg = title;
                 eventParam.CurOpt = CurOpt.ProcessBarStep;
                 this.callBackF(eventParam);
             }
@@ -698,7 +699,7 @@ namespace GuPiao
             // 隐藏进度条
             eventParam = new TradeEventParam();
             eventParam.CurOpt = CurOpt.CloseProcessBar;
-            eventParam.Msg = "历史数据取得结束";
+            eventParam.Msg = this.configInfo.SystemTitle + " 历史数据取得结束";
             this.callBackF(eventParam);
         }
 
@@ -783,8 +784,7 @@ namespace GuPiao
             sb.Append(this.tradeDate.ToString("yyyy/MM/dd")).Append(" ");
             sb.Append(buySell.Time.Substring(0, 2)).Append(":");
             sb.Append(buySell.Time.Substring(2, 2)).Append(":");
-            sb.Append(buySell.Time.Substring(4, 2)).Append(":");
-            sb.Append(" ");
+            sb.Append(buySell.Time.Substring(4, 2)).Append(" ");
             if (orderType == OrderType.Buy)
             {
                 sb.Append("B ");
