@@ -1177,7 +1177,7 @@ namespace Common
 
             try
             {
-                string[] emuSetting = File.ReadAllLines(Consts.BASE_PATH + "BuyCellSetting.txt");
+                string[] emuSetting = File.ReadAllLines(System.AppDomain.CurrentDomain.BaseDirectory + "BuyCellSetting.txt");
                 emuInfo.BefDay = Convert.ToInt32(emuSetting[1]);
                 emuInfo.ThreadCnt = Convert.ToInt32(emuSetting[3]);
                 emuInfo.ThreadMoney = Convert.ToDecimal(emuSetting[5]);
