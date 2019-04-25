@@ -209,6 +209,7 @@ namespace GuPiao
 
             // 取得分型的数据
             FenXing fenXing = new FenXing();
+            fenXing.needResetData = false;
             List<BaseDataInfo> fenxingInfo =
                 fenXing.DoFenXingSp(stockInfos, this.configInfo, this.dataFilter[0].ToString().PadLeft(6, '0'), null);
 
@@ -275,13 +276,22 @@ namespace GuPiao
         /// <returns></returns>
         protected override bool CanGetData()
         {
-            if (!this.dataFilter.Contains(this.CheckTime(DateTime.Now.ToString("HHmmss"))))
+            int time = this.CheckTime(DateTime.Now.ToString("HHmmss"));
+            if (this.dataFilter.Contains(time))
             {
-                return false;
+                if (!this.curRoundDataEnd)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
             else
             {
-                return true;
+                this.curRoundDataEnd = false;
+                return false;
             }
         }
 

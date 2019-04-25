@@ -14,11 +14,6 @@ namespace GuPiao
     {
         #region 全局变量
 
-        /// <summary>
-        /// 设置当前时刻的位置
-        /// </summary>
-        private int dataFilterIdx = 0;
-
         #endregion
 
         #region 子类重写父类的虚方法
@@ -106,24 +101,6 @@ namespace GuPiao
                         }
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// 所有代码的数据取得完成
-        /// </summary>
-        protected override void GetDataOneLoopEnd()
-        {
-            this.dataFilterIdx++;
-            if (this.dataFilterIdx >= this.dataFilter.Count)
-            {
-                this.dataFilterIdx = 0;
-
-                // 当前数据处理完成
-                TradeEventParam eventParam = new TradeEventParam();
-                eventParam.Msg = "当前数据处理完成";
-                eventParam.CurOpt = CurOpt.EmuTradeEnd;
-                this.callBackF(eventParam);
             }
         }
 

@@ -78,6 +78,16 @@ namespace GuPiao
 
         private readonly object Locker = new object();
 
+        /// <summary>
+        /// 设置当前时刻的位置
+        /// </summary>
+        protected int dataFilterIdx = 0;
+
+        /// <summary>
+        /// 当前时间段的数据是否获取完成
+        /// </summary>
+        protected bool curRoundDataEnd = false;
+
         #endregion
 
         #region 公共方法
@@ -141,13 +151,13 @@ namespace GuPiao
         {
             List<GuPiaoInfo> dataLst = new List<GuPiaoInfo>();
 
-            if (!this.CanGetData())
-            {
-                return dataLst;
-            }
-
             lock (Locker)
             {
+                if (!this.CanGetData())
+                {
+                    return dataLst;
+                }
+
                 int maxCnt = this.getDataGrpIdx + this.configInfo.DataCntPerSecond;
                 if (maxCnt > this.allStockCd.Count)
                 {
@@ -271,7 +281,7 @@ namespace GuPiao
         /// <param name="msg"></param>
         public void WriteComnLog(string msg)
         {
-            File.AppendAllText(this.GetAllTradeLogFile(), msg + "\r\n", Encoding.UTF8);
+            File.AppendAllText(this.GetAllTradeLogFile(), DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " " + msg + "\r\n", Encoding.UTF8);
         }
 
         /// <summary>
@@ -453,7 +463,31 @@ namespace GuPiao
         /// </summary>
         protected virtual void GetDataOneLoopEnd()
         {
-            //this.WriteComnLog(this.tradeDate.ToString("yyyy/MM/dd HH:mm:ss") + " 一轮数据取得完成");
+            lock (Locker)
+            {
+                this.curRoundDataEnd = true;
+                // 当前数据取得完成
+                TradeEventParam eventParam = new TradeEventParam();
+                string time = DateTime.Now.ToString("HHmmss");
+                time = this.CheckTime(time).ToString().PadLeft(6, '0');
+
+                eventParam.Msg = time.Substring(0, 2) + ":" + time.Substring(2, 2) + " 时间点的数据取得完成";
+                eventParam.CurOpt = CurOpt.GetStockInfo;
+                this.callBackF(eventParam);
+                this.WriteComnLog(eventParam.Msg);
+
+                this.dataFilterIdx++;
+                if (this.dataFilterIdx >= this.dataFilter.Count)
+                {
+                    this.dataFilterIdx = 0;
+
+                    // 当前数据处理完成
+                    eventParam = new TradeEventParam();
+                    eventParam.Msg = "当天数据处理完成";
+                    eventParam.CurOpt = CurOpt.EmuTradeEnd;
+                    this.callBackF(eventParam);
+                }
+            }
         }
 
         /// <summary>

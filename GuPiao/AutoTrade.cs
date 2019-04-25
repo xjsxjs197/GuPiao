@@ -127,6 +127,17 @@ namespace GuPiao
             this.TimerProcess();
         }
 
+        /// <summary>
+        /// 弹出趋势图辅助的画面
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnQushi_Click(object sender, EventArgs e)
+        {
+            CreateQushi qushiForm = new CreateQushi();
+            qushiForm.Show(this);
+        }
+
         #endregion
 
         #region 私有方法

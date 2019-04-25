@@ -18,6 +18,11 @@ namespace DataProcess.FenXing
         /// </summary>
         private List<BaseDataInfo> hstData = new List<BaseDataInfo>();
 
+        /// <summary>
+        /// 是否需要重置数据
+        /// </summary>
+        public bool needResetData = true;
+
         #endregion
 
         #region " 公有方法 "
@@ -187,26 +192,29 @@ namespace DataProcess.FenXing
             tmpPoint.DayMinVal = lastPoint.DayMinVal;
             int maxCnt = this.hstData.Count - 2;
             int lastIdx = maxCnt + 1;
-            for (int i = maxCnt; i >= 0; i--)
+            if (this.needResetData)
             {
-                if (this.hstData[i].DayMaxVal > tmpPoint.DayMaxVal)
+                for (int i = maxCnt; i >= 0; i--)
                 {
-                    tmpPoint.DayMaxVal = this.hstData[i].DayMaxVal;
-                }
-                if (this.hstData[i].DayMinVal < tmpPoint.DayMinVal)
-                {
-                    tmpPoint.DayMinVal = this.hstData[i].DayMinVal;
-                }
+                    if (this.hstData[i].DayMaxVal > tmpPoint.DayMaxVal)
+                    {
+                        tmpPoint.DayMaxVal = this.hstData[i].DayMaxVal;
+                    }
+                    if (this.hstData[i].DayMinVal < tmpPoint.DayMinVal)
+                    {
+                        tmpPoint.DayMinVal = this.hstData[i].DayMinVal;
+                    }
 
-                if (this.hstData[i].Day.EndsWith(startTime))
-                {
-                    tmpPoint.DayMaxVal = this.hstData[i].DayMaxVal;
-                    tmpPoint.DayMinVal = this.hstData[i].DayMinVal;
-                }
-                else
-                {
-                    this.hstData[i].DayMaxVal = tmpPoint.DayMaxVal;
-                    this.hstData[i].DayMinVal = tmpPoint.DayMinVal;
+                    if (this.hstData[i].Day.EndsWith(startTime))
+                    {
+                        tmpPoint.DayMaxVal = this.hstData[i].DayMaxVal;
+                        tmpPoint.DayMinVal = this.hstData[i].DayMinVal;
+                    }
+                    else
+                    {
+                        this.hstData[i].DayMaxVal = tmpPoint.DayMaxVal;
+                        this.hstData[i].DayMinVal = tmpPoint.DayMinVal;
+                    }
                 }
             }
 

@@ -101,6 +101,7 @@
             this.btnQushi.TabIndex = 4;
             this.btnQushi.Text = "趋势辅助";
             this.btnQushi.UseVisualStyleBackColor = true;
+            this.btnQushi.Click += new System.EventHandler(this.btnQushi_Click);
             // 
             // rdoReal
             // 
