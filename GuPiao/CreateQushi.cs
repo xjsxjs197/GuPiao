@@ -649,7 +649,7 @@ namespace GuPiao
 
                 base.baseFile = fileItem.File;
                 string shortName = Util.GetShortNameWithoutType(fileItem.File);
-                if (NO_CHUANGYE && this.IsChuangyeStock(shortName))
+                if (NO_CHUANGYE && Util.IsChuangyeStock(shortName))
                 {
                     continue;
                 }
@@ -801,7 +801,7 @@ namespace GuPiao
                 }
 
                 string shortName = Util.GetShortNameWithoutType(fileItem.File);
-                if (NO_CHUANGYE && this.IsChuangyeStock(shortName))
+                if (NO_CHUANGYE && Util.IsChuangyeStock(shortName))
                 {
                     continue;
                 }
@@ -842,7 +842,7 @@ namespace GuPiao
 
             foreach (KeyValuePair<string, string> stockDate in this.hasBuyPointsStock)
             {
-                if (NO_CHUANGYE && this.IsChuangyeStock(stockDate.Key))
+                if (NO_CHUANGYE && Util.IsChuangyeStock(stockDate.Key))
                 {
                     continue;
                 }
@@ -1298,16 +1298,6 @@ namespace GuPiao
             {
                 ((Control)btn).Enabled = true;
             }
-        }
-
-        /// <summary>
-        /// 是否是创业板数据
-        /// </summary>
-        /// <param name="stockCd"></param>
-        /// <returns></returns>
-        private bool IsChuangyeStock(string stockCd)
-        {
-            return stockCd.StartsWith("300");
         }
 
         /// <summary>
