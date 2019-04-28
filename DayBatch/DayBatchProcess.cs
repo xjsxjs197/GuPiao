@@ -863,6 +863,13 @@ namespace DayBatch
             int x2 = 0;
             int y2 = 0;
             int index = 1;
+            Pen linePen = new Pen(Color.FromArgb(50, Color.Gray));
+            linePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Custom;
+            linePen.DashPattern = new float[] { 3, 3 };
+
+            Brush blackBush = new SolidBrush(Color.BlueViolet);
+            Font font = new Font(new FontFamily("Microsoft YaHei"), 8, FontStyle.Regular);
+
             while (index <= stockInfo.Count - 1)
             {
                 x2 = startX - Consts.IMG_X_STEP;
@@ -872,12 +879,19 @@ namespace DayBatch
                 x1 = x2;
                 y1 = y2;
 
+                grp.DrawLine(linePen, x2, 0, x2, img.Height - 1);
+                if (index % 9 == 0)
+                {
+                    grp.DrawString(stockInfo[index].Day.Substring(4, 4), font, blackBush, x2, img.Height - 20);
+                }
+
                 index++;
                 startX -= Consts.IMG_X_STEP;
             }
 
             // 释放资源
             pen.Dispose();
+            linePen.Dispose();
         }
 
         /// <summary>
