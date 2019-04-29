@@ -283,33 +283,40 @@ namespace DataProcess.FenXing
                         // 当前下降，前面是上升，说明前一个点是高点
                         lastPoint.CurPointType = PointType.Top;
 
-                        if (!startingSell && buyed && !this.hstData[i].Day.StartsWith(buyDate))
+                        if (buyed && !this.hstData[i].Day.StartsWith(buyDate))
                         {
-                            // 已经买过，并且不是当天，判断是否设置第一类卖点
-                            lastTopPos = this.GeBefTopVal(lastIdx, maxCnt);
-                            if (lastTopPos > 0 && this.hstData[i].DayVal * Consts.LIMIT_VAL < this.hstData[lastTopPos].DayMaxVal)
-                            {
-                                // 当前高点比前一个高点底，设置第一类卖点
-                                //this.hstData[i].BuySellFlg = -1;
-                                //buyed = false;
-                                startingSell = true;
-                            }
-                        }
-                        else if (startingSell)
-                        {
-                            // 开始卖的准备，并且趋势开始上升
+                            // 设置第一类卖点
                             this.hstData[i].BuySellFlg = -1;
                             buyed = false;
-                            startingSell = false;
                         }
+
+                        //if (!startingSell && buyed && !this.hstData[i].Day.StartsWith(buyDate))
+                        //{
+                        //    // 已经买过，并且不是当天，判断是否设置第一类卖点
+                        //    lastTopPos = this.GeBefTopVal(lastIdx, maxCnt);
+                        //    if (lastTopPos > 0 && this.hstData[i].DayVal * Consts.LIMIT_VAL < this.hstData[lastTopPos].DayMaxVal)
+                        //    {
+                        //        // 当前高点比前一个高点底，设置第一类卖点
+                        //        //this.hstData[i].BuySellFlg = -1;
+                        //        //buyed = false;
+                        //        startingSell = true;
+                        //    }
+                        //}
+                        //else if (startingSell)
+                        //{
+                        //    // 开始卖的准备，并且趋势开始上升
+                        //    this.hstData[i].BuySellFlg = -1;
+                        //    buyed = false;
+                        //    startingSell = false;
+                        //}
                     }
 
-                    // 已经买过，只要下降到买入价，或者下降到日线一下，并且不是当天，开始卖的准备
-                    if (buyed && (this.hstData[i].DayVal < buyPrice || this.hstData[i].DayVal < this.hstData[i].DayAvgVal)
-                        && !this.hstData[i].Day.StartsWith(buyDate))
-                    {
-                        startingSell = true;
-                    }
+                    //// 已经买过，只要下降到买入价，或者下降到日线一下，并且不是当天，开始卖的准备
+                    //if (buyed && (this.hstData[i].DayVal < buyPrice || this.hstData[i].DayVal < this.hstData[i].DayAvgVal)
+                    //    && !this.hstData[i].Day.StartsWith(buyDate))
+                    //{
+                    //    startingSell = true;
+                    //}
                 }
                 else if (chkVal > 0)
                 {
@@ -539,7 +546,8 @@ namespace DataProcess.FenXing
         /// <returns></returns>
         private bool IsBuyPointOne(decimal curVal, int lastIdx, int maxCnt)
         {
-            if (this.bottomPoints.Count == 3 && curVal > this.bottomPoints[1])
+            //if (this.bottomPoints.Count == 3 && curVal > this.bottomPoints[1])
+            if (this.bottomPoints.Count == 3)
             {
                 int lastTopPos = this.GeBefTopVal(lastIdx, maxCnt);
                 if (lastTopPos > 0)
