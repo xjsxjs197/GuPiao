@@ -329,6 +329,14 @@ namespace GuPiao
             string selectedText = this.cmbCon.SelectedItem as string;
             switch (selectedText)
             {
+                case "查看成功买点":
+                    this.ViewBuySellPoints("GoodBuySellPoint.txt");
+                    break;
+
+                case "查看失败买点":
+                    this.ViewBuySellPoints("BadBuySellPoint.txt");
+                    break;
+
                 case "下跌递减":
                     this.Do(this.ThreadChkQushi, new ChkDownDecreaseQushi(), this.cmbCon, selectedText);
                     break;
@@ -697,6 +705,37 @@ namespace GuPiao
         #endregion
 
         #region " 画面显示相关 "
+
+        /// <summary>
+        /// 查看模拟的买卖点
+        /// </summary>
+        /// <param name="file"></param>
+        private void ViewBuySellPoints(string file)
+        {
+            this.subFolder = TimeRange.M30.ToString() + "/";
+            string filePath = Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + file;
+            string[] allPoints = File.ReadAllLines(filePath);
+            
+            // 设置当前的数据时间
+            this.dataDate = this.GetDataDate(this.subFolder);
+
+            this.allStock.Clear();
+
+            foreach (string line in allPoints)
+            {
+                if (string.IsNullOrEmpty(line))
+                {
+                    break;
+                }
+
+                this.allStock.Add(line.Substring(0, 6));
+            }
+
+            // 重新显示当前信息
+            this.ReDisplayStockInfo(0);
+
+            this.cmbCon.Enabled = true;
+        }
 
         /// <summary>
         /// 取得数据后的处理

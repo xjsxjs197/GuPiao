@@ -250,7 +250,7 @@ namespace DataProcess.FenXing
                     lastPoint.CurPointType = PointType.Bottom;
 
                     // 判断当前的低点是否是第一类买点
-                    if (!buyed && this.IsBuyPointOne(lastPoint, this.hstData[i].DayVal)
+                    if (!buyed && this.IsBuyPointOne(lastPoint, this.hstData[i].DayVal, lastIdx, maxCnt)
                         && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
                     {
                         this.bottomPoints.RemoveRange(0, 2);
@@ -314,7 +314,7 @@ namespace DataProcess.FenXing
                 else if (chkVal > 0)
                 {
                     // 判断当前的低点是否是第一类买点
-                    if (!buyed && this.IsBuyPointOne(this.hstData[i].DayVal)
+                    if (!buyed && this.IsBuyPointOne(this.hstData[i].DayVal, lastIdx, maxCnt)
                         && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
                     {
                         this.bottomPoints.RemoveRange(0, 2);
@@ -492,7 +492,7 @@ namespace DataProcess.FenXing
         /// <param name="lastBottomPoint"></param>
         /// <param name="curVal"></param>
         /// <returns></returns>
-        private bool IsBuyPointOne(BaseDataInfo lastBottomPoint, decimal curVal)
+        private bool IsBuyPointOne(BaseDataInfo lastBottomPoint, decimal curVal, int lastIdx, int maxCnt)
         { 
             if (this.bottomPoints.Count == 0)
             {
@@ -528,7 +528,7 @@ namespace DataProcess.FenXing
                 }
             }
 
-            return this.IsBuyPointOne(curVal);
+            return this.IsBuyPointOne(curVal, lastIdx, maxCnt);
         }
 
         /// <summary>
@@ -537,11 +537,20 @@ namespace DataProcess.FenXing
         /// <param name="lastBottomPoint"></param>
         /// <param name="curVal"></param>
         /// <returns></returns>
-        private bool IsBuyPointOne(decimal curVal)
+        private bool IsBuyPointOne(decimal curVal, int lastIdx, int maxCnt)
         {
             if (this.bottomPoints.Count == 3 && curVal > this.bottomPoints[1])
             {
-                return true;
+                int lastTopPos = this.GeBefTopVal(lastIdx, maxCnt);
+                if (lastTopPos > 0)
+                {
+                    int lastTopPos2 = this.GeBefTopVal(lastTopPos, maxCnt);
+                    if (lastTopPos2 > 0 && this.hstData[lastTopPos].DayMaxVal > this.hstData[lastTopPos2].DayMaxVal * Consts.LIMIT_VAL)
+                    {
+                        return true;
+                    }
+                }
+                
             }
 
             return false;
