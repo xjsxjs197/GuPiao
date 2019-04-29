@@ -864,6 +864,7 @@ namespace DayBatch
             int y2 = 0;
             int index = 1;
             Pen linePen = new Pen(Color.FromArgb(50, Color.Gray));
+            Pen linePen2 = new Pen(Color.FromArgb(90, Color.Gray));
             linePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Custom;
             linePen.DashPattern = new float[] { 3, 3 };
 
@@ -879,10 +880,14 @@ namespace DayBatch
                 x1 = x2;
                 y1 = y2;
 
-                grp.DrawLine(linePen, x2, 0, x2, img.Height - 1);
-                if (index % 9 == 0)
+                if ((index - 7) % 8 == 0)
                 {
+                    grp.DrawLine(linePen2, x2, 0, x2, img.Height - 1);
                     grp.DrawString(stockInfo[index].Day.Substring(4, 4), font, blackBush, x2, img.Height - 20);
+                }
+                else
+                {
+                    grp.DrawLine(linePen, x2, 0, x2, img.Height - 1);
                 }
 
                 index++;
@@ -892,6 +897,7 @@ namespace DayBatch
             // 释放资源
             pen.Dispose();
             linePen.Dispose();
+            linePen2.Dispose();
         }
 
         /// <summary>

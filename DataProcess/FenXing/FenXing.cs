@@ -314,7 +314,7 @@ namespace DataProcess.FenXing
                 else if (chkVal > 0)
                 {
                     // 判断当前的低点是否是第一类买点
-                    if (!buyed && this.IsBuyPointOne(lastPoint, this.hstData[i].DayVal)
+                    if (!buyed && this.IsBuyPointOne(this.hstData[i].DayVal)
                         && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
                     {
                         this.bottomPoints.RemoveRange(0, 2);
