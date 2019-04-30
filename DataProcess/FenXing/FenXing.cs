@@ -252,6 +252,7 @@ namespace DataProcess.FenXing
                     // 判断当前的低点是否是第一类买点
                     if (!buyed && this.IsBuyPointOne(lastPoint, this.hstData[i].DayVal, lastIdx, maxCnt)
                         && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
+                        //&& string.Compare(this.hstData[i].Day, "133000") > 0 && !this.hstData[i].Day.EndsWith("150000"))
                     {
                         this.bottomPoints.RemoveRange(0, 2);
                         this.hstData[i].BuySellFlg = 1;
@@ -508,7 +509,7 @@ namespace DataProcess.FenXing
             else if (this.bottomPoints.Count == 1)
             {
                 this.bottomPoints.Add(lastBottomPoint.DayMinVal);
-                if (!(this.bottomPoints[1] * Consts.LIMIT_VAL < this.bottomPoints[0]))
+                if (!(this.bottomPoints[1] * Consts.DIFF_VAL < this.bottomPoints[0]))
                 {
                     this.bottomPoints.RemoveAt(0);
                 }
@@ -516,14 +517,14 @@ namespace DataProcess.FenXing
             else if (this.bottomPoints.Count == 2)
             {
                 this.bottomPoints.Add(lastBottomPoint.DayMinVal);
-                if (!(this.bottomPoints[2] * Consts.LIMIT_VAL < this.bottomPoints[1]))
+                if (!(this.bottomPoints[2] * Consts.DIFF_VAL < this.bottomPoints[1]))
                 {
                     this.bottomPoints.RemoveRange(0, 2);
                 }
             }
             else
             {
-                if (lastBottomPoint.DayMinVal * Consts.LIMIT_VAL < this.bottomPoints[this.bottomPoints.Count - 1])
+                if (lastBottomPoint.DayMinVal * Consts.DIFF_VAL < this.bottomPoints[this.bottomPoints.Count - 1])
                 {
                     this.bottomPoints.Add(lastBottomPoint.DayMinVal);
                     this.bottomPoints.RemoveAt(0);
@@ -546,19 +547,19 @@ namespace DataProcess.FenXing
         /// <returns></returns>
         private bool IsBuyPointOne(decimal curVal, int lastIdx, int maxCnt)
         {
-            //if (this.bottomPoints.Count == 3 && curVal > this.bottomPoints[1])
-            if (this.bottomPoints.Count == 3)
+            if (this.bottomPoints.Count == 3 && curVal > this.bottomPoints[1] * Consts.LIMIT_VAL)
+            //if (this.bottomPoints.Count == 3)
             {
                 int lastTopPos = this.GeBefTopVal(lastIdx, maxCnt);
                 if (lastTopPos > 0)
                 {
                     int lastTopPos2 = this.GeBefTopVal(lastTopPos, maxCnt);
-                    if (lastTopPos2 > 0 && this.hstData[lastTopPos].DayMaxVal > this.hstData[lastTopPos2].DayMaxVal * Consts.LIMIT_VAL)
+                    if (lastTopPos2 > 0 && this.hstData[lastTopPos].DayMaxVal > this.hstData[lastTopPos2].DayMaxVal * Consts.DIFF_VAL)
                     {
                         return true;
                     }
                 }
-                
+
             }
 
             return false;

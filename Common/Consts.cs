@@ -23,7 +23,7 @@ namespace Common
         /// <summary>
         /// 不作为变化的判断范围
         /// </summary>
-        public const decimal LIMIT_VAL = (decimal)1.005;
+        public const decimal LIMIT_VAL = (decimal)1.002;
 
         /// <summary>
         /// 查找趋势时连续的天数
@@ -94,5 +94,10 @@ namespace Common
         /// 趋势图高度
         /// </summary>
         public const int IMG_H = 400;
+
+        /// <summary>
+        /// 比较高低点时的值
+        /// </summary>
+        public const decimal DIFF_VAL = (decimal)1.008;
     }
 }
