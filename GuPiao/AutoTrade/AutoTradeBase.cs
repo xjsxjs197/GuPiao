@@ -578,6 +578,13 @@ namespace GuPiao
             return true;
         }
 
+        /// <summary>
+        /// 过滤停牌的数据
+        /// </summary>
+        protected virtual void CheckTingPaiData()
+        { 
+        }
+
         #endregion
 
         #region 私有方法
@@ -643,7 +650,9 @@ namespace GuPiao
                 }
             }
 
-            // 过滤当天停牌的数据 TODO
+            // 过滤当天停牌的数据
+            this.CheckTingPaiData();
+
             // 年线以下过滤 TODO
         }
 

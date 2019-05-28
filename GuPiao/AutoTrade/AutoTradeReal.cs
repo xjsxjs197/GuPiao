@@ -5,6 +5,7 @@ using System.Text;
 using System.Windows.Forms;
 using Common;
 using DataProcess.FenXing;
+using System.Text.RegularExpressions;
 
 namespace GuPiao
 {
@@ -292,6 +293,35 @@ namespace GuPiao
             {
                 this.curRoundDataEnd = false;
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 过滤停牌的数据
+        /// </summary>
+        protected override void CheckTingPaiData()
+        {
+            string url = "http://data.eastmoney.com/tfpxx/";
+            string result = Util.HttpGet(url, string.Empty, Encoding.GetEncoding("GB2312"));
+            if (!string.IsNullOrEmpty(result))
+            {
+                int idx = result.IndexOf("defjson:  {pages:1,data:[\"");
+                if (idx <= 0)
+                {
+                    return;
+                }
+
+                string tingpaiInfo = result.Substring(idx + 26, result.IndexOf("]},") - idx - 26);
+                if (string.IsNullOrEmpty(tingpaiInfo))
+                {
+                    return;
+                }
+
+                string[] tingpaiData = Regex.Split(tingpaiInfo, "\",\"", RegexOptions.IgnoreCase);
+                for (int i = 0; i < tingpaiData.Length; i++)
+                {
+                    this.allStockCd.Remove(tingpaiData[i].Substring(0, 6));
+                }
             }
         }
 
