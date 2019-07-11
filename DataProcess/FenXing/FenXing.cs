@@ -131,21 +131,21 @@ namespace DataProcess.FenXing
                     // 当前上升，前面是下降，说明前一个点是低点
                     lastPoint.CurPointType = PointType.Bottom;
 
-                    // 判断是否是第二类买点
-                    lastBottomPos = this.GeBefBottomPos(lastIdx, maxCnt);
-                    if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
-                    {
-                        // 当前低点高于上一个低点，设置第二类买点
-                        this.hstData[i].BuySellFlg = 2;
-                    }
+                    //// 判断是否是第二类买点
+                    //lastBottomPos = this.GeBefBottomPos(lastIdx, maxCnt);
+                    //if (lastBottomPos > 0 && lastPoint.DayMinVal > this.hstData[lastBottomPos].DayMinVal * Consts.LIMIT_VAL)
+                    //{
+                    //    // 当前低点高于上一个低点，设置第二类买点
+                    //    this.hstData[i].BuySellFlg = 2;
+                    //}
                 }
                 else if (chkVal < 0 && lastChkVal > 0)
                 {
                     // 当前下降，前面是上升，说明前一个点是高点
                     lastPoint.CurPointType = PointType.Top;
 
-                    // 设置第一类卖点
-                    this.hstData[i].BuySellFlg = -1;
+                    //// 设置第一类卖点
+                    //this.hstData[i].BuySellFlg = -1;
                 }
 
                 // 更新当前的点
@@ -249,17 +249,17 @@ namespace DataProcess.FenXing
                     // 当前上升，前面是下降，说明前一个点是低点
                     lastPoint.CurPointType = PointType.Bottom;
 
-                    // 判断当前的低点是否是第一类买点
-                    if (!buyed && this.IsBuyPointOne(lastPoint, this.hstData[i].DayVal, lastIdx, maxCnt)
-                        && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
-                        //&& string.Compare(this.hstData[i].Day, "133000") > 0 && !this.hstData[i].Day.EndsWith("150000"))
-                    {
-                        this.bottomPoints.RemoveRange(0, 2);
-                        this.hstData[i].BuySellFlg = 1;
-                        buyed = true;
-                        buyPrice = this.hstData[i].DayVal;
-                        buyDate = this.hstData[i].Day.Substring(0, 8);
-                    }
+                    //// 判断当前的低点是否是第一类买点
+                    //if (!buyed && this.IsBuyPointOne(lastPoint, this.hstData[i].DayVal, lastIdx, maxCnt)
+                    //    && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
+                    //    //&& string.Compare(this.hstData[i].Day, "133000") > 0 && !this.hstData[i].Day.EndsWith("150000"))
+                    //{
+                    //    this.bottomPoints.RemoveRange(0, 2);
+                    //    this.hstData[i].BuySellFlg = 1;
+                    //    buyed = true;
+                    //    buyPrice = this.hstData[i].DayVal;
+                    //    buyDate = this.hstData[i].Day.Substring(0, 8);
+                    //}
 
                     /*if (!buyed && this.hstData[i].DayVal > this.hstData[i].DayAvgVal
                         && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
@@ -284,12 +284,12 @@ namespace DataProcess.FenXing
                         // 当前下降，前面是上升，说明前一个点是高点
                         lastPoint.CurPointType = PointType.Top;
 
-                        if (buyed && !this.hstData[i].Day.StartsWith(buyDate))
-                        {
-                            // 设置第一类卖点
-                            this.hstData[i].BuySellFlg = -1;
-                            buyed = false;
-                        }
+                        //if (buyed && !this.hstData[i].Day.StartsWith(buyDate))
+                        //{
+                        //    // 设置第一类卖点
+                        //    this.hstData[i].BuySellFlg = -1;
+                        //    buyed = false;
+                        //}
 
                         //if (!startingSell && buyed && !this.hstData[i].Day.StartsWith(buyDate))
                         //{
@@ -319,19 +319,19 @@ namespace DataProcess.FenXing
                     //    startingSell = true;
                     //}
                 }
-                else if (chkVal > 0)
-                {
-                    // 判断当前的低点是否是第一类买点
-                    if (!buyed && this.IsBuyPointOne(this.hstData[i].DayVal, lastIdx, maxCnt)
-                        && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
-                    {
-                        this.bottomPoints.RemoveRange(0, 2);
-                        this.hstData[i].BuySellFlg = 1;
-                        buyed = true;
-                        buyPrice = this.hstData[i].DayVal;
-                        buyDate = this.hstData[i].Day.Substring(0, 8);
-                    }
-                }
+                //else if (chkVal > 0)
+                //{
+                //    // 判断当前的低点是否是第一类买点
+                //    if (!buyed && this.IsBuyPointOne(this.hstData[i].DayVal, lastIdx, maxCnt)
+                //        && !this.hstData[i].Day.EndsWith(startTime) && !this.hstData[i].Day.EndsWith("150000"))
+                //    {
+                //        this.bottomPoints.RemoveRange(0, 2);
+                //        this.hstData[i].BuySellFlg = 1;
+                //        buyed = true;
+                //        buyPrice = this.hstData[i].DayVal;
+                //        buyDate = this.hstData[i].Day.Substring(0, 8);
+                //    }
+                //}
 
                 // 更新当前的点
                 if (chkVal != 0)

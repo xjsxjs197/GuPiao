@@ -78,6 +78,7 @@
     <Compile Include="Enum\OrderType.cs" />
     <Compile Include="Object\BuySellItem.cs" />
     <Compile Include="Object\BuySellSetting.cs" />
+    <Compile Include="Object\DrawImgInfo.cs" />
     <Compile Include="Object\FilePosInfo.cs" />
     <Compile Include="Enum\PointType.cs" />
     <Compile Include="BaseModule\DosProgressBar.cs" />

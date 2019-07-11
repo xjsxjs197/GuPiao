@@ -99,6 +99,11 @@ namespace DayBatch
         /// </summary>
         private BuySellSetting configInfo;
 
+        /// <summary>
+        /// 画图时的信息
+        /// </summary>
+        private DrawImgInfo drawImgInfo;
+
         #endregion
 
         #region " 初始化 "
@@ -111,6 +116,9 @@ namespace DayBatch
             this.callBef = null;
             this.callEnd = null;
             this.callRowEnd = null;
+
+            // 初始化各种笔、画刷信息
+            this.InitDrawImgInfo();
         }
 
         /// <summary>
@@ -121,6 +129,9 @@ namespace DayBatch
             this.callBef = callBef;
             this.callEnd = callEnd;
             this.callRowEnd = callRowEnd;
+
+            // 初始化各种笔、画刷信息
+            this.InitDrawImgInfo();
         }
 
         #endregion
@@ -202,6 +213,9 @@ namespace DayBatch
                 // 模拟运行
                 this.StartEmuTest();
             }
+
+            // 释放资源
+            this.ReleaseResource();
         }
 
         /// <summary>
@@ -228,6 +242,9 @@ namespace DayBatch
 
             // 画趋势图
             this.DrawQushiImg(timeRange);
+
+            // 释放资源
+            this.ReleaseResource();
         }
 
         /// <summary>
@@ -765,7 +782,7 @@ namespace DayBatch
 
             // 最大、最小值信息
             decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
-            decimal step = Util.GetYstep(minMaxInfo);
+            decimal yStep = Util.GetYstep(minMaxInfo);
 
             // 设定图片
             Bitmap imgQushi = new Bitmap((stockInfos.Count + 2) * Consts.IMG_X_STEP, Consts.IMG_H);
@@ -774,29 +791,40 @@ namespace DayBatch
             grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
             // 开始当前的线（5分，15分，30分，天）
-            this.DrawStockQushi(stockInfos, step, minMaxInfo[0], imgQushi, new Pen(Color.Black, 1F), grp);
+            this.DrawStockQushi(stockInfos, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.BlackLinePen, grp, true);
 
             // 画均线
             if (timeRange == TimeRange.Day)
             {
-                // 取得5日级别信息
+                // 取得5日均线信息
                 List<BaseDataInfo> stockInfo5Jibie = GetAverageLineInfo(stockInfos, 5);
 
-                // 开始画5日线
+                // 开始画5日均线
                 if (stockInfo5Jibie.Count > 0)
                 {
-                    this.DrawStockQushi(stockInfo5Jibie, step, minMaxInfo[0], imgQushi, new Pen(Color.Green, 1F), grp);
+                    this.DrawStockQushi(stockInfo5Jibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
                 }
 
                 /*
-                // 取得10日级别信息
+                // 取得10日均线信息
                 List<BaseDataInfo> stockInfo10Jibie = GetJibieStockInfo(stockInfos, 10);
 
-                // 开始画10日线
+                // 开始画10日均线
                 if (stockInfo10Jibie.Count > 0)
                 {
-                    this.DrawStockQushi(stockInfo10Jibie, step, minMaxInfo[0], imgQushi, new Pen(Color.Red, 1F), grp);
+                 *  this.DrawStockQushi(stockInfo10Jibie, step, minMaxInfo[0], imgQushi, this.drawImgInfo.RedLinePen, grp, false);
                 }*/
+            }
+            else if (timeRange == TimeRange.M30)
+            {
+                // 取得日均线信息
+                List<BaseDataInfo> stockInfoDayJibie = GetAverageLineInfo(stockInfos, 8);
+
+                // 开始画日均线
+                if (stockInfoDayJibie.Count > 0)
+                {
+                    this.DrawStockQushi(stockInfoDayJibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
+                }
             }
 
             // 开始画分型、笔的线段
@@ -819,24 +847,24 @@ namespace DayBatch
                     fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
                     break;
             }
-            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkOrange, 1F), grp);
+            this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkOrangeLinePen, grp, Consts.IMG_X_STEP);
 
-            // 在5,15分钟的分型图上画天的分型信息
-            //if (timeRange == TimeRange.M5 || timeRange == TimeRange.M15)
-            //{
-            //    dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
-            //    if (dataInfo != null)
-            //    {
-            //        // 基础数据信息
-            //        stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
-            //        if (stockInfos.Count > 0)
-            //        {
-            //            // 开始画分型、笔的线段
-            //            fenXingInfo = SetFenxingInfo(stockInfos);
-            //            this.DrawFenxingPen(fenXingInfo, step, minMaxInfo[0], imgQushi, new Pen(Color.DarkGreen, 1F), grp, timeRange == TimeRange.M5 ? IMG_X_STEP * 48 : IMG_X_STEP * 16);
-            //        }
-            //    }
-            //}
+            // 在30分钟的分型图上画天的分型信息
+            if (timeRange == TimeRange.M30)
+            {
+                dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
+                if (dataInfo != null)
+                {
+                    // 基础数据信息
+                    stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+                    if (stockInfos.Count > 0)
+                    {
+                        // 开始画分型、笔的线段
+                        fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
+                        this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkBlueLinePen, grp, Consts.IMG_X_STEP * 8);
+                    }
+                }
+            }
 
             // 保存图片
             imgQushi.Save(this.basePath + Consts.IMG_FOLDER + this.subFolder + stockCdData.Substring(0, 6) + ".png");
@@ -855,49 +883,43 @@ namespace DayBatch
         /// </summary>
         /// <param name="stockInfo"></param>
         /// <param name="step"></param>
-        private void DrawStockQushi(List<BaseDataInfo> stockInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
+        private void DrawStockQushi(List<BaseDataInfo> stockInfo, decimal yStep, decimal minVal, Bitmap img, Pen pen, Graphics grp, bool needJiangeLine)
         {
-            int startX = img.Width - Consts.IMG_X_STEP;
-            int x1 = startX;
-            int y1 = this.GetYPos(img.Height, stockInfo[0].DayVal, minVal, step);
+            int x1 = img.Width - Consts.IMG_X_STEP;
+            int y1 = this.GetYPos(img.Height, stockInfo[0].DayVal, minVal, yStep);
             int x2 = 0;
             int y2 = 0;
             int index = 1;
-            Pen linePen = new Pen(Color.FromArgb(50, Color.Gray));
-            Pen linePen2 = new Pen(Color.FromArgb(90, Color.Gray));
-            linePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Custom;
-            linePen.DashPattern = new float[] { 3, 3 };
+            int maxCount = stockInfo.Count - 1;
+            int maxHeight = img.Height - 1;
+            int strYPos = img.Height - 20;
 
-            Brush blackBush = new SolidBrush(Color.BlueViolet);
-            Font font = new Font(new FontFamily("Microsoft YaHei"), 8, FontStyle.Regular);
-
-            while (index <= stockInfo.Count - 1)
+            while (index <= maxCount)
             {
-                x2 = startX - Consts.IMG_X_STEP;
-                y2 = this.GetYPos(img.Height, stockInfo[index].DayVal, minVal, step);
+                x2 = x1 - Consts.IMG_X_STEP;
+                y2 = this.GetYPos(img.Height, stockInfo[index].DayVal, minVal, yStep);
 
                 grp.DrawLine(pen, x1, y1, x2, y2);
                 x1 = x2;
                 y1 = y2;
 
-                if ((index - 7) % 8 == 0)
+                if (needJiangeLine)
                 {
-                    grp.DrawLine(linePen2, x2, 0, x2, img.Height - 1);
-                    grp.DrawString(stockInfo[index].Day.Substring(4, 4), font, blackBush, x2, img.Height - 20);
-                }
-                else
-                {
-                    grp.DrawLine(linePen, x2, 0, x2, img.Height - 1);
+                    //if ((index - 7) % 8 == 0)
+                    if (((index - 7) & 7) == 0)
+                    {
+                        grp.DrawLine(this.drawImgInfo.NormalLinePen, x2, 0, x2, maxHeight);
+                        grp.DrawString(stockInfo[index].Day.Substring(4, 4), this.drawImgInfo.NormalFont,
+                            this.drawImgInfo.BlueVioletBush, x2, strYPos);
+                    }
+                    else
+                    {
+                        grp.DrawLine(this.drawImgInfo.DashLinePen, x2, 0, x2, maxHeight);
+                    }
                 }
 
                 index++;
-                startX -= Consts.IMG_X_STEP;
             }
-
-            // 释放资源
-            pen.Dispose();
-            linePen.Dispose();
-            linePen2.Dispose();
         }
 
         /// <summary>
@@ -910,7 +932,7 @@ namespace DayBatch
         /// <returns></returns>
         private int GetYPos(int imgH, decimal pointVal, decimal minVal, decimal step)
         {
-            return imgH - ((int)((pointVal - minVal) * step)) - 10;
+            return imgH - ((int)((pointVal - minVal) * step) + 10);
         }
 
         /// <summary>
@@ -972,6 +994,56 @@ namespace DayBatch
             return dt;
         }
 
+        /// <summary>
+        /// 初始化各种笔、画刷信息
+        /// </summary>
+        private void InitDrawImgInfo()
+        {
+            this.drawImgInfo = new DrawImgInfo();
+            this.drawImgInfo.BuyBush = new SolidBrush(Color.Red);
+            this.drawImgInfo.SellBush = new SolidBrush(Color.Green);
+            this.drawImgInfo.BlueVioletBush = new SolidBrush(Color.BlueViolet);
+            this.drawImgInfo.BuySellFont = new Font(new FontFamily("Microsoft YaHei"), 6, FontStyle.Bold);
+            this.drawImgInfo.NormalFont = new Font(new FontFamily("Microsoft YaHei"), 8, FontStyle.Regular);
+
+            this.drawImgInfo.DashLinePen = new Pen(Color.FromArgb(50, Color.Gray));
+            this.drawImgInfo.DashLinePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Custom;
+            this.drawImgInfo.DashLinePen.DashPattern = new float[] { 3, 3 };
+            this.drawImgInfo.NormalLinePen = new Pen(Color.FromArgb(90, Color.Gray));
+
+            this.drawImgInfo.BlackLinePen = new Pen(Color.Black, 1F);
+            this.drawImgInfo.GreenLinePen = new Pen(Color.Green, 1F);
+            this.drawImgInfo.RedLinePen = new Pen(Color.Red, 1F);
+            this.drawImgInfo.DarkOrangeLinePen = new Pen(Color.DarkOrange, 1F);
+            this.drawImgInfo.DarkGreenLinePen = new Pen(Color.DarkGreen, 1F);
+            this.drawImgInfo.DarkBlueLinePen = new Pen(Color.DarkBlue, 1F);
+        }
+
+        /// <summary>
+        /// 释放资源
+        /// </summary>
+        private void ReleaseResource()
+        {
+            if (this.drawImgInfo != null)
+            {
+                this.drawImgInfo.BuyBush.Dispose();
+                this.drawImgInfo.SellBush.Dispose();
+                this.drawImgInfo.BlueVioletBush.Dispose();
+                this.drawImgInfo.BuySellFont.Dispose();
+                this.drawImgInfo.NormalFont.Dispose();
+
+                this.drawImgInfo.DashLinePen.Dispose();
+                this.drawImgInfo.NormalLinePen.Dispose();
+
+                this.drawImgInfo.BlackLinePen.Dispose();
+                this.drawImgInfo.GreenLinePen.Dispose();
+                this.drawImgInfo.RedLinePen.Dispose();
+                this.drawImgInfo.DarkOrangeLinePen.Dispose();
+                this.drawImgInfo.DarkGreenLinePen.Dispose();
+                this.drawImgInfo.DarkBlueLinePen.Dispose();
+            }
+        }
+
         #region " 分型处理相关 "
 
         /// <summary>
@@ -979,33 +1051,30 @@ namespace DayBatch
         /// </summary>
         /// <param name="stockInfo"></param>
         /// <param name="step"></param>
-        private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, decimal step, decimal minVal, Bitmap img, Pen pen, Graphics grp)
+        private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, decimal yStep, decimal minVal, Bitmap img, Pen pen, Graphics grp, int xStep)
         {
             if (fenXingInfo.Count == 0)
             {
                 return false;
             }
 
-            int x1 = img.Width - ((fenXingInfo.Count - 1) * Consts.IMG_X_STEP + Consts.IMG_X_STEP);
-            int y1 = this.GetYPos(img.Height, fenXingInfo[fenXingInfo.Count - 1].DayVal, minVal, step);
-            int x2 = 0;
+            int x1 = img.Width - ((fenXingInfo.Count - 1) * xStep + Consts.IMG_X_STEP);
+            int y1 = this.GetYPos(img.Height, fenXingInfo[fenXingInfo.Count - 1].DayVal, minVal, yStep);
+            int x2 = x1;
             int y2 = 0;
             decimal curVal;
             int maxCnt = fenXingInfo.Count - 2;
-            Brush buyBush = new SolidBrush(Color.Red);
-            Brush sellBush = new SolidBrush(Color.Green);
-            Font font = new Font(new FontFamily("Microsoft YaHei"), 6, FontStyle.Bold);
+            
             bool hasBuyPoint = false;
             bool buyed = false;
 
             for (int index = maxCnt; index >= 0; index--)
             {
-                x2 = img.Width - (index * Consts.IMG_X_STEP + Consts.IMG_X_STEP);
-
+                x2 += xStep;
                 if (fenXingInfo[index].CurPointType != PointType.Changing || index == 0)
                 {
                     curVal = fenXingInfo[index].CurPointType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
-                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+                    y2 = this.GetYPos(img.Height, curVal, minVal, yStep);
 
                     //// 写字用做标识
                     //if (fenXingInfo[index].CurPointType == PointType.Top)
@@ -1025,23 +1094,20 @@ namespace DayBatch
                 if (fenXingInfo[index].BuySellFlg > 0 && !buyed)
                 {
                     curVal = fenXingInfo[index].DayVal;
-                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+                    y2 = this.GetYPos(img.Height, curVal, minVal, yStep);
 
-                    grp.DrawString("B", font, buyBush, x2, y2);
+                    grp.DrawString("B", this.drawImgInfo.BuySellFont, this.drawImgInfo.BuyBush, x2, y2);
                     buyed = true;
                 }
                 else if (fenXingInfo[index].BuySellFlg < 0 && buyed)
                 {
                     curVal = fenXingInfo[index].DayVal;
-                    y2 = this.GetYPos(img.Height, curVal, minVal, step);
+                    y2 = this.GetYPos(img.Height, curVal, minVal, yStep);
 
-                    grp.DrawString("T", font, sellBush, x2, y2);
+                    grp.DrawString("T", this.drawImgInfo.BuySellFont, this.drawImgInfo.SellBush, x2, y2);
                     buyed = false;
                 }
             }
-
-            // 释放资源
-            pen.Dispose();
 
             return hasBuyPoint;
         }
