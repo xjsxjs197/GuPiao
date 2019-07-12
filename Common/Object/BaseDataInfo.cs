@@ -41,9 +41,19 @@ namespace Common
         public decimal DayMaxVal { get; set; }
 
         /// <summary>
+        /// 当天最低价位(比较用)
+        /// </summary>
+        public decimal DayMinValTmp { get; set; }
+
+        /// <summary>
+        /// 当天最高价位(比较用)
+        /// </summary>
+        public decimal DayMaxValTmp { get; set; }
+
+        /// <summary>
         /// 当前点的分型
         /// </summary>
-        public PointType CurPointType { get; set; }
+        public PointType PointType { get; set; }
 
         /// <summary>
         /// 买卖点标识(-3,-2,-1,0,1,2,3)
@@ -69,5 +79,10 @@ namespace Common
         /// 30日均线价位
         /// </summary>
         public decimal Day30AvgVal { get; set; }
+
+        /// <summary>
+        /// 上一个比较点的情报
+        /// </summary>
+        public BaseDataInfo LastChkPoint { get; set; }
     }
 }

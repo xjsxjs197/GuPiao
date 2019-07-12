@@ -1071,9 +1071,9 @@ namespace DayBatch
             for (int index = maxCnt; index >= 0; index--)
             {
                 x2 += xStep;
-                if (fenXingInfo[index].CurPointType != PointType.Changing || index == 0)
+                if (fenXingInfo[index].PointType == PointType.Down || fenXingInfo[index].PointType == PointType.Top || index == 0)
                 {
-                    curVal = fenXingInfo[index].CurPointType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
+                    curVal = fenXingInfo[index].PointType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
                     y2 = this.GetYPos(img.Height, curVal, minVal, yStep);
 
                     //// 写字用做标识

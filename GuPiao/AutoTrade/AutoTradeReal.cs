@@ -190,7 +190,6 @@ namespace GuPiao
         {
             // 取得分型的数据
             FenXing fenXing = new FenXing();
-            fenXing.needResetData = false;
             List<BaseDataInfo> fenxingInfo =
                 fenXing.DoFenXingSp(stockInfos, this.configInfo, this.dataFilter[0].ToString().PadLeft(6, '0'), null);
 
