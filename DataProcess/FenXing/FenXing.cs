@@ -21,7 +21,7 @@ namespace DataProcess.FenXing
         /// <summary>
         /// 是否需要重置数据
         /// </summary>
-        public bool needResetData = true;
+        public bool needResetData = false;
 
         /// <summary>
         /// 保存到目前为止的低点（最多三个）
@@ -225,8 +225,8 @@ namespace DataProcess.FenXing
                 }
             }
 
-            // 设置日均线数据
-            this.SetDayAverageLineInfo(avgDataLen);
+            //// 设置日均线数据
+            //this.SetDayAverageLineInfo(avgDataLen);
 
             // 开始比较
             int chkVal = 0;

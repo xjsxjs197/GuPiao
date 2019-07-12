@@ -150,14 +150,10 @@ namespace GuPiao
         public List<GuPiaoInfo> TimerGetData()
         {
             List<GuPiaoInfo> dataLst = new List<GuPiaoInfo>();
+            bool canDoNext = false;
 
             lock (Locker)
             {
-                if (!this.CanGetData())
-                {
-                    return dataLst;
-                }
-
                 int maxCnt = this.getDataGrpIdx + this.configInfo.DataCntPerSecond;
                 if (maxCnt > this.allStockCd.Count)
                 {
@@ -176,10 +172,12 @@ namespace GuPiao
                         this.getDataGrpIdx++;
                     }
 
-                    //this.WriteComnLog("取数据 ： " + noList.Count);
+                    //this.WriteComnLog("取数据开始 ： " + noList.Count);
 
                     // 通过代码列表取得数据
                     this.GetDataByCdList(noList, dataLst);
+
+                    //this.WriteComnLog("取数据结束");
                 }
                 catch (Exception e)
                 {
@@ -193,6 +191,11 @@ namespace GuPiao
                     this.callBackF(eventParam);
                 }
 
+                // 处理当前取得的数据
+                // 设置当前区间的高低点
+                canDoNext = this.AddRealTimeData(dataLst);
+
+                // 判断当前时间段的数据是否处理完成
                 if (this.getDataGrpIdx >= this.allStockCd.Count)
                 {
                     this.getDataGrpIdx = 0;
@@ -202,7 +205,14 @@ namespace GuPiao
                 }
             }
 
-            return dataLst;
+            if (canDoNext)
+            {
+                return dataLst;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -214,13 +224,6 @@ namespace GuPiao
         {
             try
             {
-                // 处理当前时间
-                int time = this.CheckTime(item.time);
-                //if (!this.dataFilter.Contains(time))
-                //{
-                //    return 0;
-                //}
-
                 // 获得数据信息
                 if (!this.stockCdData.ContainsKey(item.fundcode))
                 {
@@ -234,7 +237,7 @@ namespace GuPiao
                 }
 
                 // 检查当前数据的买卖点标志
-                BaseDataInfo lastItem = this.CheckCurDataBuySellFlg(stockInfos, item, time);
+                BaseDataInfo lastItem = this.CheckCurDataBuySellFlg(stockInfos, item, this.CheckTime(item.time));
                 if (lastItem != null)
                 {
                     return lastItem.BuySellFlg;
@@ -585,6 +588,16 @@ namespace GuPiao
         { 
         }
 
+        /// <summary>
+        /// 处理当前取得的数据
+        /// 设置当前区间的高低点
+        /// </summary>
+        /// <returns>是否可以继续向下处理</returns>
+        protected virtual bool AddRealTimeData(List<GuPiaoInfo> data)
+        {
+            return true;
+        }
+
         #endregion
 
         #region 私有方法
@@ -729,7 +742,15 @@ namespace GuPiao
                 string stockCd = Util.GetShortNameWithoutType(item.File).Substring(0, 6);
                 if (this.allStockCd.Contains(stockCd))
                 {
-                    this.stockCdData.Add(stockCd, DayBatchProcess.GetStockHistoryInfo(item.File));
+                    // 追加一个空的最新的数据
+                    List<BaseDataInfo> hstData = DayBatchProcess.GetStockHistoryInfo(item.File);
+                    BaseDataInfo newItem = new BaseDataInfo();
+                    newItem.Code = stockCd;
+                    newItem.DayMinVal = decimal.MaxValue;
+                    newItem.DayMaxVal = 0;
+                    hstData.Insert(0, newItem);
+
+                    this.stockCdData.Add(stockCd, hstData);
                 }
 
                 // 更新进度条

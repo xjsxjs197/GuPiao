@@ -188,33 +188,13 @@ namespace GuPiao
         /// <returns></returns>
         protected override BaseDataInfo CheckCurDataBuySellFlg(List<BaseDataInfo> stockInfos, GuPiaoInfo item, int time)
         {
-            // 判断当前的数据，是否已经追加到历史数据中
-            BaseDataInfo lastItem = stockInfos[0];
-            string stockCd = lastItem.Code;
-            string lastTime = time.ToString().PadLeft(6, '0');
-            if (lastItem.Day.Equals(this.curDay + lastTime))
-            {
-                return null;
-            }
-
-            //this.WriteComnLog(lastTime + " 检查分型：" + stockCd);
-
-            // 处理最后的数据
-            lastItem = new BaseDataInfo();
-            lastItem.Code = stockCd;
-            lastItem.Day = this.curDay + lastTime;
-            lastItem.DayVal = Convert.ToDecimal(item.currentVal);
-            lastItem.DayMaxVal = Convert.ToDecimal(item.zuigaoVal);
-            lastItem.DayMinVal = Convert.ToDecimal(item.zuidiVal);
-            stockInfos.Insert(0, lastItem);
-
             // 取得分型的数据
             FenXing fenXing = new FenXing();
             fenXing.needResetData = false;
             List<BaseDataInfo> fenxingInfo =
                 fenXing.DoFenXingSp(stockInfos, this.configInfo, this.dataFilter[0].ToString().PadLeft(6, '0'), null);
 
-            return lastItem;
+            return fenxingInfo[0];
         }
 
         /// <summary>
@@ -322,6 +302,61 @@ namespace GuPiao
                 {
                     this.allStockCd.Remove(tingpaiData[i].Substring(0, 6));
                 }
+            }
+        }
+
+        /// <summary>
+        /// 处理当前取得的数据
+        /// 设置当前区间的高低点
+        /// </summary>
+        protected override bool AddRealTimeData(List<GuPiaoInfo> data)
+        {
+            int time = this.CheckTime(DateTime.Now.ToString("HHmmss"));
+            bool isRangeTime = this.dataFilter.Contains(time);
+            foreach (GuPiaoInfo item in data)
+            {
+                if (this.stockCdData.ContainsKey(item.fundcode))
+                {
+                    List<BaseDataInfo> hstData = this.stockCdData[item.fundcode];
+                    BaseDataInfo lastItem = hstData[hstData.Count - 1];
+                    lastItem.DayVal = Convert.ToDecimal(item.currentVal);
+                    if (lastItem.DayVal > lastItem.DayMaxVal)
+                    {
+                        lastItem.DayMaxVal = lastItem.DayVal;
+                    }
+                    if (lastItem.DayVal < lastItem.DayMinVal)
+                    {
+                        lastItem.DayMinVal = lastItem.DayVal;
+                    }
+
+                    if (isRangeTime && !this.curRoundDataEnd)
+                    {
+                        lastItem = new BaseDataInfo();
+                        lastItem.Code = item.fundcode;
+                        lastItem.DayVal = Convert.ToDecimal(item.currentVal);
+                        lastItem.DayMaxVal = lastItem.DayVal;
+                        lastItem.DayMinVal = lastItem.DayVal;
+                        hstData.Insert(0, lastItem);
+                    }
+                }
+            }
+
+            if (isRangeTime)
+            {
+                if (this.curRoundDataEnd)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                this.curRoundDataEnd = false;
+
+                return false;
             }
         }
 
