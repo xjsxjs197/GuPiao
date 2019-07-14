@@ -355,7 +355,7 @@ namespace DayBatch
                 {
                     total += stockInfos[index + i].DayVal;
                     maxVal = Math.Max(stockInfos[index + i].DayVal, maxVal);
-                    minVal = Math.Max(stockInfos[index + i].DayVal, minVal);
+                    minVal = Math.Min(stockInfos[index + i].DayVal, minVal);
                 }
 
                 BaseDataInfo item = new BaseDataInfo();
@@ -782,7 +782,9 @@ namespace DayBatch
 
             // 最大、最小值信息
             decimal[] minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
-            decimal yStep = Util.GetYstep(minMaxInfo);
+            List<List<BaseDataInfo>> drawQushiInfo = new List<List<BaseDataInfo>>();
+            List<List<BaseDataInfo>> drawFenXingInfo = new List<List<BaseDataInfo>>();
+            //decimal yStep = Util.GetYstep(minMaxInfo);
 
             // 设定图片
             Bitmap imgQushi = new Bitmap((stockInfos.Count + 2) * Consts.IMG_X_STEP, Consts.IMG_H);
@@ -791,7 +793,8 @@ namespace DayBatch
             grp.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
             // 开始当前的线（5分，15分，30分，天）
-            this.DrawStockQushi(stockInfos, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.BlackLinePen, grp, true);
+            //this.DrawStockQushi(stockInfos, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.BlackLinePen, grp, true);
+            drawQushiInfo.Add(stockInfos);
 
             // 画均线
             if (timeRange == TimeRange.Day)
@@ -802,18 +805,12 @@ namespace DayBatch
                 // 开始画5日均线
                 if (stockInfo5Jibie.Count > 0)
                 {
-                    this.DrawStockQushi(stockInfo5Jibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
+                    //this.DrawStockQushi(stockInfo5Jibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
+                    decimal[] newMinMaxInfo = Util.GetMaxMinStock(stockInfo5Jibie);
+                    minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
+                    minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+                    drawQushiInfo.Add(stockInfos);
                 }
-
-                /*
-                // 取得10日均线信息
-                List<BaseDataInfo> stockInfo10Jibie = GetJibieStockInfo(stockInfos, 10);
-
-                // 开始画10日均线
-                if (stockInfo10Jibie.Count > 0)
-                {
-                 *  this.DrawStockQushi(stockInfo10Jibie, step, minMaxInfo[0], imgQushi, this.drawImgInfo.RedLinePen, grp, false);
-                }*/
             }
             else if (timeRange == TimeRange.M30)
             {
@@ -823,7 +820,11 @@ namespace DayBatch
                 // 开始画日均线
                 if (stockInfoDayJibie.Count > 0)
                 {
-                    this.DrawStockQushi(stockInfoDayJibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
+                    //this.DrawStockQushi(stockInfoDayJibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
+                    decimal[] newMinMaxInfo = Util.GetMaxMinStock(stockInfoDayJibie);
+                    minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
+                    minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+                    drawQushiInfo.Add(stockInfoDayJibie);
                 }
             }
 
@@ -847,7 +848,8 @@ namespace DayBatch
                     fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
                     break;
             }
-            this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkOrangeLinePen, grp, Consts.IMG_X_STEP);
+            drawFenXingInfo.Add(fenXingInfo);
+            //this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkOrangeLinePen, grp, Consts.IMG_X_STEP);
 
             // 在30分钟的分型图上画天的分型信息
             if (timeRange == TimeRange.M30)
@@ -857,12 +859,45 @@ namespace DayBatch
                 {
                     // 基础数据信息
                     stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+                    decimal[] newMinMaxInfo = (decimal[])dataInfo["minMaxInfo"];
+                    minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
+                    minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+
                     if (stockInfos.Count > 0)
                     {
                         // 开始画分型、笔的线段
-                        fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
-                        this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkBlueLinePen, grp, Consts.IMG_X_STEP * 8);
+                        this.fenXing = new FenXing();
+                        List<BaseDataInfo> newFenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
+                        //this.DrawFenxingPen(newFenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkBlueLinePen, grp, Consts.IMG_X_STEP * 8);
+                        drawFenXingInfo.Add(newFenXingInfo);
                     }
+                }
+            }
+
+            // 画趋势图
+            decimal yStep = Util.GetYstep(minMaxInfo);
+            for (int i = 0; i < drawQushiInfo.Count; i++)
+            {
+                if (i == 0)
+                {
+                    this.DrawStockQushi(drawQushiInfo[0], yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.BlackLinePen, grp, true);
+                }
+                else
+                {
+                    this.DrawStockQushi(drawQushiInfo[i], yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
+                }
+            }
+
+            // 画分型图
+            for (int i = 0; i < drawFenXingInfo.Count; i++)
+            {
+                if (i == 0)
+                {
+                    this.DrawFenxingPen(drawFenXingInfo[0], yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkOrangeLinePen, grp, Consts.IMG_X_STEP);
+                }
+                else
+                {
+                    this.DrawFenxingPen(drawFenXingInfo[i], yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkBlueLinePen, grp, Consts.IMG_X_STEP * 8);
                 }
             }
 

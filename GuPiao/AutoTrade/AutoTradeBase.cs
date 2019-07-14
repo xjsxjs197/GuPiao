@@ -742,8 +742,12 @@ namespace GuPiao
                 string stockCd = Util.GetShortNameWithoutType(item.File).Substring(0, 6);
                 if (this.allStockCd.Contains(stockCd))
                 {
-                    // 追加一个空的最新的数据
+                    // 取得历史数据，并且做分型处理
                     List<BaseDataInfo> hstData = DayBatchProcess.GetStockHistoryInfo(item.File);
+                    FenXing fenXing = new FenXing();
+                    hstData = fenXing.DoFenXingComn(hstData);
+                    
+                    // 追加一个空的最新的数据
                     BaseDataInfo newItem = new BaseDataInfo();
                     newItem.Code = stockCd;
                     newItem.DayMinVal = decimal.MaxValue;
