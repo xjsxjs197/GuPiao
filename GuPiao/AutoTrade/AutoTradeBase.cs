@@ -477,7 +477,7 @@ namespace GuPiao
                 eventParam.Msg = time.Substring(0, 2) + ":" + time.Substring(2, 2) + " 时间点的数据取得完成";
                 eventParam.CurOpt = CurOpt.GetStockInfo;
                 this.callBackF(eventParam);
-                this.WriteComnLog(eventParam.Msg);
+                //this.WriteComnLog(eventParam.Msg);
 
                 //this.dataFilterIdx++;
                 //if (this.dataFilterIdx >= this.dataFilter.Count)
@@ -674,6 +674,7 @@ namespace GuPiao
         /// </summary>
         private void SetCdDataMapping()
         {
+            int step = 0;
             // 设置数据过滤器
             this.dataFilter.Clear();
             switch (this.configInfo.AutoTradeLevel)
@@ -687,6 +688,7 @@ namespace GuPiao
                     this.dataFilter.Add(140000);
                     this.dataFilter.Add(143000);
                     this.dataFilter.Add(150000);
+                    step = 3000;
                     break;
 
                 case "M15":
@@ -706,6 +708,7 @@ namespace GuPiao
                     this.dataFilter.Add(143000);
                     this.dataFilter.Add(144500);
                     this.dataFilter.Add(150000);
+                    step = 1500;
                     break;
 
                 case "M5":
@@ -717,6 +720,7 @@ namespace GuPiao
                             , 140000, 140500, 141000, 141500, 142000, 142500, 143000, 143500, 144000, 144500, 145000, 145500
                             , 150000
                         });
+                    step = 500;
                     break;
             }
 
@@ -732,7 +736,7 @@ namespace GuPiao
             eventParam.Msg = title;
             this.callBackF(eventParam);
 
-            string nowTime = DateTime.Now.ToString("HHmmss");
+            string nowTime = this.tradeDate.ToString("yyyyMMdd") + this.CheckTime(DateTime.Now.ToString("HHmmss"), step).ToString().PadLeft(6, '0');
             foreach (FilePosInfo item in allCsv)
             {
                 if (item.IsFolder)
@@ -751,7 +755,7 @@ namespace GuPiao
                     // 追加一个空的最新的数据
                     BaseDataInfo newItem = new BaseDataInfo();
                     newItem.Code = stockCd;
-                    newItem.Day = this.tradeDate.ToString("yyyyMMdd") + this.CheckTime(nowTime).ToString().PadLeft(6, '0');
+                    newItem.Day = nowTime;
                     newItem.DayMinVal = decimal.MaxValue;
                     newItem.DayMaxVal = 0;
                     hstData.Insert(0, newItem);
@@ -819,7 +823,19 @@ namespace GuPiao
         protected int CheckTime(string strTime)
         {
             int time = Convert.ToInt32(strTime) + 100;
-            return (int)(time / 400) * 400;
+            return (int)(time / 500) * 500;
+        }
+
+        /// <summary>
+        /// 处理当前交易的时间
+        /// </summary>
+        /// <param name="strTime"></param>
+        /// <param name="step"></param>
+        /// <returns></returns>
+        protected int CheckTime(string strTime, int step)
+        {
+            int time = Convert.ToInt32(strTime) + step + 100;
+            return (int)(time / step) * step;
         }
 
         #region 写交易Log

@@ -312,6 +312,7 @@ namespace GuPiao
         {
             int time = this.CheckTime(DateTime.Now.ToString("HHmmss"));
             bool isRangeTime = this.dataFilter.Contains(time);
+            string lastTime = string.Empty;
             string nowTime = this.tradeDate.ToString("yyyyMMdd") + time.ToString().PadLeft(6, '0');
             foreach (GuPiaoInfo item in data)
             {
@@ -319,6 +320,7 @@ namespace GuPiao
                 {
                     List<BaseDataInfo> hstData = this.stockCdData[item.fundcode];
                     BaseDataInfo lastItem = hstData[0];
+                    lastTime = lastItem.Day;
                     lastItem.DayVal = Convert.ToDecimal(item.currentVal);
                     if (lastItem.DayVal > lastItem.DayMaxVal)
                     {
@@ -329,7 +331,7 @@ namespace GuPiao
                         lastItem.DayMinVal = lastItem.DayVal;
                     }
 
-                    if (isRangeTime && !this.curRoundDataEnd)
+                    if (isRangeTime && lastTime.Equals(nowTime))
                     {
                         // 测试Log
                         if (string.Compare(lastItem.Code, "000015") <= 0)
@@ -344,7 +346,16 @@ namespace GuPiao
                         // 追加当前最新数据
                         lastItem = new BaseDataInfo();
                         lastItem.Code = item.fundcode;
-                        lastItem.Day = nowTime;
+                        // 取得下一次的数据变更时间
+                        int idx = this.dataFilter.IndexOf(time);
+                        if ((idx + 1) < this.dataFilter.Count)
+                        {
+                            lastItem.Day = this.tradeDate.ToString("yyyyMMdd") + this.dataFilter[idx + 1].ToString().PadLeft(6, '0');
+                        }
+                        else
+                        {
+                            lastItem.Day = nowTime;
+                        }
                         lastItem.DayVal = Convert.ToDecimal(item.currentVal);
                         lastItem.DayMaxVal = lastItem.DayVal;
                         lastItem.DayMinVal = lastItem.DayVal;
@@ -355,13 +366,13 @@ namespace GuPiao
 
             if (isRangeTime)
             {
-                if (this.curRoundDataEnd)
+                if (lastTime.Equals(nowTime))
                 {
-                    return false;
+                    return true;
                 }
                 else
                 {
-                    return true;
+                    return false;
                 }
             }
             else
