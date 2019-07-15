@@ -674,7 +674,7 @@ namespace GuPiao
         /// </summary>
         private void SetCdDataMapping()
         {
-            int step = 0;
+            int addMinute = 0;
             // 设置数据过滤器
             this.dataFilter.Clear();
             switch (this.configInfo.AutoTradeLevel)
@@ -688,7 +688,7 @@ namespace GuPiao
                     this.dataFilter.Add(140000);
                     this.dataFilter.Add(143000);
                     this.dataFilter.Add(150000);
-                    step = 3000;
+                    addMinute = 30;
                     break;
 
                 case "M15":
@@ -708,7 +708,7 @@ namespace GuPiao
                     this.dataFilter.Add(143000);
                     this.dataFilter.Add(144500);
                     this.dataFilter.Add(150000);
-                    step = 1500;
+                    addMinute = 15;
                     break;
 
                 case "M5":
@@ -720,7 +720,7 @@ namespace GuPiao
                             , 140000, 140500, 141000, 141500, 142000, 142500, 143000, 143500, 144000, 144500, 145000, 145500
                             , 150000
                         });
-                    step = 500;
+                    addMinute = 5;
                     break;
             }
 
@@ -736,7 +736,7 @@ namespace GuPiao
             eventParam.Msg = title;
             this.callBackF(eventParam);
 
-            string nowTime = this.tradeDate.ToString("yyyyMMdd") + this.CheckTime(DateTime.Now.ToString("HHmmss"), step).ToString().PadLeft(6, '0');
+            string nowTime = this.tradeDate.ToString("yyyyMMdd") + this.GetFirstTime(addMinute).ToString().PadLeft(6, '0');
             foreach (FilePosInfo item in allCsv)
             {
                 if (item.IsFolder)
@@ -827,15 +827,20 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 处理当前交易的时间
+        /// 取得第一个开始取数据的时间
         /// </summary>
         /// <param name="strTime"></param>
         /// <param name="step"></param>
         /// <returns></returns>
-        protected int CheckTime(string strTime, int step)
+        private int GetFirstTime(int addMinute)
         {
-            int time = Convert.ToInt32(strTime) + step + 100;
-            return (int)(time / step) * step;
+            int time = Convert.ToInt32(DateTime.Now.AddMinutes(addMinute + 1).ToString("HHmmss"));
+            if (time < this.dataFilter[0] || time > this.dataFilter[this.dataFilter.Count - 1])
+            {
+                time = this.dataFilter[0];
+            }
+
+            return (int)(time / 500) * 500;
         }
 
         #region 写交易Log
