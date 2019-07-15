@@ -191,7 +191,7 @@ namespace GuPiao
             // 取得分型的数据
             FenXing fenXing = new FenXing();
             List<BaseDataInfo> fenxingInfo =
-                fenXing.DoFenXingSp(stockInfos, this.configInfo, this.dataFilter[0].ToString().PadLeft(6, '0'), null);
+                fenXing.DoFenXingLastItem(stockInfos);
 
             return fenxingInfo[0];
         }
@@ -312,12 +312,13 @@ namespace GuPiao
         {
             int time = this.CheckTime(DateTime.Now.ToString("HHmmss"));
             bool isRangeTime = this.dataFilter.Contains(time);
+            string nowTime = this.tradeDate.ToString("yyyyMMdd") + time.ToString().PadLeft(6, '0');
             foreach (GuPiaoInfo item in data)
             {
                 if (this.stockCdData.ContainsKey(item.fundcode))
                 {
                     List<BaseDataInfo> hstData = this.stockCdData[item.fundcode];
-                    BaseDataInfo lastItem = hstData[hstData.Count - 1];
+                    BaseDataInfo lastItem = hstData[0];
                     lastItem.DayVal = Convert.ToDecimal(item.currentVal);
                     if (lastItem.DayVal > lastItem.DayMaxVal)
                     {
@@ -330,8 +331,20 @@ namespace GuPiao
 
                     if (isRangeTime && !this.curRoundDataEnd)
                     {
+                        // 测试Log
+                        if (string.Compare(lastItem.Code, "000015") <= 0)
+                        {
+                            this.WriteComnLog(lastItem.Code + " " + lastItem.Day + " " + lastItem.DayVal + " " + lastItem.DayMinVal + " " + lastItem.DayMaxVal);
+                        }
+
+                        // 设置分型的数据
+                        FenXing fenXing = new FenXing();
+                        fenXing.DoFenXingLastItem(hstData);
+
+                        // 追加当前最新数据
                         lastItem = new BaseDataInfo();
                         lastItem.Code = item.fundcode;
+                        lastItem.Day = nowTime;
                         lastItem.DayVal = Convert.ToDecimal(item.currentVal);
                         lastItem.DayMaxVal = lastItem.DayVal;
                         lastItem.DayMinVal = lastItem.DayVal;

@@ -92,10 +92,17 @@ namespace DataProcess.FenXing
         /// 根据最后一个元素检查当前的分型
         /// </summary>
         /// <param name="data"></param>
-        public void DoFenXingLastItem(List<BaseDataInfo> data)
+        public List<BaseDataInfo> DoFenXingLastItem(List<BaseDataInfo> data)
         {
             BaseDataInfo curPoint = data[0];
             BaseDataInfo lastChkPoint = data[1].LastChkPoint;
+            if (data[1].PointType == PointType.Up || data[1].PointType == PointType.Down)
+            {
+                lastChkPoint = data[1];
+                lastChkPoint.DayMaxValTmp = lastChkPoint.DayMaxVal;
+                lastChkPoint.DayMinValTmp = lastChkPoint.DayMinVal;
+            }
+            curPoint.LastChkPoint = lastChkPoint;
 
             // 判断两个点的大小关系
             curPoint.PointType = this.ChkPointsVal(curPoint, lastChkPoint);
@@ -111,13 +118,7 @@ namespace DataProcess.FenXing
                 lastChkPoint.PointType = PointType.Top;
             }
 
-            // 更新当前的点
-            if (curPoint.PointType == PointType.Up || curPoint.PointType == PointType.Down)
-            {
-                lastChkPoint = curPoint;
-                lastChkPoint.DayMaxValTmp = lastChkPoint.DayMaxVal;
-                lastChkPoint.DayMinValTmp = lastChkPoint.DayMinVal;
-            }
+            return data;
         }
 
         #endregion

@@ -479,17 +479,17 @@ namespace GuPiao
                 this.callBackF(eventParam);
                 this.WriteComnLog(eventParam.Msg);
 
-                this.dataFilterIdx++;
-                if (this.dataFilterIdx >= this.dataFilter.Count)
-                {
-                    this.dataFilterIdx = 0;
+                //this.dataFilterIdx++;
+                //if (this.dataFilterIdx >= this.dataFilter.Count)
+                //{
+                //    this.dataFilterIdx = 0;
 
-                    // 当前数据处理完成
-                    eventParam = new TradeEventParam();
-                    eventParam.Msg = "当天数据处理完成";
-                    eventParam.CurOpt = CurOpt.EmuTradeEnd;
-                    this.callBackF(eventParam);
-                }
+                //    // 当前数据处理完成
+                //    eventParam = new TradeEventParam();
+                //    eventParam.Msg = "当天数据处理完成";
+                //    eventParam.CurOpt = CurOpt.EmuTradeEnd;
+                //    this.callBackF(eventParam);
+                //}
             }
         }
 
@@ -709,14 +709,14 @@ namespace GuPiao
                     break;
 
                 case "M5":
-                    for (int i = 93500; i <= 113000; i += 500)
-                    {
-                        this.dataFilter.Add(i);
-                    }
-                    for (int i = 130500; i <= 150000; i += 500)
-                    {
-                        this.dataFilter.Add(i);
-                    }
+                    this.dataFilter.AddRange(
+                        new int[] { 93500, 94000, 94500, 95000, 95500
+                            , 100000, 100500, 101000, 101500, 102000, 102500, 103000, 103500, 104000, 104500, 105000, 105500
+                            , 110000, 110500, 111000, 111500, 112000, 112500, 113000
+                            , 130500, 131000, 131500, 132000, 132500, 133000, 133500, 134000, 134500, 135000, 135500
+                            , 140000, 140500, 141000, 141500, 142000, 142500, 143000, 143500, 144000, 144500, 145000, 145500
+                            , 150000
+                        });
                     break;
             }
 
@@ -732,6 +732,7 @@ namespace GuPiao
             eventParam.Msg = title;
             this.callBackF(eventParam);
 
+            string nowTime = DateTime.Now.ToString("HHmmss");
             foreach (FilePosInfo item in allCsv)
             {
                 if (item.IsFolder)
@@ -750,6 +751,7 @@ namespace GuPiao
                     // 追加一个空的最新的数据
                     BaseDataInfo newItem = new BaseDataInfo();
                     newItem.Code = stockCd;
+                    newItem.Day = this.tradeDate.ToString("yyyyMMdd") + this.CheckTime(nowTime).ToString().PadLeft(6, '0');
                     newItem.DayMinVal = decimal.MaxValue;
                     newItem.DayMaxVal = 0;
                     hstData.Insert(0, newItem);
@@ -817,7 +819,7 @@ namespace GuPiao
         protected int CheckTime(string strTime)
         {
             int time = Convert.ToInt32(strTime) + 100;
-            return (int)(time / 500) * 500;
+            return (int)(time / 400) * 400;
         }
 
         #region 写交易Log
