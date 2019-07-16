@@ -237,7 +237,7 @@ namespace GuPiao
                 }
 
                 // 检查当前数据的买卖点标志
-                BaseDataInfo lastItem = this.CheckCurDataBuySellFlg(stockInfos, item, this.CheckTime(item.time));
+                BaseDataInfo lastItem = this.CheckCurDataBuySellFlg(stockInfos, item);
                 if (lastItem != null)
                 {
                     return lastItem.BuySellFlg;
@@ -471,8 +471,7 @@ namespace GuPiao
                 this.curRoundDataEnd = true;
                 // 当前数据取得完成
                 TradeEventParam eventParam = new TradeEventParam();
-                string time = DateTime.Now.ToString("HHmmss");
-                time = this.CheckTime(time).ToString().PadLeft(6, '0');
+                string time = this.CheckTime(this.GetNowTime()).ToString().PadLeft(6, '0');
 
                 eventParam.Msg = time.Substring(0, 2) + ":" + time.Substring(2, 2) + " 时间点的数据取得完成";
                 eventParam.CurOpt = CurOpt.GetStockInfo;
@@ -499,7 +498,7 @@ namespace GuPiao
         /// <param name="stockInfos"></param>
         /// <param name="item"></param>
         /// <returns></returns>
-        protected virtual BaseDataInfo CheckCurDataBuySellFlg(List<BaseDataInfo> stockInfos, GuPiaoInfo item, int time)
+        protected virtual BaseDataInfo CheckCurDataBuySellFlg(List<BaseDataInfo> stockInfos, GuPiaoInfo item)
         {
             throw new Exception("检查当前数据的买卖点标志：未实现");
         }
@@ -570,15 +569,6 @@ namespace GuPiao
         /// <param name="todayGuPiao"></param>
         protected virtual void GetTodayTradeInfo(List<OrderInfo> todayGuPiao)
         { 
-        }
-
-        /// <summary>
-        /// 是否可以开始取数据
-        /// </summary>
-        /// <returns></returns>
-        protected virtual bool CanGetData()
-        {
-            return true;
         }
 
         /// <summary>
@@ -816,13 +806,23 @@ namespace GuPiao
         }
 
         /// <summary>
+        /// 提前1分钟取得当前数据
+        /// </summary>
+        /// <returns></returns>
+        protected string GetNowTime()
+        {
+            return DateTime.Now.AddMinutes(1).ToString("HHmmss");
+        }
+
+        /// <summary>
         /// 处理当前交易的时间
+        /// 以5分钟为单位
         /// </summary>
         /// <param name="time"></param>
         /// <returns></returns>
         protected int CheckTime(string strTime)
         {
-            int time = Convert.ToInt32(strTime) + 100;
+            int time = Convert.ToInt32(strTime);
             return (int)(time / 500) * 500;
         }
 

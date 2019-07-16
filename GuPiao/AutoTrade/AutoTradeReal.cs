@@ -186,7 +186,7 @@ namespace GuPiao
         /// <param name="stockInfos"></param>
         /// <param name="item"></param>
         /// <returns></returns>
-        protected override BaseDataInfo CheckCurDataBuySellFlg(List<BaseDataInfo> stockInfos, GuPiaoInfo item, int time)
+        protected override BaseDataInfo CheckCurDataBuySellFlg(List<BaseDataInfo> stockInfos, GuPiaoInfo item)
         {
             // 取得分型的数据
             FenXing fenXing = new FenXing();
@@ -251,31 +251,6 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 是否可以开始取数据
-        /// </summary>
-        /// <returns></returns>
-        protected override bool CanGetData()
-        {
-            int time = this.CheckTime(DateTime.Now.ToString("HHmmss"));
-            if (this.dataFilter.Contains(time))
-            {
-                if (!this.curRoundDataEnd)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                this.curRoundDataEnd = false;
-                return false;
-            }
-        }
-
-        /// <summary>
         /// 过滤停牌的数据
         /// </summary>
         protected override void CheckTingPaiData()
@@ -310,7 +285,7 @@ namespace GuPiao
         /// </summary>
         protected override bool AddRealTimeData(List<GuPiaoInfo> data)
         {
-            int time = this.CheckTime(DateTime.Now.ToString("HHmmss"));
+            int time = this.CheckTime(this.GetNowTime());
             bool isRangeTime = this.dataFilter.Contains(time);
             string lastTime = string.Empty;
             string nowTime = this.tradeDate.ToString("yyyyMMdd") + time.ToString().PadLeft(6, '0');

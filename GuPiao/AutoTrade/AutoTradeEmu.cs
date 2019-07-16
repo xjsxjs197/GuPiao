@@ -110,10 +110,10 @@ namespace GuPiao
         /// <param name="stockInfos"></param>
         /// <param name="item"></param>
         /// <returns></returns>
-        protected override BaseDataInfo CheckCurDataBuySellFlg(List<BaseDataInfo> stockInfos, GuPiaoInfo item, int time)
+        protected override BaseDataInfo CheckCurDataBuySellFlg(List<BaseDataInfo> stockInfos, GuPiaoInfo item)
         {
             List<BaseDataInfo> nowEndStockInfo = new List<BaseDataInfo>();
-            string curDateTime = this.tradeDate.ToString("yyyyMMdd") + time.ToString().PadLeft(6, '0');
+            string curDateTime = this.tradeDate.ToString("yyyyMMdd") + this.CheckTime(item.time).ToString().PadLeft(6, '0');
             for (int i = stockInfos.Count - 1; i >= 0; i--)
             {
                 if (string.Compare(stockInfos[i].Day, curDateTime) <= 0)
