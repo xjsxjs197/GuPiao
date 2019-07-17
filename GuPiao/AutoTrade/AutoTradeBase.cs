@@ -149,6 +149,12 @@ namespace GuPiao
         /// <returns></returns>
         public List<GuPiaoInfo> TimerGetData()
         {
+            // 判断是否在取得数据的时间段内
+            if (!this.CanGetData())
+            {
+                return null;
+            }
+
             List<GuPiaoInfo> dataLst = new List<GuPiaoInfo>();
             bool canDoNext = false;
 
@@ -664,7 +670,6 @@ namespace GuPiao
         /// </summary>
         private void SetCdDataMapping()
         {
-            int addMinute = 0;
             // 设置数据过滤器
             this.dataFilter.Clear();
             switch (this.configInfo.AutoTradeLevel)
@@ -678,7 +683,6 @@ namespace GuPiao
                     this.dataFilter.Add(140000);
                     this.dataFilter.Add(143000);
                     this.dataFilter.Add(150000);
-                    addMinute = 30;
                     break;
 
                 case "M15":
@@ -698,7 +702,6 @@ namespace GuPiao
                     this.dataFilter.Add(143000);
                     this.dataFilter.Add(144500);
                     this.dataFilter.Add(150000);
-                    addMinute = 15;
                     break;
 
                 case "M5":
@@ -710,7 +713,6 @@ namespace GuPiao
                             , 140000, 140500, 141000, 141500, 142000, 142500, 143000, 143500, 144000, 144500, 145000, 145500
                             , 150000
                         });
-                    addMinute = 5;
                     break;
             }
 
@@ -726,7 +728,7 @@ namespace GuPiao
             eventParam.Msg = title;
             this.callBackF(eventParam);
 
-            string nowTime = this.tradeDate.ToString("yyyyMMdd") + this.GetFirstTime(addMinute).ToString().PadLeft(6, '0');
+            string nowTime = this.tradeDate.ToString("yyyyMMdd") + this.GetFirstTime().ToString().PadLeft(6, '0');
             foreach (FilePosInfo item in allCsv)
             {
                 if (item.IsFolder)
@@ -832,15 +834,43 @@ namespace GuPiao
         /// <param name="strTime"></param>
         /// <param name="step"></param>
         /// <returns></returns>
-        private int GetFirstTime(int addMinute)
+        private int GetFirstTime()
         {
-            int time = Convert.ToInt32(DateTime.Now.AddMinutes(addMinute + 1).ToString("HHmmss"));
+            int time = Convert.ToInt32(DateTime.Now.AddMinutes(1).ToString("HHmmss"));
             if (time < this.dataFilter[0] || time > this.dataFilter[this.dataFilter.Count - 1])
             {
                 time = this.dataFilter[0];
             }
+            else
+            {
+                for (int i = 0; i < this.dataFilter.Count - 1; i++)
+                {
+                    if (time >= this.dataFilter[i] && time < this.dataFilter[i + 1])
+                    {
+                        time = this.dataFilter[i + 1];
+                        break;
+                    }
+                }
+            }
 
-            return (int)(time / 500) * 500;
+            return time;
+        }
+
+        /// <summary>
+        /// 是否在可以取得数据的时间段内
+        /// </summary>
+        /// <returns></returns>
+        private bool CanGetData()
+        {
+            int time = Convert.ToInt32(DateTime.Now.ToString("HHmmss"));
+            if (time < 093000 || (time > 113000 && time < 130000) || time > 150000)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
         #region 写交易Log

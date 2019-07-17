@@ -138,6 +138,19 @@ namespace GuPiao
             qushiForm.Show(this);
         }
 
+        /// <summary>
+        /// 允许方式改变
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void rdoEmuMode_CheckedChanged(object sender, EventArgs e)
+        {
+            if (this.rdoRealEmu.Checked)
+            {
+                this.dtEmu.Value = DateTime.Now;
+            }
+        }
+
         #endregion
 
         #region 私有方法
@@ -155,6 +168,7 @@ namespace GuPiao
 
             // 绑定事件
             this.FormClosing += new FormClosingEventHandler(this.AutoTrade_FormClosing);
+            this.rdoRealEmu.CheckedChanged += new EventHandler(this.rdoEmuMode_CheckedChanged);
 
             ThreadPool.SetMinThreads(1, 1);
             ThreadPool.SetMaxThreads(5, 5);
