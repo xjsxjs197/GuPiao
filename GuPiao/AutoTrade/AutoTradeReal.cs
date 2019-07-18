@@ -193,7 +193,7 @@ namespace GuPiao
             List<BaseDataInfo> fenxingInfo =
                 fenXing.DoFenXingLastItem(stockInfos);
 
-            return fenxingInfo[0];
+            return fenxingInfo[1];
         }
 
         /// <summary>
