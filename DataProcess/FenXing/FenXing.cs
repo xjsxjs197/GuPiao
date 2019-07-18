@@ -135,6 +135,7 @@ namespace DataProcess.FenXing
             BaseDataInfo lastChkPoint = this.hstData[this.hstData.Count - 1];
             lastChkPoint.DayMaxValTmp = lastChkPoint.DayMaxVal;
             lastChkPoint.DayMinValTmp = lastChkPoint.DayMinVal;
+            lastChkPoint.LastChkPoint = null;
 
             int maxCnt = this.hstData.Count - 2;
 
@@ -400,18 +401,29 @@ namespace DataProcess.FenXing
             {
                 return PointType.Up;
             }
-            else if (lastChkPoint.DayMaxValTmp > curPoint.DayMaxVal * Consts.LIMIT_VAL
-                && lastChkPoint.DayMinValTmp > curPoint.DayMinVal * Consts.LIMIT_VAL)
+            else if (curPoint.DayMaxVal * Consts.LIMIT_VAL < lastChkPoint.DayMaxValTmp
+                && curPoint.DayMinVal * Consts.LIMIT_VAL < lastChkPoint.DayMinValTmp)
             {
                 return PointType.Down;
             }
-            else
+            else if (lastChkPoint.LastChkPoint != null)
             {
                 // 前后有包含关系，或者没有变化
-                lastChkPoint.DayMaxValTmp = curPoint.DayMaxVal;
+                if (lastChkPoint.LastChkPoint.PointType == PointType.Up)
+                {
+                    lastChkPoint.DayMaxValTmp = Math.Max(lastChkPoint.DayMaxValTmp, curPoint.DayMaxVal);
+                    lastChkPoint.DayMinValTmp = Math.Max(lastChkPoint.DayMinValTmp, curPoint.DayMinVal);
+                }
+                else if (lastChkPoint.LastChkPoint.PointType == PointType.Down)
+                {
+                    lastChkPoint.DayMaxValTmp = Math.Min(lastChkPoint.DayMaxValTmp, curPoint.DayMaxVal);
+                    lastChkPoint.DayMinValTmp = Math.Min(lastChkPoint.DayMinValTmp, curPoint.DayMinVal);
+                }
 
                 return PointType.Changing;
             }
+
+            return PointType.Changing;
         }
 
         /// <summary>
