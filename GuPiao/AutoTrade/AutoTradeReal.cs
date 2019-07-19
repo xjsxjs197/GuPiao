@@ -329,7 +329,7 @@ namespace GuPiao
                         }
                         else
                         {
-                            lastItem.Day = nowTime;
+                            lastItem.Day = this.tradeDate.ToString("yyyyMMdd") + "150500";
                         }
                         lastItem.DayVal = Convert.ToDecimal(item.currentVal);
                         lastItem.DayMaxVal = lastItem.DayVal;
