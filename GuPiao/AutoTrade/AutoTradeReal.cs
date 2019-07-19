@@ -301,7 +301,7 @@ namespace GuPiao
                     {
                         lastItem.DayMaxVal = lastItem.DayVal;
                     }
-                    if (lastItem.DayVal < lastItem.DayMinVal)
+                    if (lastItem.DayVal < lastItem.DayMinVal && lastItem.DayVal > 0)
                     {
                         lastItem.DayMinVal = lastItem.DayVal;
                     }
