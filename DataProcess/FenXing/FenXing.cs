@@ -136,6 +136,7 @@ namespace DataProcess.FenXing
             lastChkPoint.DayMaxValTmp = lastChkPoint.DayMaxVal;
             lastChkPoint.DayMinValTmp = lastChkPoint.DayMinVal;
             lastChkPoint.LastChkPoint = null;
+            int lastIdx = this.hstData.Count - 1;
 
             int maxCnt = this.hstData.Count - 2;
 
@@ -150,17 +151,24 @@ namespace DataProcess.FenXing
                 if (curPoint.PointType == PointType.Up && lastChkPoint.PointType == PointType.Down)
                 {
                     // 当前上升，前面是下降，说明前一个点是低点
-                    lastChkPoint.PointType = PointType.Bottom;
+                    if (this.IsRangeOk(lastIdx, maxCnt))
+                    {
+                        lastChkPoint.PointType = PointType.Bottom;
+                    }
                 }
                 else if (curPoint.PointType == PointType.Down && lastChkPoint.PointType == PointType.Up)
                 {
                     // 当前下降，前面是上升，说明前一个点是高点
-                    lastChkPoint.PointType = PointType.Top;
+                    if (this.IsRangeOk(lastIdx, maxCnt))
+                    {
+                        lastChkPoint.PointType = PointType.Top;
+                    }
                 }
 
                 // 更新当前的点
                 if (curPoint.PointType == PointType.Up || curPoint.PointType == PointType.Down)
                 {
+                    lastIdx = i;
                     lastChkPoint = curPoint;
                     lastChkPoint.DayMaxValTmp = lastChkPoint.DayMaxVal;
                     lastChkPoint.DayMinValTmp = lastChkPoint.DayMinVal;
@@ -346,6 +354,39 @@ namespace DataProcess.FenXing
 
         //    return this.hstData;
         //}
+
+        /// <summary>
+        /// 判断当前的顶或底距离上一个底或顶的距离是否合理，中间至少有一条线
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <param name="maxCnt"></param>
+        /// <returns></returns>
+        private bool IsRangeOk(int idx, int maxCnt)
+        {
+            int oldIdx = idx;
+            PointType pt = PointType.Changing;
+            while (idx <= maxCnt)
+            {
+                pt = this.hstData[idx].PointType;
+                if (pt == PointType.Top
+                    || pt == PointType.Bottom)
+                {
+                    if (idx >= oldIdx + 4)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        this.hstData[idx].PointType = (pt == PointType.Top ? PointType.Up : PointType.Down);
+                        return false;
+                    }
+                }
+
+                idx++;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// 取得前一个顶分型的位置
