@@ -748,7 +748,7 @@ namespace GuPiao
                     BaseDataInfo newItem = new BaseDataInfo();
                     newItem.Code = stockCd;
                     newItem.Day = nowTime;
-                    newItem.DayMinVal = decimal.MaxValue;
+                    newItem.DayMinVal = Consts.MAX_VAL;
                     newItem.DayMaxVal = 0;
                     hstData.Insert(0, newItem);
 

@@ -343,13 +343,13 @@ namespace DayBatch
             int jibieCount = jibie - 1;
             int maxCount = stockInfos.Count - jibie;
             decimal total = 0;
-            decimal minVal = decimal.MaxValue;
+            decimal minVal = Consts.MAX_VAL;
             decimal maxVal = 0;
 
             while (index <= maxCount)
             {
                 total = 0;
-                minVal = decimal.MaxValue;
+                minVal = Consts.MAX_VAL;
                 maxVal = 0;
                 for (int i = 0; i <= jibieCount; i++)
                 {

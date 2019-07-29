@@ -99,5 +99,10 @@ namespace Common
         /// 比较高低点时的值
         /// </summary>
         public const decimal DIFF_VAL = (decimal)1.008;
+
+        /// <summary>
+        /// 初始化价格时的最大值
+        /// </summary>
+        public const decimal MAX_VAL = (decimal)8000;
     }
 }

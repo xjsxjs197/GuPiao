@@ -117,7 +117,7 @@ namespace DataProcess.FenXing
             if (curPoint.PointType == PointType.Up && lastChkPoint.PointType == PointType.Down)
             {
                 // 当前上升，前面是下降，说明前一个点是低点
-                if (this.IsRangeOk(lastIdx, maxCnt))
+                if (this.IsRangeOk(lastIdx, maxCnt, data))
                 {
                     lastChkPoint.PointType = PointType.Bottom;
                 }
@@ -125,7 +125,7 @@ namespace DataProcess.FenXing
             else if (curPoint.PointType == PointType.Down && lastChkPoint.PointType == PointType.Up)
             {
                 // 当前下降，前面是上升，说明前一个点是高点
-                if (this.IsRangeOk(lastIdx, maxCnt))
+                if (this.IsRangeOk(lastIdx, maxCnt, data))
                 {
                     lastChkPoint.PointType = PointType.Top;
                 }
@@ -164,7 +164,7 @@ namespace DataProcess.FenXing
                 if (curPoint.PointType == PointType.Up && lastChkPoint.PointType == PointType.Down)
                 {
                     // 当前上升，前面是下降，说明前一个点是低点
-                    if (this.IsRangeOk(lastIdx, maxCnt))
+                    if (this.IsRangeOk(lastIdx, maxCnt, this.hstData))
                     {
                         lastChkPoint.PointType = PointType.Bottom;
                     }
@@ -172,7 +172,7 @@ namespace DataProcess.FenXing
                 else if (curPoint.PointType == PointType.Down && lastChkPoint.PointType == PointType.Up)
                 {
                     // 当前下降，前面是上升，说明前一个点是高点
-                    if (this.IsRangeOk(lastIdx, maxCnt))
+                    if (this.IsRangeOk(lastIdx, maxCnt, this.hstData))
                     {
                         lastChkPoint.PointType = PointType.Top;
                     }
@@ -374,13 +374,13 @@ namespace DataProcess.FenXing
         /// <param name="idx"></param>
         /// <param name="maxCnt"></param>
         /// <returns></returns>
-        private bool IsRangeOk(int idx, int maxCnt)
+        private bool IsRangeOk(int idx, int maxCnt, List<BaseDataInfo> data)
         {
             int oldIdx = idx;
             PointType pt = PointType.Changing;
             while (idx <= maxCnt)
             {
-                pt = this.hstData[idx].PointType;
+                pt = data[idx].PointType;
                 if (pt == PointType.Top
                     || pt == PointType.Bottom)
                 {
@@ -390,7 +390,7 @@ namespace DataProcess.FenXing
                     }
                     else
                     {
-                        this.hstData[idx].PointType = (pt == PointType.Top ? PointType.Up : PointType.Down);
+                        data[idx].PointType = (pt == PointType.Top ? PointType.Up : PointType.Down);
                         return false;
                     }
                 }

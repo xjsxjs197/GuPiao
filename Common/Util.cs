@@ -1243,7 +1243,7 @@ namespace Common
         public static decimal[] GetMaxMinStock(List<BaseDataInfo> stockInfos)
         {
             decimal[] minMaxInfo = new decimal[2];
-            decimal minVal = decimal.MaxValue;
+            decimal minVal = Consts.MAX_VAL;
             decimal maxVal = 0;
 
             for (int i = stockInfos.Count - 1; i >= 0; i--)
