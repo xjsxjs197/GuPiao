@@ -96,11 +96,18 @@ namespace DataProcess.FenXing
         {
             BaseDataInfo curPoint = data[0];
             BaseDataInfo lastChkPoint = data[1].LastChkPoint;
+            int lastIdx = data.IndexOf(lastChkPoint);
+            int maxCnt = data.Count - 1;
             if (data[1].PointType == PointType.Up || data[1].PointType == PointType.Down)
             {
+                lastIdx = 1;
                 lastChkPoint = data[1];
                 lastChkPoint.DayMaxValTmp = lastChkPoint.DayMaxVal;
                 lastChkPoint.DayMinValTmp = lastChkPoint.DayMinVal;
+            }
+            else if (lastIdx == -1)
+            {
+                lastIdx = maxCnt;
             }
             curPoint.LastChkPoint = lastChkPoint;
 
@@ -110,12 +117,18 @@ namespace DataProcess.FenXing
             if (curPoint.PointType == PointType.Up && lastChkPoint.PointType == PointType.Down)
             {
                 // 当前上升，前面是下降，说明前一个点是低点
-                lastChkPoint.PointType = PointType.Bottom;
+                if (this.IsRangeOk(lastIdx, maxCnt))
+                {
+                    lastChkPoint.PointType = PointType.Bottom;
+                }
             }
             else if (curPoint.PointType == PointType.Down && lastChkPoint.PointType == PointType.Up)
             {
                 // 当前下降，前面是上升，说明前一个点是高点
-                lastChkPoint.PointType = PointType.Top;
+                if (this.IsRangeOk(lastIdx, maxCnt))
+                {
+                    lastChkPoint.PointType = PointType.Top;
+                }
             }
 
             return data;
