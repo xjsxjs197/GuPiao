@@ -134,6 +134,61 @@ namespace DataProcess.FenXing
             return data;
         }
 
+        /// <summary>
+        /// 在分型的数据中划分线段
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public List<BaseDataInfo> DoCheckLine(List<BaseDataInfo> data)
+        {
+            List<BaseDataInfo> newData = new List<BaseDataInfo>();
+            BaseDataInfo item = new BaseDataInfo();
+            bool finded = false;
+
+            for (int i = 0; i < data.Count; i++)
+            {
+                finded = false;
+                if (data[i].PointType == PointType.Bottom)
+                {
+                    item.DayMinVal = data[i].DayMinVal;
+                    finded = true;
+                }
+                else if (data[i].PointType == PointType.Top)
+                {
+                    item.DayMaxVal = data[i].DayMaxVal;
+                    finded = true;
+                }
+
+                if (finded)
+                {
+                    for (int j = i + 1; i < data.Count; j++)
+                    {
+                        finded = false;
+                        if (data[j].PointType == PointType.Bottom)
+                        {
+                            item.DayMinVal = data[j].DayMinVal;
+                            finded = true;
+                        }
+                        else if (data[j].PointType == PointType.Top)
+                        {
+                            item.DayMaxVal = data[j].DayMaxVal;
+                            finded = true;
+                        }
+
+                        if (finded)
+                        {
+                            newData.Add(item);
+                            item = new BaseDataInfo();
+                            i = j;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return newData;
+        }
+
         #endregion
 
         #region " 私有方法 "

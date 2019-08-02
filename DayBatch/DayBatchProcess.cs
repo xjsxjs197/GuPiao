@@ -1098,7 +1098,7 @@ namespace DayBatch
             this.DrawFenxingPen(fenXingInfo, yStep, minVal, img, pen, grp, xStep);
 
             // 根据分型画线段
-            this.DrawXianduan(fenXingInfo, yStep, minVal, img, this.drawImgInfo.RedLinePen, grp, xStep);
+            //this.DrawXianduan(fenXingInfo, yStep, minVal, img, this.drawImgInfo.RedLinePen, grp, xStep);
         }
 
         /// <summary>

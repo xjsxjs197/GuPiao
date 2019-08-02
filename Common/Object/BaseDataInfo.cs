@@ -56,6 +56,11 @@ namespace Common
         public PointType PointType { get; set; }
 
         /// <summary>
+        /// 当前笔的分型
+        /// </summary>
+        public PointType PenType { get; set; }
+
+        /// <summary>
         /// 买卖点标识(-3,-2,-1,0,1,2,3)
         /// </summary>
         public int BuySellFlg { get; set; }
@@ -84,5 +89,10 @@ namespace Common
         /// 上一个比较点的情报
         /// </summary>
         public BaseDataInfo LastChkPoint { get; set; }
+
+        /// <summary>
+        /// 当前元素在原始List中的位置
+        /// </summary>
+        public int PosAtOldList { get; set; }
     }
 }
