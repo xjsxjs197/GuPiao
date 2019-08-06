@@ -1121,11 +1121,6 @@ namespace Common
         {
             DateTime dt = DateTime.Now;
 
-            if (dt.Hour < 15)
-            {
-                dt = dt.AddDays(-1);
-            }
-
             while (Util.IsHolidayByDate(dt))
             {
                 dt = dt.AddDays(-1);

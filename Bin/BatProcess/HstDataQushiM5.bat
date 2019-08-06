@@ -1,0 +1,1 @@
+..\daybatch M5 nodata

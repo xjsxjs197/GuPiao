@@ -1,1 +1,0 @@
-.\daybatch nodata noimg emu

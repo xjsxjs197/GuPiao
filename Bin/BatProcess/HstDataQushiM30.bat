@@ -1,0 +1,1 @@
+..\daybatch M30 nodata

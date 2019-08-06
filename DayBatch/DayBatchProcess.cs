@@ -151,6 +151,8 @@ namespace DayBatch
             bool needGetData = true;
             bool needDrawImg = true;
             bool emuTest = false;
+            bool getAll = false;
+            bool checkData = false;
             if (args == null || args.Length == 0)
             {
                 hasM5 = true;
@@ -190,28 +192,53 @@ namespace DayBatch
                     {
                         emuTest = true;
                     }
+                    else if ("getAll".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        getAll = true;
+                    }
+                    else if ("checkData".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        checkData = true;
+                    }
                 }
             }
 
-            // 取得所有数据的基本信息（代码）
-            this.GetAllStockBaseInfo();
-
-            if (needGetData)
+            if (getAll || checkData)
             {
-                // 取数据
-                this.GetData(hasM5, hasM15, hasM30, hasDay);
+                if (getAll)
+                {
+                    // 取得所有代码
+                    this.CheckAllCd();
+                }
+
+                if (checkData)
+                {
+                    // 检查并删除失效的数据
+                    this.CheckData();
+                }
             }
-
-            if (needDrawImg)
+            else
             {
-                // 画趋势图
-                this.DrawQushiImg(hasM5, hasM15, hasM30, hasDay);
-            }
+                // 取得所有数据的基本信息（代码）
+                this.GetAllStockBaseInfo();
 
-            if (emuTest)
-            {
-                // 模拟运行
-                this.StartEmuTest();
+                if (needGetData)
+                {
+                    // 取数据
+                    this.GetData(hasM5, hasM15, hasM30, hasDay);
+                }
+
+                if (needDrawImg)
+                {
+                    // 画趋势图
+                    this.DrawQushiImg(hasM5, hasM15, hasM30, hasDay);
+                }
+
+                if (emuTest)
+                {
+                    // 模拟运行
+                    this.StartEmuTest();
+                }
             }
 
             // 释放资源
@@ -1079,6 +1106,30 @@ namespace DayBatch
             }
         }
 
+        /// <summary>
+        /// 写Log
+        /// </summary>
+        /// <param name="msg"></param>
+        private void WriteLog(string msg)
+        {
+            File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " " + msg + "\r\n", Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 写Log
+        /// </summary>
+        /// <param name="msg"></param>
+        private void WriteLog(string msg, bool needConsole)
+        {
+            if (needConsole)
+            {
+                Console.WriteLine();
+                Console.WriteLine(msg + "\r\n");
+            }
+
+            this.WriteLog(msg);
+        }
+
         #region " 分型中枢处理相关 "
 
         /// <summary>
@@ -1591,6 +1642,253 @@ namespace DayBatch
             }
 
             return newCsv;
+        }
+
+        #endregion
+
+        #region 取得所有最新的代码
+        
+        /// <summary>
+        /// 检查所有可用的代码
+        /// </summary>
+        private void CheckAllCd()
+        {
+            List<string> allAvailableCd = new List<string>();
+            DateTime dt = Util.GetAvailableDt();
+            string endDay = dt.AddDays(-1).ToString("yyyyMMdd");
+            string startDay = dt.AddDays(-9).ToString("yyyyMMdd");
+
+            // 设置进度条
+            DosProgressBar dosProgressBar = new DosProgressBar();
+            int idx = 1;
+            int totalLen = 3000;
+            if (this.callBef != null)
+            {
+                this.callBef(totalLen);
+            }
+            this.WriteLog("开始检查000001--003000数据......", true);
+
+            for (int i = 1; i <= 3000; i++)
+            {
+                this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+
+                // 更新进度条
+                if (this.callRowEnd != null)
+                {
+                    this.callRowEnd();
+                }
+                dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
+            }
+
+            // 关闭进度条
+            if (this.callEnd != null)
+            {
+                this.callEnd();
+            }
+            this.WriteLog("000001--003000数据检查完了......", true);
+
+            // 设置进度条
+            dosProgressBar = new DosProgressBar();
+            idx = 1;
+            totalLen = 999;
+            if (this.callBef != null)
+            {
+                this.callBef(totalLen);
+            }
+            this.WriteLog("开始检查300001--300999数据......", true);
+
+            for (int i = 300001; i <= 300999; i++)
+            {
+                this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+
+                // 更新进度条
+                if (this.callRowEnd != null)
+                {
+                    this.callRowEnd();
+                }
+                dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
+            }
+
+            // 关闭进度条
+            if (this.callEnd != null)
+            {
+                this.callEnd();
+            }
+            this.WriteLog("300001--300999数据检查完了......", true);
+
+            // 设置进度条
+            dosProgressBar = new DosProgressBar();
+            idx = 1;
+            totalLen = 3999;
+            if (this.callBef != null)
+            {
+                this.callBef(totalLen);
+            }
+            this.WriteLog("开始检查600000--603999数据......", true);
+
+            for (int i = 600000; i <= 603999; i++)
+            {
+                this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+
+                // 更新进度条
+                if (this.callRowEnd != null)
+                {
+                    this.callRowEnd();
+                }
+                dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
+            }
+
+            // 关闭进度条
+            if (this.callEnd != null)
+            {
+                this.callEnd();
+            }
+            this.WriteLog("600000--603999数据检查完了......", true);
+
+            File.WriteAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 检查可用的代码
+        /// </summary>
+        /// <param name="stockCd"></param>
+        private string CheckAvailableCd163(int stockCd, List<string> allAvailableCd, string endDay, string startDay)
+        {
+            string strCd = stockCd.ToString().PadLeft(6, '0');
+            // 判断类型
+            if (strCd.StartsWith("6"))
+            {
+                strCd = "0" + strCd;
+            }
+            else
+            {
+                strCd = "1" + strCd;
+            }
+
+            Encoding encoding = Encoding.GetEncoding("GBK");
+            string result = string.Empty;
+
+            try
+            {
+                result = Util.HttpGet(@"http://quotes.money.163.com/service/chddata.html?fields=TCLOSE;HIGH;LOW;TOPEN;LCLOSE;&end=" + endDay + "&code="
+                    + strCd + "&start=" + startDay, "", encoding);
+            }
+            catch (Exception e)
+            {
+                this.WriteLog("取得 " + strCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace);
+                return e.Message;
+            }
+
+            if (!string.IsNullOrEmpty(result) && !"null".Equals(result, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string[] lines = null;
+                string[] lastRow = null;
+                try
+                {
+                    lines = result.Split('\n');
+                    if (lines.Length > 2)
+                    {
+                        lastRow = lines[1].Split(',');
+                    }
+                }
+                catch (Exception e)
+                {
+                    this.WriteLog("处理Json " + strCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace);
+                    return e.Message;
+                }
+
+                if (lastRow != null && lastRow.Length > 2)
+                {
+                    // 取得最新的一条数据
+                    string lastDay = lastRow[0].Replace("-", "").Replace("/", "");
+
+                    if (endDay.Equals(lastDay))
+                    {
+                        allAvailableCd.Add(stockCd.ToString().PadLeft(6, '0') + " " + lastRow[2]);
+                    }
+                }
+            }
+
+            return string.Empty;
+        }
+
+        #endregion
+
+        #region 检查并删除失效的数据
+
+        /// <summary>
+        /// 检查数据的正确性
+        /// </summary>
+        private void CheckData()
+        {
+            DateTime dt = Util.GetAvailableDt();
+            List<string> delCdLst = new List<string>();
+            this.GetAllStockBaseInfo();
+
+            this.CheckCsvData(TimeRange.Day, dt.ToString("yyyyMMdd"), delCdLst);
+            this.CheckCsvData(TimeRange.M30, dt.ToString("yyyyMMdd150000"), delCdLst);
+            this.CheckCsvData(TimeRange.M15, dt.ToString("yyyyMMdd150000"), delCdLst);
+            this.CheckCsvData(TimeRange.M5, dt.ToString("yyyyMMdd150000"), delCdLst);
+
+            if (delCdLst.Count > 0)
+            {
+                this.WriteLog("删除了如下文件：");
+                this.WriteLog(string.Join(",", delCdLst.ToArray()));
+            }
+            else
+            {
+                this.WriteLog("没有删除的文件");
+            }
+        }
+
+        /// <summary>
+        /// 检查数据
+        /// </summary>
+        /// <param name="timeRange"></param>
+        private void CheckCsvData(TimeRange timeRange, string dt, List<string> delCdLst)
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = timeRange.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + this.subFolder);
+
+            // 设置进度条
+            DosProgressBar dosProgressBar = new DosProgressBar();
+            int idx = 1;
+            int totalLen = allCsv.Count;
+            if (this.callBef != null)
+            {
+                this.callBef(totalLen);
+            }
+            this.WriteLog("开始检查" + timeRange.ToString() + "的数据......", true);
+
+            foreach (FilePosInfo fileItem in allCsv)
+            {
+                if (fileItem.IsFolder)
+                {
+                    continue;
+                }
+
+                string stockCd = Util.GetShortNameWithoutType(fileItem.File).Substring(0, 6);
+                if (!this.allStockCd.Contains(stockCd))
+                {
+                    File.Delete(fileItem.File);
+                    delCdLst.Add(this.subFolder + stockCd);
+                }
+
+                // 更新进度条
+                if (this.callRowEnd != null)
+                {
+                    this.callRowEnd();
+                }
+                dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
+            }
+
+            // 关闭进度条
+            if (this.callEnd != null)
+            {
+                this.callEnd();
+            }
+            this.WriteLog(timeRange.ToString() + "的数据检查完了......", true);
         }
 
         #endregion
