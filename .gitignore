@@ -94,3 +94,5 @@ Bin/TradeX.xml
 Bin/ZMTradeCoreM.bin
 Bin/Log/*.txt
 Bin/DayBatch V1.0.exe
+Common/Common.csproj.user
+Bin/office.xml
