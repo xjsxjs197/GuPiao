@@ -47,7 +47,13 @@ namespace DataProcess.FenXing
                 return this.hstData;
             }
 
-            return this.DoFenXingComn();
+            // 分型、画笔
+            List<BaseDataInfo> fenxingData = this.DoFenXingComn();
+
+            // 根据笔画线段
+            this.DoCheckLine(fenxingData);
+
+            return fenxingData;
         }
 
         /// <summary>
@@ -85,7 +91,13 @@ namespace DataProcess.FenXing
                 minMaxInfo = Util.GetMaxMinStock(this.hstData);
             }
 
-            return this.DoFenXingSp(emuInfo, startTime, minMaxInfo);
+            // 分型、画笔
+            List<BaseDataInfo> fenxingData = this.DoFenXingSp(emuInfo, startTime, minMaxInfo);
+
+            // 根据笔画线段
+            this.DoCheckLine(fenxingData);
+
+            return fenxingData;
         }
 
         /// <summary>
@@ -139,54 +151,112 @@ namespace DataProcess.FenXing
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public List<BaseDataInfo> DoCheckLine(List<BaseDataInfo> data)
+        public void DoCheckLine(List<BaseDataInfo> data)
         {
             List<BaseDataInfo> newData = new List<BaseDataInfo>();
-            BaseDataInfo item = new BaseDataInfo();
-            bool finded = false;
+            BaseDataInfo lastPen = new BaseDataInfo();
+            bool isUpPen = true;
+            int lastIdx = 0;
 
-            for (int i = 0; i < data.Count; i++)
-            {
-                finded = false;
-                if (data[i].PointType == PointType.Bottom)
+            // 取得第一个高低点信息
+            int maxCnt = data.Count - 1;
+            for (int i = maxCnt; i >= 0; i--)
+            { 
+                if (data[i].PointType == PointType.Top)
                 {
-                    item.DayMinVal = data[i].DayMinVal;
-                    finded = true;
-                }
-                else if (data[i].PointType == PointType.Top)
-                {
-                    item.DayMaxVal = data[i].DayMaxVal;
-                    finded = true;
-                }
-
-                if (finded)
-                {
-                    for (int j = i + 1; i < data.Count; j++)
+                    for (int j = i - 1; j >= 0; j--)
                     {
-                        finded = false;
                         if (data[j].PointType == PointType.Bottom)
                         {
-                            item.DayMinVal = data[j].DayMinVal;
-                            finded = true;
-                        }
-                        else if (data[j].PointType == PointType.Top)
-                        {
-                            item.DayMaxVal = data[j].DayMaxVal;
-                            finded = true;
-                        }
-
-                        if (finded)
-                        {
-                            newData.Add(item);
-                            item = new BaseDataInfo();
-                            i = j;
+                            if (data[j].DayMinVal > data[maxCnt].DayVal)
+                            {
+                                lastIdx = maxCnt;
+                                data[lastIdx].PenType = PointType.Bottom;
+                                isUpPen = true;
+                            }
+                            else
+                            {
+                                lastIdx = i - 1;
+                                data[i].PenType = PointType.Top;
+                                isUpPen = false;
+                            }
                             break;
                         }
                     }
+                    break;
+                }
+                else if (data[i].PointType == PointType.Bottom)
+                {
+                    for (int j = i - 1; j >= 0; j--)
+                    {
+                        if (data[j].PointType == PointType.Top)
+                        {
+                            if (data[j].DayMaxVal < data[maxCnt].DayVal)
+                            {
+                                lastIdx = maxCnt;
+                                data[lastIdx].PenType = PointType.Top;
+                                isUpPen = false;
+                            }
+                            else
+                            {
+                                lastIdx = i - 1;
+                                data[i].PenType = PointType.Bottom;
+                                isUpPen = true;
+                            }
+                            break;
+                        }
+                    }
+                    break;
                 }
             }
 
-            return newData;
+            if (lastIdx == 0)
+            {
+                return;
+            }
+
+            // 设置第一个点
+            lastIdx = this.GetNextPen(lastIdx, data, lastPen, isUpPen);
+            if (lastIdx == -1)
+            {
+                return;
+            }
+            lastPen.LastChkPoint = null;
+
+            for (int i = lastIdx - 1; i >= 0; i--)
+            {
+                BaseDataInfo curPen = new BaseDataInfo();
+                curPen.LastChkPoint = lastPen;
+                i = this.GetNextPen(i, data, curPen, isUpPen);
+                if (i == -1)
+                {
+                    return;
+                }
+
+                // 判断两个点的大小关系
+                curPen.PenType = this.ChkPointsVal(curPen, lastPen);
+
+                if (curPen.PenType == PointType.Up && lastPen.PenType == PointType.Down)
+                {
+                    // 当前上升，前面是下降，说明前一个点是低点
+                    data[lastPen.PenBottomPos].PenType = PointType.Bottom;
+                    i = lastPen.PenBottomPos;
+                    isUpPen = true;
+                }
+                else if (curPen.PenType == PointType.Down && lastPen.PenType == PointType.Up)
+                {
+                    // 当前下降，前面是上升，说明前一个点是高点
+                    data[lastPen.PenTopPos].PenType = PointType.Top;
+                    i = lastPen.PenTopPos;
+                    isUpPen = false;
+                }
+
+                // 更新当前的点
+                if (curPen.PenType == PointType.Up || curPen.PenType == PointType.Down)
+                {
+                    lastPen = curPen;
+                }
+            }
         }
 
         #endregion
@@ -253,6 +323,89 @@ namespace DataProcess.FenXing
         private List<BaseDataInfo> DoFenXingSp(BuySellSetting emuInfo, string startTime, decimal[] minMaxInfo)
         {
             return this.DoFenXingComn();
+        }
+
+        /// <summary>
+        /// 取得下一个向下的笔数据（主要是高低点数据）
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <param name="data"></param>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private int GetNextDownPen(int idx, List<BaseDataInfo> data, BaseDataInfo penInfo)
+        { 
+            while (idx >= 0)
+            {
+                if (data[idx].PointType == PointType.Top)
+                {
+                    penInfo.DayMaxVal = data[idx].DayMaxVal;
+                    penInfo.DayMaxValTmp = data[idx].DayMaxVal;
+                    penInfo.PenTopPos = idx;
+                }
+                else if (data[idx].PointType == PointType.Bottom)
+                {
+                    penInfo.DayMinVal = data[idx].DayMinVal;
+                    penInfo.DayMinValTmp = data[idx].DayMinVal;
+                    penInfo.PenBottomPos = idx;
+                    break;
+                }
+
+                idx--;
+            }
+
+            return idx;
+        }
+
+        /// <summary>
+        /// 取得下一个向上的笔数据（主要是高低点数据）
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <param name="data"></param>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private int GetNextUpPen(int idx, List<BaseDataInfo> data, BaseDataInfo penInfo)
+        {
+            while (idx >= 0)
+            {
+                if (data[idx].PointType == PointType.Bottom)
+                {
+                    penInfo.DayMinVal = data[idx].DayMinVal;
+                    penInfo.DayMinValTmp = data[idx].DayMinVal;
+                    penInfo.PenBottomPos = idx;
+                }
+                else if (data[idx].PointType == PointType.Top)
+                {
+                    penInfo.DayMaxVal = data[idx].DayMaxVal;
+                    penInfo.DayMaxValTmp = data[idx].DayMaxVal;
+                    penInfo.PenTopPos = idx;
+                    break;
+                }
+
+                idx--;
+            }
+
+            return idx;
+        }
+
+        /// <summary>
+        /// 取得下一个笔信息
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <param name="data"></param>
+        /// <param name="penInfo"></param>
+        /// <param name="isUpPen"></param>
+        /// <returns></returns>
+        private int GetNextPen(int idx, List<BaseDataInfo> data, BaseDataInfo penInfo, bool isUpPen)
+        {
+            if (isUpPen)
+            {
+                idx = this.GetNextDownPen(idx, data, penInfo);
+            }
+            else
+            {
+                idx = this.GetNextUpPen(idx, data, penInfo);
+            }
+            return idx;
         }
 
         ///// <summary>

@@ -91,8 +91,13 @@ namespace Common
         public BaseDataInfo LastChkPoint { get; set; }
 
         /// <summary>
-        /// 当前元素在原始List中的位置
+        /// 当前笔的高点在原始List中的位置
         /// </summary>
-        public int PosAtOldList { get; set; }
+        public int PenTopPos { get; set; }
+
+        /// <summary>
+        /// 当前笔的低点点在原始List中的位置
+        /// </summary>
+        public int PenBottomPos { get; set; }
     }
 }

@@ -1144,12 +1144,17 @@ namespace DayBatch
         /// <param name="xStep"></param>
         /// <returns></returns>
         private void DrawZhongShu(List<BaseDataInfo> fenXingInfo, decimal yStep, decimal minVal, Bitmap img, Pen pen, Graphics grp, int xStep)
-        { 
+        {
+            if (fenXingInfo.Count == 0)
+            {
+                return;
+            }
+
             // 画分型的笔
             this.DrawFenxingPen(fenXingInfo, yStep, minVal, img, pen, grp, xStep);
 
             // 根据分型画线段
-            //this.DrawXianduan(fenXingInfo, yStep, minVal, img, this.drawImgInfo.RedLinePen, grp, xStep);
+            this.DrawXianduan(fenXingInfo, yStep, minVal, img, this.drawImgInfo.RedLinePen, grp, xStep);
         }
 
         /// <summary>
@@ -1164,65 +1169,28 @@ namespace DayBatch
         /// <param name="xStep"></param>
         private void DrawXianduan(List<BaseDataInfo> fenXingInfo, decimal yStep, decimal minVal, Bitmap img, Pen pen, Graphics grp, int xStep)
         {
-            if (fenXingInfo.Count == 0)
-            {
-                return;
-            }
-
             int x1 = 0;
             int y1 = 0;
-            int startX = 0;
-            decimal yVal;
-            PointType nextType = PointType.Changing;
-            for (int i = 0; i < fenXingInfo.Count; i++)
-            {
-                if (fenXingInfo[i].PointType == PointType.Bottom || fenXingInfo[i].PointType == PointType.Top)
-                {
-                    x1 = img.Width - (i * xStep + Consts.IMG_X_STEP);
-                    yVal = fenXingInfo[i].PointType == PointType.Top ? fenXingInfo[i].DayMaxVal : fenXingInfo[i].DayMinVal;
-                    y1 = this.GetYPos(img.Height, yVal, minVal, yStep);
-
-                    nextType = fenXingInfo[i].PointType == PointType.Top ? PointType.Bottom : PointType.Top;
-                    startX = i + 1;
-                    break;
-                }
-            }
-
-            if (x1 == 0)
-            {
-                return;
-            }
-
-            int x2 = x1;
+            int x2 = img.Width - ((fenXingInfo.Count - 1) * xStep + Consts.IMG_X_STEP);
             int y2 = 0;
-            int cnt = 0;
-
-            for (int i = startX; i < fenXingInfo.Count; i++)
+            decimal curVal;
+            int maxCnt = fenXingInfo.Count - 2;
+            
+            for (int index = maxCnt; index >= 0; index--)
             {
-                cnt = 0;
-                for (int j = i; j < fenXingInfo.Count; j++)
+                x2 += xStep;
+                if (fenXingInfo[index].PenType == PointType.Bottom || fenXingInfo[index].PenType == PointType.Top)
                 {
-                    if (fenXingInfo[j].PointType == nextType)
+                    curVal = fenXingInfo[index].PenType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
+                    y2 = this.GetYPos(img.Height, curVal, minVal, yStep);
+
+                    if (x1 > 0)
                     {
-                        if (cnt == 0)
-                        {
-                            cnt++;
-                        }
-                        else
-                        {
-                            x2 = img.Width - (j * xStep + Consts.IMG_X_STEP);
-                            yVal = fenXingInfo[j].PointType == PointType.Top ? fenXingInfo[j].DayMaxVal : fenXingInfo[j].DayMinVal;
-                            y2 = this.GetYPos(img.Height, yVal, minVal, yStep);
-
-                            grp.DrawLine(pen, x1, y1, x2, y2);
-                            x1 = x2;
-                            y1 = y2;
-
-                            i = j;
-                            nextType = fenXingInfo[j].PointType == PointType.Top ? PointType.Bottom : PointType.Top;
-                            break;
-                        }
+                        grp.DrawLine(pen, x1, y1, x2, y2);
                     }
+
+                    x1 = x2;
+                    y1 = y2;
                 }
             }
         }
@@ -1234,11 +1202,6 @@ namespace DayBatch
         /// <param name="step"></param>
         private bool DrawFenxingPen(List<BaseDataInfo> fenXingInfo, decimal yStep, decimal minVal, Bitmap img, Pen pen, Graphics grp, int xStep)
         {
-            if (fenXingInfo.Count == 0)
-            {
-                return false;
-            }
-
             int x1 = img.Width - ((fenXingInfo.Count - 1) * xStep + Consts.IMG_X_STEP);
             int y1 = this.GetYPos(img.Height, fenXingInfo[fenXingInfo.Count - 1].DayVal, minVal, yStep);
             int x2 = x1;
