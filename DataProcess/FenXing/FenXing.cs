@@ -236,25 +236,49 @@ namespace DataProcess.FenXing
                 // 判断两个点的大小关系
                 curPen.PenType = this.ChkPointsVal(curPen, lastPen);
 
-                if (curPen.PenType == PointType.Up && lastPen.PenType == PointType.Down)
+                if (curPen.PenType == PointType.Up)
                 {
-                    // 当前上升，前面是下降，说明前一个点是低点
-                    data[lastPen.PenBottomPos].PenType = PointType.Bottom;
-                    i = lastPen.PenBottomPos;
-                    isUpPen = true;
-                }
-                else if (curPen.PenType == PointType.Down && lastPen.PenType == PointType.Up)
-                {
-                    // 当前下降，前面是上升，说明前一个点是高点
-                    data[lastPen.PenTopPos].PenType = PointType.Top;
-                    i = lastPen.PenTopPos;
-                    isUpPen = false;
-                }
+                    if (lastPen.PenType == PointType.Down)
+                    {
+                        // 当前上升，前面是下降，说明前一个点是低点
+                        data[lastPen.PenBottomPos].PenType = PointType.Bottom;
+                        i = lastPen.PenBottomPos;
+                        isUpPen = true;
 
-                // 更新当前的点
-                if (curPen.PenType == PointType.Up || curPen.PenType == PointType.Down)
+                        // 更新当前的点
+                        lastPen = curPen;
+                        lastPen.PenType = PointType.Changing;
+                    }
+                    else
+                    {
+                        // 更新当前的点
+                        lastPen = curPen;
+                    }
+                }
+                else if (curPen.PenType == PointType.Down)
                 {
+                    if (lastPen.PenType == PointType.Up)
+                    {
+                        // 当前下降，前面是上升，说明前一个点是高点
+                        data[lastPen.PenTopPos].PenType = PointType.Top;
+                        i = lastPen.PenTopPos;
+                        isUpPen = false;
+
+                        // 更新当前的点
+                        lastPen = curPen;
+                        lastPen.PenType = PointType.Changing;
+                    }
+                    else
+                    {
+                        // 更新当前的点
+                        lastPen = curPen;
+                    }
+                }
+                else
+                {
+                    PointType lastType = lastPen.PenType;
                     lastPen = curPen;
+                    lastPen.PenType = lastType;
                 }
             }
         }
@@ -341,12 +365,14 @@ namespace DataProcess.FenXing
                     penInfo.DayMaxVal = data[idx].DayMaxVal;
                     penInfo.DayMaxValTmp = data[idx].DayMaxVal;
                     penInfo.PenTopPos = idx;
+                    penInfo.Day = data[idx].Day;
                 }
                 else if (data[idx].PointType == PointType.Bottom)
                 {
                     penInfo.DayMinVal = data[idx].DayMinVal;
                     penInfo.DayMinValTmp = data[idx].DayMinVal;
                     penInfo.PenBottomPos = idx;
+                    penInfo.Day = data[idx].Day;
                     break;
                 }
 
@@ -372,12 +398,14 @@ namespace DataProcess.FenXing
                     penInfo.DayMinVal = data[idx].DayMinVal;
                     penInfo.DayMinValTmp = data[idx].DayMinVal;
                     penInfo.PenBottomPos = idx;
+                    penInfo.Day = data[idx].Day;
                 }
                 else if (data[idx].PointType == PointType.Top)
                 {
                     penInfo.DayMaxVal = data[idx].DayMaxVal;
                     penInfo.DayMaxValTmp = data[idx].DayMaxVal;
                     penInfo.PenTopPos = idx;
+                    penInfo.Day = data[idx].Day;
                     break;
                 }
 
