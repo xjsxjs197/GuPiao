@@ -1255,18 +1255,17 @@ namespace Common
 
             for (int i = stockInfos.Count - 1; i >= 0; i--)
             {
-                decimal curVal = stockInfos[i].DayVal;
-                if (curVal > maxVal)
+                if (stockInfos[i].DayMaxVal > maxVal)
                 {
-                    maxVal = curVal;
+                    maxVal = stockInfos[i].DayMaxVal;
                 }
 
-                if (curVal > 0 && curVal < minVal)
+                if (stockInfos[i].DayMinVal > 0 && stockInfos[i].DayMinVal < minVal)
                 {
-                    minVal = curVal;
+                    minVal = stockInfos[i].DayMinVal;
                 }
 
-                if (curVal == 0)
+                if (stockInfos[i].DayVal == 0)
                 {
                     BaseDataInfo item = new BaseDataInfo();
                     item.Day = stockInfos[i].Day;
@@ -1291,7 +1290,7 @@ namespace Common
         /// <returns></returns>
         public static decimal GetYstep(decimal[] minMaxInfo)
         {
-            return 370 / (minMaxInfo[1] - minMaxInfo[0]);
+            return 380 / (minMaxInfo[1] - minMaxInfo[0]);
         }
 
         /// <summary>

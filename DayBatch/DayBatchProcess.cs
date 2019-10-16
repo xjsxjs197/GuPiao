@@ -876,6 +876,10 @@ namespace DayBatch
                     break;
             }
             drawFenXingInfo.Add(fenXingInfo);
+            decimal[] newMinMaxInfo = Util.GetMaxMinStock(fenXingInfo);
+            minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
+            minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+
             //this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkOrangeLinePen, grp, Consts.IMG_X_STEP);
 
             //// 在30分钟的分型图上画天的分型信息
@@ -954,7 +958,7 @@ namespace DayBatch
             int index = 1;
             int maxCount = stockInfo.Count - 1;
             int maxHeight = img.Height - 1;
-            int strYPos = img.Height - 20;
+            int strYPos = img.Height - 15;
 
             while (index <= maxCount)
             {
@@ -994,6 +998,9 @@ namespace DayBatch
         /// <returns></returns>
         private int GetYPos(int imgH, decimal pointVal, decimal minVal, decimal step)
         {
+            if (imgH - ((int)((pointVal - minVal) * step) + 10) > imgH)
+            {
+            }
             return imgH - ((int)((pointVal - minVal) * step) + 10);
         }
 
