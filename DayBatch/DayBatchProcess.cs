@@ -959,6 +959,7 @@ namespace DayBatch
             int maxCount = stockInfo.Count - 1;
             int maxHeight = img.Height - 1;
             int strYPos = img.Height - 15;
+            bool drawDate = true;
 
             while (index <= maxCount)
             {
@@ -975,8 +976,17 @@ namespace DayBatch
                     if (((index - 7) & 7) == 0)
                     {
                         grp.DrawLine(this.drawImgInfo.NormalLinePen, x2, 0, x2, maxHeight);
-                        grp.DrawString(stockInfo[index].Day.Substring(4, 4), this.drawImgInfo.NormalFont,
-                            this.drawImgInfo.BlueVioletBush, x2, strYPos);
+
+                        if (drawDate)
+                        {
+                            grp.DrawString(stockInfo[index].Day.Substring(4, 4), this.drawImgInfo.NormalFont,
+                                this.drawImgInfo.BlueVioletBush, x2, strYPos);
+                            drawDate = false;
+                        }
+                        else
+                        {
+                            drawDate = true;
+                        }
                     }
                     else
                     {
