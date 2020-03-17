@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,8 +9,7 @@ using System.Threading;
 using System.Windows.Forms;
 using Common;
 using DayBatch;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
+using MySQLDriverCS;
 
 namespace GuPiao
 {
@@ -594,6 +592,7 @@ namespace GuPiao
             //this.Do(this.CheckRightCd);
             //this.Do(this.ReplaceDayData);
             //this.Do(this.SetRongziRongYuan);
+            this.Do(this.ImportCsvToMySql);
         }
 
         #endregion
@@ -1391,6 +1390,78 @@ namespace GuPiao
         #endregion
 
         #region " 测试模块 "
+
+        /// <summary>
+        /// Csv数据导入到Mysql
+        /// </summary>
+        private void ImportCsvToMySql()
+        {
+            MySQLConnection mySQLConn = null;
+            try
+            {
+                // 取得配置的DB信息
+                string[] dbAddrInfo = File.ReadAllLines(@".\DbAddrInfo.txt");
+                string[] mysqlDb = dbAddrInfo[2].Split(' ');
+
+                // 连接DB
+                string conn = "server=" + mysqlDb[0] + ";uid=" + mysqlDb[2] + ";pwd=" + mysqlDb[3] + ";database=" + mysqlDb[1] + ";Charset=utf8";
+                string conn2 = new MySQLConnectionString(mysqlDb[0], mysqlDb[1], mysqlDb[2], mysqlDb[3], Convert.ToInt32(mysqlDb[4])).AsString + ";Charset=utf8;";
+                mySQLConn = new MySQLConnection("Data Source=autotrad;Password=Xayr!234;User ID=root;Location=127.0.0.1;Port=3306;Charset=utf-8;");
+                mySQLConn.Open();
+
+                //MySQLCommand commn2 = new MySQLCommand("set names utf8", mySQLConn);
+                //commn2.ExecuteNonQuery();
+
+                // 开始导入代码名称数据
+                StringBuilder sb = new StringBuilder();
+                sb.Append("insert into code_name (code, name, rzrj_flg, add_user, add_date) VALUES ");
+                string dt = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+
+                string[] allLine = File.ReadAllLines(@".\data\AllStockInfo.txt", Encoding.UTF8);
+                
+                // 设置进度条
+                this.ResetProcessBar(allLine.Length);
+                
+                for (int i = 0; i < 100; i++)
+                {
+                    sb.Append("('").Append(allLine[i].Substring(0, 6)).Append("'");
+                    sb.Append(",'").Append(allLine[i].Substring(7)).Append("'");
+                    sb.Append(",0");
+                    sb.Append(",'system'");
+                    sb.Append(",'").Append(dt).Append("')");
+                    if (i == 99)
+                    {
+                        sb.Append(";");
+                    }
+                    else
+                    {
+                        sb.Append(",");
+                    }
+
+                    // 更新进度条
+                    this.ProcessBarStep();
+                }
+
+                //File.WriteAllText(@"d:\aaaa.txt", sb.ToString(), Encoding.UTF8);
+                MySQLCommand mySQLCommand = new MySQLCommand(sb.ToString(), mySQLConn);
+                mySQLCommand.ExecuteNonQuery();
+
+                // 关闭进度条
+                this.CloseProcessBar();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+            }
+            finally
+            {
+                if (mySQLConn != null)
+                {
+                    // 关闭DB
+                    mySQLConn.Close();
+                }
+            }
+        }
 
         /// <summary>
         /// 融资融券设置
