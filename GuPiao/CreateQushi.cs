@@ -9,7 +9,7 @@ using System.Threading;
 using System.Windows.Forms;
 using Common;
 using DayBatch;
-using MySQLDriverCS;
+using MySql.Data.MySqlClient;
 
 namespace GuPiao
 {
@@ -1396,71 +1396,150 @@ namespace GuPiao
         /// </summary>
         private void ImportCsvToMySql()
         {
-            MySQLConnection mySQLConn = null;
-            try
+            // 取得配置的DB信息
+            string[] dbAddrInfo = File.ReadAllLines(@".\DbAddrInfo.txt");
+            string[] mysqlDb = dbAddrInfo[2].Split(' ');
+
+            // 连接DB
+            string conn = "server=" + mysqlDb[0] + ";Database=" + mysqlDb[1] + ";user=" + mysqlDb[2] + ";password=" + mysqlDb[3] + ";port=" + mysqlDb[4] + ";CharSet=utf8;";
+            using (MySqlConnection mySQLConn = new MySqlConnection(conn))
             {
-                // 取得配置的DB信息
-                string[] dbAddrInfo = File.ReadAllLines(@".\DbAddrInfo.txt");
-                string[] mysqlDb = dbAddrInfo[2].Split(' ');
-
-                // 连接DB
-                string conn = "server=" + mysqlDb[0] + ";uid=" + mysqlDb[2] + ";pwd=" + mysqlDb[3] + ";database=" + mysqlDb[1] + ";Charset=utf8";
-                string conn2 = new MySQLConnectionString(mysqlDb[0], mysqlDb[1], mysqlDb[2], mysqlDb[3], Convert.ToInt32(mysqlDb[4])).AsString + ";Charset=utf8;";
-                mySQLConn = new MySQLConnection("Data Source=autotrad;Password=Xayr!234;User ID=root;Location=127.0.0.1;Port=3306;Charset=utf-8;");
                 mySQLConn.Open();
-
-                //MySQLCommand commn2 = new MySQLCommand("set names utf8", mySQLConn);
-                //commn2.ExecuteNonQuery();
+                MySqlTransaction tx = mySQLConn.BeginTransaction();
 
                 // 开始导入代码名称数据
                 StringBuilder sb = new StringBuilder();
-                sb.Append("insert into code_name (code, name, rzrj_flg, add_user, add_date) VALUES ");
                 string dt = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
 
                 string[] allLine = File.ReadAllLines(@".\data\AllStockInfo.txt", Encoding.UTF8);
-                
+
                 // 设置进度条
-                this.ResetProcessBar(allLine.Length);
-                
-                for (int i = 0; i < 100; i++)
+                //this.ResetProcessBar(allLine.Length);
+
+                //try
+                //{
+                //    for (int i = 0; i < allLine.Length; i++)
+                //    {
+                //        sb = new StringBuilder();
+                //        sb.Append("insert into code_name (code, name, rzrj_flg, add_user, add_date, upd_user, upd_date) VALUES ");
+                //        sb.Append("('").Append(allLine[i].Substring(0, 6)).Append("'");
+                //        sb.Append(",'").Append(allLine[i].Substring(7)).Append("'");
+                //        sb.Append(",0");
+                //        sb.Append(",'system'");
+                //        sb.Append(",'").Append(dt).Append("'");
+                //        sb.Append(",'system'");
+                //        sb.Append(",'").Append(dt).Append("');");
+
+                //        MySqlCommand cmd = new MySqlCommand(sb.ToString(), mySQLConn, tx);
+                //        cmd.ExecuteNonQuery();
+
+                //        if (i > 0 && i % 1000 == 0)
+                //        {
+                //            tx.Commit();
+                //            tx = mySQLConn.BeginTransaction();
+                //        }
+                //        else if (i == allLine.Length - 1)
+                //        {
+                //            tx.Commit();
+                //        }
+
+                //        // 更新进度条
+                //        this.ProcessBarStep();
+                //    }
+                //}
+                //catch (Exception e)
+                //{
+                //    tx.Rollback();
+                //    MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                //}
+
+                //// 关闭进度条
+                //this.CloseProcessBar();
+
+                // 导入天的数据
+                //this.ImportCsvToMySql(mySQLConn, TimeRange.Day, "data_day", dt, tx);
+
+                // 导入M5的数据
+                this.ImportCsvToMySql(mySQLConn, TimeRange.M5, "data_m5", dt, tx);
+
+                // 导入M15的数据
+                this.ImportCsvToMySql(mySQLConn, TimeRange.M15, "data_m15", dt, tx);
+
+                // 导入M30的数据
+                this.ImportCsvToMySql(mySQLConn, TimeRange.M30, "data_m30", dt, tx);
+            }
+        }
+
+        /// <summary>
+        /// 导入特定类型数据到Mysql
+        /// </summary>
+        /// <param name="mySQLConn"></param>
+        /// <param name="timeRange"></param>
+        private void ImportCsvToMySql(MySqlConnection mySQLConn, TimeRange timeRange, string dbName,
+            string dt, MySqlTransaction tx)
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = timeRange.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + this.subFolder);
+
+            // 设置进度条
+            this.ResetProcessBar(allCsv.Count);
+
+            try
+            {
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.Connection = mySQLConn;
+                cmd.Transaction = tx;
+
+                foreach (FilePosInfo fileItem in allCsv)
                 {
-                    sb.Append("('").Append(allLine[i].Substring(0, 6)).Append("'");
-                    sb.Append(",'").Append(allLine[i].Substring(7)).Append("'");
-                    sb.Append(",0");
-                    sb.Append(",'system'");
-                    sb.Append(",'").Append(dt).Append("')");
-                    if (i == 99)
+                    if (fileItem.IsFolder)
                     {
-                        sb.Append(";");
+                        continue;
                     }
-                    else
+
+                    base.baseFile = fileItem.File;
+                    string[] allLine = File.ReadAllLines(fileItem.File);
+                    for (int i = 1; i < allLine.Length; i++)
                     {
-                        sb.Append(",");
+                        // 2020-03-18 15:00:00,000001,,12.710,12.740,12.650,12.720
+                        // datetime,code,name,close_val,max_val,min_val,open_val
+                        string[] curLine = allLine[i].Split(',');
+                        StringBuilder sb = new StringBuilder();
+                        sb.Append("insert into ").Append(dbName).Append(" (");
+                        sb.Append(" code, datetime, open_val, close_val, min_val, max_val) VALUES (");
+                        sb.Append(" '").Append(curLine[1].Replace("'", "")).Append("'");
+                        sb.Append(",'").Append(curLine[0]).Append("'");
+                        sb.Append(",").Append(curLine[6]);
+                        sb.Append(",").Append(curLine[3]);
+                        sb.Append(",").Append(curLine[5]);
+                        sb.Append(",").Append(curLine[4]);
+                        sb.Append(");");
+
+                        cmd.CommandText = sb.ToString();
+                        //MySqlCommand cmd = new MySqlCommand(sb.ToString(), mySQLConn, tx);
+                        cmd.ExecuteNonQuery();
+
+                        if (i % 1000 == 0 || i == allLine.Length - 1)
+                        {
+                            tx.Commit();
+                            tx = mySQLConn.BeginTransaction();
+                            cmd.Transaction = tx;
+                        }
                     }
 
                     // 更新进度条
                     this.ProcessBarStep();
                 }
-
-                //File.WriteAllText(@"d:\aaaa.txt", sb.ToString(), Encoding.UTF8);
-                MySQLCommand mySQLCommand = new MySQLCommand(sb.ToString(), mySQLConn);
-                mySQLCommand.ExecuteNonQuery();
-
-                // 关闭进度条
-                this.CloseProcessBar();
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message + "\n" + e.StackTrace);
+                tx.Rollback();
+                throw e;
             }
-            finally
-            {
-                if (mySQLConn != null)
-                {
-                    // 关闭DB
-                    mySQLConn.Close();
-                }
-            }
+
+            // 关闭进度条
+            this.CloseProcessBar();
         }
 
         /// <summary>
