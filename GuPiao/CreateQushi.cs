@@ -1405,7 +1405,6 @@ namespace GuPiao
             using (MySqlConnection mySQLConn = new MySqlConnection(conn))
             {
                 mySQLConn.Open();
-                MySqlTransaction tx = mySQLConn.BeginTransaction();
 
                 // 开始导入代码名称数据
                 StringBuilder sb = new StringBuilder();
@@ -1457,16 +1456,16 @@ namespace GuPiao
                 //this.CloseProcessBar();
 
                 // 导入天的数据
-                //this.ImportCsvToMySql(mySQLConn, TimeRange.Day, "data_day", dt, tx);
+                //this.ImportCsvToMySql(mySQLConn, TimeRange.Day, "data_day", dt);
 
                 // 导入M5的数据
-                this.ImportCsvToMySql(mySQLConn, TimeRange.M5, "data_m5", dt, tx);
+                this.ImportCsvToMySql(mySQLConn, TimeRange.M5, "data_m5", dt);
 
                 // 导入M15的数据
-                this.ImportCsvToMySql(mySQLConn, TimeRange.M15, "data_m15", dt, tx);
+                //this.ImportCsvToMySql(mySQLConn, TimeRange.M15, "data_m15", dt);
 
                 // 导入M30的数据
-                this.ImportCsvToMySql(mySQLConn, TimeRange.M30, "data_m30", dt, tx);
+                //this.ImportCsvToMySql(mySQLConn, TimeRange.M30, "data_m30", dt);
             }
         }
 
@@ -1476,7 +1475,7 @@ namespace GuPiao
         /// <param name="mySQLConn"></param>
         /// <param name="timeRange"></param>
         private void ImportCsvToMySql(MySqlConnection mySQLConn, TimeRange timeRange, string dbName,
-            string dt, MySqlTransaction tx)
+            string dt)
         {
             // 取得已经存在的所有数据信息
             this.subFolder = timeRange.ToString() + "/";
@@ -1485,11 +1484,17 @@ namespace GuPiao
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
 
+            MySqlTransaction tx = null;
+            bool needBeginTransaction = true;
+
             try
             {
                 MySqlCommand cmd = new MySqlCommand();
                 cmd.Connection = mySQLConn;
-                cmd.Transaction = tx;
+
+                StringBuilder sb = new StringBuilder();
+                string maxDt = string.Empty;
+                int lineCnt = 0;
 
                 foreach (FilePosInfo fileItem in allCsv)
                 {
@@ -1498,34 +1503,71 @@ namespace GuPiao
                         continue;
                     }
 
+                    if (needBeginTransaction)
+                    {
+                        tx = mySQLConn.BeginTransaction();
+                        cmd.Transaction = tx;
+                    }
+                    
+                    sb.Length = 0;
+                    sb.Append("select date_format(max(datetime), '%Y-%m-%d %H:%i:%s') from ").Append(dbName);
+                    sb.Append(" Where code = '").Append(Util.GetShortNameWithoutType(fileItem.File).Substring(0, 6)).Append("'");
+                    cmd.CommandText = sb.ToString();
+
+                    object dbResult = cmd.ExecuteScalar();
+                    if (dbResult != null)
+                    {
+                        maxDt = dbResult.ToString();
+                    }
+                    sb.Length = 0;
+                    lineCnt = 0;
+
                     base.baseFile = fileItem.File;
                     string[] allLine = File.ReadAllLines(fileItem.File);
-                    for (int i = 1; i < allLine.Length; i++)
+                    int maxLen = allLine.Length - 1;
+                    for (int i = 1; i <= maxLen; i++)
                     {
                         // 2020-03-18 15:00:00,000001,,12.710,12.740,12.650,12.720
                         // datetime,code,name,close_val,max_val,min_val,open_val
                         string[] curLine = allLine[i].Split(',');
-                        StringBuilder sb = new StringBuilder();
-                        sb.Append("insert into ").Append(dbName).Append(" (");
-                        sb.Append(" code, datetime, open_val, close_val, min_val, max_val) VALUES (");
-                        sb.Append(" '").Append(curLine[1].Replace("'", "")).Append("'");
-                        sb.Append(",'").Append(curLine[0]).Append("'");
-                        sb.Append(",").Append(curLine[6]);
-                        sb.Append(",").Append(curLine[3]);
-                        sb.Append(",").Append(curLine[5]);
-                        sb.Append(",").Append(curLine[4]);
-                        sb.Append(");");
-
-                        cmd.CommandText = sb.ToString();
-                        //MySqlCommand cmd = new MySqlCommand(sb.ToString(), mySQLConn, tx);
-                        cmd.ExecuteNonQuery();
-
-                        if (i % 1000 == 0 || i == allLine.Length - 1)
+                        if (string.Compare(curLine[0], maxDt) > 0)
                         {
-                            tx.Commit();
-                            tx = mySQLConn.BeginTransaction();
-                            cmd.Transaction = tx;
+                            lineCnt++;
+
+                            sb.Append("insert into ").Append(dbName).Append(" (");
+                            sb.Append(" code, datetime, open_val, close_val, min_val, max_val) VALUES (");
+                            sb.Append(" '").Append(curLine[1].Replace("'", "")).Append("'");
+                            sb.Append(",'").Append(curLine[0]).Append("'");
+                            sb.Append(",").Append(curLine[6]);
+                            sb.Append(",").Append(curLine[3]);
+                            sb.Append(",").Append(curLine[5]);
+                            sb.Append(",").Append(curLine[4]);
+                            sb.Append(");");
+
+                            cmd.CommandText = sb.ToString();
+                            sb.Length = 0;
+                            //MySqlCommand cmd = new MySqlCommand(sb.ToString(), mySQLConn, tx);
+                            cmd.ExecuteNonQuery();
+
+                            if (lineCnt % 1000 == 0 && i < maxLen)
+                            {
+                                tx.Commit();
+                                tx = mySQLConn.BeginTransaction();
+                                needBeginTransaction = false;
+                                cmd.Transaction = tx;
+                                lineCnt = 0;
+                            }
                         }
+                    }
+
+                    if (lineCnt > 0)
+                    {
+                        tx.Commit();
+                        needBeginTransaction = true;
+                    }
+                    else
+                    {
+                        needBeginTransaction = false;
                     }
 
                     // 更新进度条
@@ -1534,7 +1576,10 @@ namespace GuPiao
             }
             catch (Exception e)
             {
-                tx.Rollback();
+                if (tx != null)
+                {
+                    tx.Rollback();
+                }
                 throw e;
             }
 
