@@ -592,7 +592,8 @@ namespace GuPiao
             //this.Do(this.CheckRightCd);
             //this.Do(this.ReplaceDayData);
             //this.Do(this.SetRongziRongYuan);
-            this.Do(this.ImportCsvToMySql);
+            //this.Do(this.ImportCsvToMySql);
+            this.Do(this.CheckM5Data);
         }
 
         #endregion
@@ -1390,6 +1391,58 @@ namespace GuPiao
         #endregion
 
         #region " 测试模块 "
+
+        private void CheckM5Data()
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = TimeRange.M5.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + this.subFolder);
+            List<string> errData = new List<string>();
+
+            // 设置进度条
+            this.ResetProcessBar(allCsv.Count);
+
+            try
+            {
+                StringBuilder sb = new StringBuilder();
+
+                foreach (FilePosInfo fileItem in allCsv)
+                {
+                    if (fileItem.IsFolder)
+                    {
+                        continue;
+                    }
+
+                    base.baseFile = fileItem.File;
+                    string[] allLine = File.ReadAllLines(fileItem.File);
+                    if (allLine.Length > 1)
+                    {
+                        if (!allLine[1].StartsWith("2020-04-01"))
+                        {
+                            //File.Delete(fileItem.File);
+                            errData.Add(Util.GetShortNameWithoutType(fileItem.File) + " " + allLine[1]);
+                        }
+                    }
+                    else
+                    {
+                        //File.Delete(fileItem.File);
+                        errData.Add(Util.GetShortNameWithoutType(fileItem.File) + " " + allLine[1]);
+                    }
+
+                    // 更新进度条
+                    this.ProcessBarStep();
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\r\n" + e.StackTrace);
+            }
+
+            File.WriteAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "dataErrChkM5" + DateTime.Now.ToString("yyyyMMdd") + ".txt", errData.ToArray(), Encoding.UTF8);
+
+            // 关闭进度条
+            this.CloseProcessBar();
+        }
 
         /// <summary>
         /// Csv数据导入到Mysql

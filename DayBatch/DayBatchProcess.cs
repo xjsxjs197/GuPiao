@@ -425,24 +425,35 @@ namespace DayBatch
                     // 失败了，再来一次
                     this.GetMinuteData(TimeRange.M5);
                 }
+
+                // 检查数据正确性
+                this.CheckData(TimeRange.M5);
             }
 
             // 获取15分钟数据
             if (hasM15)
             {
-                this.CopyDataFromM5(TimeRange.M15);
+                //this.CopyDataFromM5(TimeRange.M15);
             }
 
             // 获取30分钟数据
             if (hasM30)
             {
                 this.CopyDataFromM5(TimeRange.M30);
+                //this.GetMinuteData(TimeRange.M30);
+
+                // 检查数据正确性
+                this.CheckData(TimeRange.M30);
             }
 
             // 获取整天的数据
             if (hasDay)
             {
                 this.CopyDataFromM5(TimeRange.Day);
+                //this.GetMinuteData(TimeRange.Day);
+
+                // 检查数据正确性
+                this.CheckData(TimeRange.Day);
             }
         }
 
@@ -526,7 +537,7 @@ namespace DayBatch
                         File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " " + errMsg + "\r\n", Encoding.UTF8);
                     }
 
-                    Thread.Sleep(1000);
+                    Thread.Sleep(1500);
                     dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
                 }
                 catch (Exception exp)
@@ -1145,6 +1156,59 @@ namespace DayBatch
             }
 
             this.WriteLog(msg);
+        }
+
+        /// <summary>
+        /// 检查基础数据的正确性
+        /// </summary>
+        private void CheckData(TimeRange timeRange)
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = timeRange.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(this.basePath + Consts.CSV_FOLDER + this.subFolder);
+            List<string> errData = new List<string>();
+
+            // 设定结束日期
+            DateTime now = this.GetNotWeeklyDayDate();
+            string endDay = now.ToString("yyyy-MM-dd");
+
+            this.WriteLog("开始检查" + timeRange.ToString() + "数据，共计：" + allCsv.Count, true);
+
+            try
+            {
+                StringBuilder sb = new StringBuilder();
+
+                foreach (FilePosInfo fileItem in allCsv)
+                {
+                    if (fileItem.IsFolder)
+                    {
+                        continue;
+                    }
+
+                    string[] allLine = File.ReadAllLines(fileItem.File);
+                    if (allLine.Length > 1)
+                    {
+                        if (!allLine[1].StartsWith(endDay))
+                        {
+                            //File.Delete(fileItem.File);
+                            errData.Add(Util.GetShortNameWithoutType(fileItem.File) + " " + allLine[1].Substring(0, 10));
+                        }
+                    }
+                    else
+                    {
+                        //File.Delete(fileItem.File);
+                        errData.Add(Util.GetShortNameWithoutType(fileItem.File) + " " + allLine[1].Substring(0, 10));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                this.WriteLog(e.Message + "\r\n" + e.StackTrace, true);
+            }
+
+            File.WriteAllLines(this.basePath + Consts.CSV_FOLDER + "DataCheck/" + DateTime.Now.ToString("yyyyMMdd") + "_" + timeRange.ToString() + ".txt", errData.ToArray(), Encoding.UTF8);
+
+            this.WriteLog("检查" + timeRange.ToString() + "数据完成，有" + errData.Count + "条数据有问题", true);
         }
 
         #region " 分型中枢处理相关 "
@@ -1782,7 +1846,7 @@ namespace DayBatch
                     // 取得最新的一条数据
                     string lastDay = lastRow[0].Replace("-", "").Replace("/", "");
 
-                    if (endDay.Equals(lastDay))
+                    if (endDay.Equals(lastDay) && !(lastRow[2].StartsWith("ST") || lastRow[2].StartsWith("*ST")))
                     {
                         allAvailableCd.Add(stockCd.ToString().PadLeft(6, '0') + " " + lastRow[2]);
                     }
@@ -1807,13 +1871,13 @@ namespace DayBatch
 
             this.CheckCsvData(TimeRange.Day, dt.ToString("yyyyMMdd"), delCdLst);
             this.CheckCsvData(TimeRange.M30, dt.ToString("yyyyMMdd150000"), delCdLst);
-            this.CheckCsvData(TimeRange.M15, dt.ToString("yyyyMMdd150000"), delCdLst);
+            //this.CheckCsvData(TimeRange.M15, dt.ToString("yyyyMMdd150000"), delCdLst);
             this.CheckCsvData(TimeRange.M5, dt.ToString("yyyyMMdd150000"), delCdLst);
 
             if (delCdLst.Count > 0)
             {
                 this.WriteLog("删除了如下文件：");
-                this.WriteLog(string.Join(",", delCdLst.ToArray()));
+                this.WriteLog(string.Join("\r\n,", delCdLst.ToArray()));
             }
             else
             {
