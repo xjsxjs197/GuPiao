@@ -10,6 +10,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Threading;
 using DataProcess.FenXing;
+using System.Text.RegularExpressions;
 
 namespace DayBatch
 {
@@ -320,15 +321,15 @@ namespace DayBatch
             int maxPoints = MAX_POINTS;
             if (stockFile.IndexOf(TimeRange.M30.ToString()) > 0)
             {
-                maxPoints *= 4;
+                maxPoints *= 8;
             }
             else if (stockFile.IndexOf(TimeRange.M15.ToString()) > 0)
             {
-                maxPoints *= 8;
+                maxPoints *= 16;
             }
             else if (stockFile.IndexOf(TimeRange.M5.ToString()) > 0)
             {
-                maxPoints *= 12;
+                maxPoints *= 48;
             }
 
             for (int i = 1; i < allLine.Length && i <= maxPoints; i++)
@@ -416,6 +417,8 @@ namespace DayBatch
         /// </summary>
         private void GetData(bool hasM5, bool hasM15, bool hasM30, bool hasDay)
         {
+            List<string> stopCdList = this.CheckTingPaiData();
+
             // 获取5分钟数据
             if (hasM5)
             {
@@ -427,7 +430,7 @@ namespace DayBatch
                 }
 
                 // 检查数据正确性
-                this.CheckData(TimeRange.M5);
+                this.CheckData(TimeRange.M5, stopCdList);
             }
 
             // 获取15分钟数据
@@ -443,7 +446,7 @@ namespace DayBatch
                 //this.GetMinuteData(TimeRange.M30);
 
                 // 检查数据正确性
-                this.CheckData(TimeRange.M30);
+                this.CheckData(TimeRange.M30, stopCdList);
             }
 
             // 获取整天的数据
@@ -453,7 +456,7 @@ namespace DayBatch
                 //this.GetMinuteData(TimeRange.Day);
 
                 // 检查数据正确性
-                this.CheckData(TimeRange.Day);
+                this.CheckData(TimeRange.Day, stopCdList);
             }
         }
 
@@ -893,28 +896,28 @@ namespace DayBatch
 
             //this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkOrangeLinePen, grp, Consts.IMG_X_STEP);
 
-            //// 在30分钟的分型图上画天的分型信息
-            //if (timeRange == TimeRange.M30)
-            //{
-            //    dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
-            //    if (dataInfo != null)
-            //    {
-            //        // 基础数据信息
-            //        stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
-            //        decimal[] newMinMaxInfo = (decimal[])dataInfo["minMaxInfo"];
-            //        minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
-            //        minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+            // 在30分钟的分型图上画天的分型信息
+            if (timeRange == TimeRange.M30)
+            {
+                dataInfo = GetStockInfo(stockCdData.Substring(0, 15), TimeRange.Day.ToString() + "/", this.basePath);
+                if (dataInfo != null)
+                {
+                    // 基础数据信息
+                    stockInfos = (List<BaseDataInfo>)dataInfo["stockInfos"];
+                    newMinMaxInfo = (decimal[])dataInfo["minMaxInfo"];
+                    minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
+                    minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
 
-            //        if (stockInfos.Count > 0)
-            //        {
-            //            // 开始画分型、笔的线段
-            //            this.fenXing = new FenXing();
-            //            List<BaseDataInfo> newFenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
-            //            //this.DrawFenxingPen(newFenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkBlueLinePen, grp, Consts.IMG_X_STEP * 8);
-            //            drawFenXingInfo.Add(newFenXingInfo);
-            //        }
-            //    }
-            //}
+                    if (stockInfos.Count > 0)
+                    {
+                        // 开始画分型、笔的线段
+                        this.fenXing = new FenXing();
+                        List<BaseDataInfo> newFenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
+                        //this.DrawFenxingPen(newFenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkBlueLinePen, grp, Consts.IMG_X_STEP * 8);
+                        drawFenXingInfo.Add(newFenXingInfo);
+                    }
+                }
+            }
 
             // 画均线趋势图
             decimal yStep = Util.GetYstep(minMaxInfo);
@@ -1161,7 +1164,7 @@ namespace DayBatch
         /// <summary>
         /// 检查基础数据的正确性
         /// </summary>
-        private void CheckData(TimeRange timeRange)
+        private void CheckData(TimeRange timeRange, List<string> stopCdList)
         {
             // 取得已经存在的所有数据信息
             this.subFolder = timeRange.ToString() + "/";
@@ -1177,6 +1180,12 @@ namespace DayBatch
             try
             {
                 StringBuilder sb = new StringBuilder();
+                string tmpCd = string.Empty;
+
+                // 设置进度条
+                DosProgressBar dosProgressBar = new DosProgressBar();
+                int idx = 1;
+                int totalLen = allCsv.Count;
 
                 foreach (FilePosInfo fileItem in allCsv)
                 {
@@ -1191,14 +1200,17 @@ namespace DayBatch
                         if (!allLine[1].StartsWith(endDay))
                         {
                             //File.Delete(fileItem.File);
-                            errData.Add(Util.GetShortNameWithoutType(fileItem.File) + " " + allLine[1].Substring(0, 10));
+                            this.AddErrorData(errData, stopCdList, fileItem.File, allLine[1].Substring(0, 10));
                         }
                     }
                     else
                     {
                         //File.Delete(fileItem.File);
-                        errData.Add(Util.GetShortNameWithoutType(fileItem.File) + " " + allLine[1].Substring(0, 10));
+                        this.AddErrorData(errData, stopCdList, fileItem.File, allLine[1].Substring(0, 10));
                     }
+
+                    // 更新进度条
+                    dosProgressBar.Dispaly((int)((idx++ / (totalLen * 1.0)) * 100));
                 }
             }
             catch (Exception e)
@@ -1209,6 +1221,57 @@ namespace DayBatch
             File.WriteAllLines(this.basePath + Consts.CSV_FOLDER + "DataCheck/" + DateTime.Now.ToString("yyyyMMdd") + "_" + timeRange.ToString() + ".txt", errData.ToArray(), Encoding.UTF8);
 
             this.WriteLog("检查" + timeRange.ToString() + "数据完成，有" + errData.Count + "条数据有问题", true);
+        }
+
+        /// <summary>
+        /// 添加错误的数据
+        /// </summary>
+        /// <param name="errData"></param>
+        /// <param name="stopCdList"></param>
+        /// <param name="stockCd"></param>
+        private void AddErrorData(List<string> errData, List<string> stopCdList, string file, string curDate)
+        {
+            string shortName = Util.GetShortNameWithoutType(file);
+            if (stopCdList.Contains(shortName.Substring(0, 6)))
+            {
+                errData.Add(shortName + " " + curDate + " 停牌");
+            }
+            else
+            {
+                errData.Add(shortName + " " + curDate);
+            }
+        }
+
+        /// <summary>
+        /// 过滤停牌的数据
+        /// </summary>
+        private List<string> CheckTingPaiData()
+        {
+            string url = "http://data.eastmoney.com/tfpxx/";
+            string result = Util.HttpGet(url, string.Empty, Encoding.GetEncoding("GB2312"));
+            List<string> stopCdList = new List<string>();
+            if (!string.IsNullOrEmpty(result))
+            {
+                int idx = result.IndexOf("defjson:  {pages:1,data:[\"");
+                if (idx <= 0)
+                {
+                    return stopCdList;
+                }
+
+                string tingpaiInfo = result.Substring(idx + 26, result.IndexOf("]},") - idx - 26);
+                if (string.IsNullOrEmpty(tingpaiInfo))
+                {
+                    return stopCdList;
+                }
+
+                string[] tingpaiData = Regex.Split(tingpaiInfo, "\",\"", RegexOptions.IgnoreCase);
+                for (int i = 0; i < tingpaiData.Length; i++)
+                {
+                    stopCdList.Add(tingpaiData[i].Substring(0, 6));
+                }
+            }
+
+            return stopCdList;
         }
 
         #region " 分型中枢处理相关 "
@@ -1235,7 +1298,7 @@ namespace DayBatch
             this.DrawFenxingPen(fenXingInfo, yStep, minVal, img, pen, grp, xStep);
 
             // 根据分型画线段
-            this.DrawXianduan(fenXingInfo, yStep, minVal, img, this.drawImgInfo.RedLinePen, grp, xStep);
+            //this.DrawXianduan(fenXingInfo, yStep, minVal, img, this.drawImgInfo.RedLinePen, grp, xStep);
         }
 
         /// <summary>

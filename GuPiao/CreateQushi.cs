@@ -592,8 +592,8 @@ namespace GuPiao
             //this.Do(this.CheckRightCd);
             //this.Do(this.ReplaceDayData);
             //this.Do(this.SetRongziRongYuan);
-            //this.Do(this.ImportCsvToMySql);
-            this.Do(this.CheckM5Data);
+            this.Do(this.ImportCsvToMySql);
+            //this.Do(this.CheckM5Data);
         }
 
         #endregion
