@@ -29,6 +29,9 @@
         private void InitializeComponent()
         {
             this.pnlButton = new System.Windows.Forms.Panel();
+            this.cmbData = new System.Windows.Forms.ComboBox();
+            this.btnDateAft = new System.Windows.Forms.Button();
+            this.btnDateBef = new System.Windows.Forms.Button();
             this.btnTestRun = new System.Windows.Forms.Button();
             this.btnChgTime = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -54,11 +57,14 @@
             this.pnlTopBody.Controls.Add(this.pnlBody);
             this.pnlTopBody.Controls.Add(this.pnlButton);
             this.pnlTopBody.Margin = new System.Windows.Forms.Padding(4);
-            this.pnlTopBody.Size = new System.Drawing.Size(602, 477);
+            this.pnlTopBody.Size = new System.Drawing.Size(752, 577);
             // 
             // pnlButton
             // 
             this.pnlButton.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlButton.Controls.Add(this.cmbData);
+            this.pnlButton.Controls.Add(this.btnDateAft);
+            this.pnlButton.Controls.Add(this.btnDateBef);
             this.pnlButton.Controls.Add(this.btnTestRun);
             this.pnlButton.Controls.Add(this.btnChgTime);
             this.pnlButton.Controls.Add(this.label1);
@@ -72,15 +78,63 @@
             this.pnlButton.Controls.Add(this.btnGetAllStock);
             this.pnlButton.Controls.Add(this.btnCreate);
             this.pnlButton.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlButton.Location = new System.Drawing.Point(0, 402);
+            this.pnlButton.Location = new System.Drawing.Point(0, 502);
             this.pnlButton.Name = "pnlButton";
-            this.pnlButton.Size = new System.Drawing.Size(602, 75);
+            this.pnlButton.Size = new System.Drawing.Size(752, 75);
             this.pnlButton.TabIndex = 0;
+            // 
+            // cmbData
+            // 
+            this.cmbData.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbData.FormattingEnabled = true;
+            this.cmbData.Items.AddRange(new object[] {
+            "显示日线",
+            "显示5分钟线",
+            "显示15分钟线",
+            "显示30分钟线",
+            "查看成功买点",
+            "查看失败买点",
+            "查看买点",
+            "查看次新",
+            "下跌递减",
+            "下跌转折",
+            "下跌转折两天",
+            "下跌转折三天",
+            "上涨转折",
+            "一路下跌",
+            "一路上涨"});
+            this.cmbData.Location = new System.Drawing.Point(300, 47);
+            this.cmbData.Name = "cmbData";
+            this.cmbData.Size = new System.Drawing.Size(105, 20);
+            this.cmbData.TabIndex = 18;
+            this.cmbData.SelectedIndexChanged += new System.EventHandler(this.cmbData_SelectedIndexChanged);
+            // 
+            // btnDateAft
+            // 
+            this.btnDateAft.Font = new System.Drawing.Font("MS UI Gothic", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.btnDateAft.Location = new System.Drawing.Point(355, 27);
+            this.btnDateAft.Name = "btnDateAft";
+            this.btnDateAft.Size = new System.Drawing.Size(47, 19);
+            this.btnDateAft.TabIndex = 17;
+            this.btnDateAft.Text = "+";
+            this.btnDateAft.UseVisualStyleBackColor = true;
+            this.btnDateAft.Click += new System.EventHandler(this.btnDateAft_Click);
+            // 
+            // btnDateBef
+            // 
+            this.btnDateBef.Font = new System.Drawing.Font("MS UI Gothic", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.btnDateBef.Location = new System.Drawing.Point(303, 27);
+            this.btnDateBef.Name = "btnDateBef";
+            this.btnDateBef.Size = new System.Drawing.Size(47, 19);
+            this.btnDateBef.TabIndex = 16;
+            this.btnDateBef.Text = "-";
+            this.btnDateBef.UseVisualStyleBackColor = true;
+            this.btnDateBef.Click += new System.EventHandler(this.btnDateBef_Click);
             // 
             // btnTestRun
             // 
             this.btnTestRun.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnTestRun.Location = new System.Drawing.Point(471, 40);
+            this.btnTestRun.Location = new System.Drawing.Point(621, 41);
             this.btnTestRun.Name = "btnTestRun";
             this.btnTestRun.Size = new System.Drawing.Size(56, 28);
             this.btnTestRun.TabIndex = 14;
@@ -92,7 +146,7 @@
             // 
             this.btnChgTime.Location = new System.Drawing.Point(300, 6);
             this.btnChgTime.Name = "btnChgTime";
-            this.btnChgTime.Size = new System.Drawing.Size(37, 62);
+            this.btnChgTime.Size = new System.Drawing.Size(105, 21);
             this.btnChgTime.TabIndex = 13;
             this.btnChgTime.Text = "Day";
             this.btnChgTime.UseVisualStyleBackColor = true;
@@ -110,7 +164,7 @@
             // btnChgDisp
             // 
             this.btnChgDisp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnChgDisp.Location = new System.Drawing.Point(533, 41);
+            this.btnChgDisp.Location = new System.Drawing.Point(683, 41);
             this.btnChgDisp.Name = "btnChgDisp";
             this.btnChgDisp.Size = new System.Drawing.Size(56, 28);
             this.btnChgDisp.TabIndex = 11;
@@ -168,7 +222,7 @@
             // lblCntInfo
             // 
             this.lblCntInfo.AutoSize = true;
-            this.lblCntInfo.Location = new System.Drawing.Point(375, 32);
+            this.lblCntInfo.Location = new System.Drawing.Point(442, 32);
             this.lblCntInfo.Name = "lblCntInfo";
             this.lblCntInfo.Size = new System.Drawing.Size(59, 12);
             this.lblCntInfo.TabIndex = 6;
@@ -176,7 +230,7 @@
             // 
             // btnAft
             // 
-            this.btnAft.Location = new System.Drawing.Point(343, 24);
+            this.btnAft.Location = new System.Drawing.Point(410, 24);
             this.btnAft.Name = "btnAft";
             this.btnAft.Size = new System.Drawing.Size(26, 28);
             this.btnAft.TabIndex = 4;
@@ -202,6 +256,7 @@
             this.btnGetAllStock.TabIndex = 1;
             this.btnGetAllStock.Text = "获取数据";
             this.btnGetAllStock.UseVisualStyleBackColor = true;
+            this.btnGetAllStock.Visible = false;
             this.btnGetAllStock.Click += new System.EventHandler(this.btnGetAllStock_Click);
             // 
             // btnCreate
@@ -212,6 +267,7 @@
             this.btnCreate.TabIndex = 0;
             this.btnCreate.Text = "画趋势图";
             this.btnCreate.UseVisualStyleBackColor = true;
+            this.btnCreate.Visible = false;
             this.btnCreate.Click += new System.EventHandler(this.btnCreate_Click);
             // 
             // pnlBody
@@ -221,7 +277,7 @@
             this.pnlBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlBody.Location = new System.Drawing.Point(0, 0);
             this.pnlBody.Name = "pnlBody";
-            this.pnlBody.Size = new System.Drawing.Size(602, 402);
+            this.pnlBody.Size = new System.Drawing.Size(752, 502);
             this.pnlBody.TabIndex = 1;
             // 
             // imgBody
@@ -229,7 +285,7 @@
             this.imgBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.imgBody.Location = new System.Drawing.Point(0, 0);
             this.imgBody.Name = "imgBody";
-            this.imgBody.Size = new System.Drawing.Size(600, 400);
+            this.imgBody.Size = new System.Drawing.Size(750, 500);
             this.imgBody.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.imgBody.TabIndex = 0;
             this.imgBody.TabStop = false;
@@ -242,10 +298,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(602, 502);
+            this.ClientSize = new System.Drawing.Size(752, 602);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(608, 530);
+            this.MaximumSize = new System.Drawing.Size(758, 630);
             this.Name = "CreateQushi";
             this.Text = "CreateQushi";
             this.pnlTopBody.ResumeLayout(false);
@@ -274,5 +330,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnChgTime;
         private System.Windows.Forms.Button btnTestRun;
+        private System.Windows.Forms.Button btnDateBef;
+        private System.Windows.Forms.Button btnDateAft;
+        private System.Windows.Forms.ComboBox cmbData;
     }
 }

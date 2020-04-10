@@ -804,7 +804,7 @@ namespace DayBatch
         /// 画趋势图
         /// </summary>
         /// <param name="stockCdData"></param>
-        private void CreateQushiImg(string stockCdData, TimeRange timeRange)
+        public void CreateQushiImg(string stockCdData, TimeRange timeRange)
         {
             // 获得数据信息
             this.subFolder = timeRange.ToString() + "/";
@@ -1079,9 +1079,19 @@ namespace DayBatch
                 dt = dt.AddDays(-1);
             }
 
-            while (Util.IsHolidayByDate(dt))
+            int holidayInfo = Util.IsHolidayByDate(dt);
+            if (holidayInfo < 0)
+            {
+                this.WriteLog("取节假日信息失败", true);
+            }
+            while (holidayInfo > 0)
             {
                 dt = dt.AddDays(-1);
+                holidayInfo = Util.IsHolidayByDate(dt);
+                if (holidayInfo < 0)
+                {
+                    this.WriteLog("取节假日信息失败", true);
+                }
             }
 
             return dt;

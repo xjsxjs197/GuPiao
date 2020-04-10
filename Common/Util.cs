@@ -9,6 +9,8 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Net;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Common
 {
@@ -1121,7 +1123,7 @@ namespace Common
         {
             DateTime dt = DateTime.Now;
 
-            while (Util.IsHolidayByDate(dt))
+            while (Util.IsHolidayByDate(dt) > 0)
             {
                 dt = dt.AddDays(-1);
             }
@@ -1133,10 +1135,9 @@ namespace Common
         /// 判断是不是周末/节假日
         /// </summary>
         /// <param name="date">日期</param>
-        /// <returns>周末和节假日返回true，工作日返回false</returns>
-        public static bool IsHolidayByDate(DateTime date)
+        /// <returns>周末和节假日返回1，工作日返回0，错误返回-1</returns>
+        public static int IsHolidayByDate(DateTime date)
         {
-            var isHoliday = false;
             try
             {
                 var day = date.DayOfWeek;
@@ -1144,22 +1145,36 @@ namespace Common
                 // 判断是否为周末
                 if (day == DayOfWeek.Sunday || day == DayOfWeek.Saturday)
                 {
-                    return true;
+                    return 1;
                 }
 
                 // 0为工作日，1为周末，2为法定节假日
-                var result = Util.HttpPost("http://tool.bitefu.net/jiari/", "d=" + date.ToString("yyyyMMdd"));
-                if (result == "1" || result == "2")
+                //var result = Util.HttpPost("http://tool.bitefu.net/jiari/", "d=" + date.ToString("yyyyMMdd"));
+                //if (result == "1" || result == "2")
+                //{
+                //    return 2;
+                //}
+                //System.Net.WebClient WebClientObj = new System.Net.WebClient();
+                //System.Collections.Specialized.NameValueCollection PostVars = new System.Collections.Specialized.NameValueCollection();
+                //PostVars.Add("d", date);
+                string strDt = date.ToString("yyyyMMdd");
+                string result = Util.HttpGet(@"http://www.easybots.cn/api/holiday.php?d=" + strDt, "", Encoding.UTF8);
+                if (!string.IsNullOrEmpty(result))
                 {
-                    isHoliday = true;
+                    JObject jo = (JObject)JsonConvert.DeserializeObject(result);
+                    return int.Parse(jo[strDt].ToString());
+                }
+                else
+                {
+                    return -2;
                 }
             }
             catch
             {
-                isHoliday = false;
+                return -1;
             }
 
-            return isHoliday;
+            return 0;
         }
 
         /// <summary>

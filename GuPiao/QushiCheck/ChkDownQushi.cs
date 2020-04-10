@@ -21,23 +21,55 @@ namespace GuPiao
         protected override bool ChkQushi(List<BaseDataInfo> stockInfos)
         {
             this.qushiDays = 0;
-            int index = 0;
-            int maxCnt = stockInfos.Count - 1;
-            while (index < maxCnt)
+            decimal bottom1 = 0;
+            decimal bottom2 = 0;
+            decimal top1 = 0;
+            decimal top2 = 0;
+
+            for (int i = 0; i < stockInfos.Count; i++)
             {
-                if (stockInfos[index].DayVal * Consts.LIMIT_VAL < stockInfos[index + 1].DayVal)
+                if (stockInfos[i].PointType == PointType.Bottom)
                 {
-                    this.qushiDays++;
-                    index++;
-                    continue;
+                    if (bottom1 == 0)
+                    {
+                        bottom1 = stockInfos[i].DayMinVal;
+                        this.qushiDays++;
+                    }
+                    else if (bottom2 == 0)
+                    {
+                        bottom2 = stockInfos[i].DayMinVal;
+                        this.qushiDays++;
+                    }
                 }
-                else
+                else if (stockInfos[i].PointType == PointType.Top)
+                {
+                    if (top1 == 0)
+                    {
+                        top1 = stockInfos[i].DayMaxVal;
+                        this.qushiDays++;
+                    }
+                    else if (top2 == 0)
+                    {
+                        top2 = stockInfos[i].DayMaxVal;
+                        this.qushiDays++;
+                    }
+                }
+
+                if (this.qushiDays == 4)
                 {
                     break;
                 }
             }
 
-            return base.IsContinueQushi();
+            if (this.qushiDays == 4)
+            {
+                if (bottom1 < bottom2 && top1 < top2)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion

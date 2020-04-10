@@ -10,6 +10,8 @@ using System.Windows.Forms;
 using Common;
 using DayBatch;
 using MySql.Data.MySqlClient;
+using DataProcess.FenXing;
+using System.Globalization;
 
 namespace GuPiao
 {
@@ -24,16 +26,6 @@ namespace GuPiao
         /// 取最多多少天数据
         /// </summary>
         private const int MAX_DAYS = 110;
-
-        /// <summary>
-        /// 趋势图X轴间隔的像素
-        /// </summary>
-        private const int IMG_X_STEP = 5;
-
-        /// <summary>
-        /// 图片的高度
-        /// </summary>
-        private const int IMG_H = 400;
 
         /// <summary>
         /// 工具的名称
@@ -158,6 +150,26 @@ namespace GuPiao
         /// </summary>
         private int oldImgWidth;
 
+        /// <summary>
+        /// 当前数据最右边的位置
+        /// </summary>
+        private int dataEndIdx;
+
+        /// <summary>
+        /// 当前趋势图文件路径
+        /// </summary>
+        private string stockImg;
+
+        /// <summary>
+        /// 是否触发日期下拉框事件
+        /// </summary>
+        private bool raiseDateChgEvent;
+
+        /// <summary>
+        /// 日期和位置的映射
+        /// </summary>
+        private Dictionary<string, int> dateIdxMap = new Dictionary<string, int>();
+
         #endregion
 
         #region " 初始化 "
@@ -172,6 +184,7 @@ namespace GuPiao
             this.subFolder = Consts.DAY_FOLDER;
             this.cmbCon.SelectedIndex = 0;
             this.pnlBody.BackColor = Color.FromArgb(199, 237, 204);
+            this.raiseDateChgEvent = false;
 
             // 重新设置页面高度
             this.ResetPageHeight();
@@ -195,6 +208,8 @@ namespace GuPiao
 
             // 显示所有信息
             this.DisplayAllStockPng(null);
+
+            this.raiseDateChgEvent = true;
         }
 
         #endregion
@@ -276,11 +291,11 @@ namespace GuPiao
             // 显示当前位置的数据信息
             this.DisplayCurDayInfo(e.X);
 
-            // 拖动图片处理
-            if (this.dragImg)
-            {
-                this.DragImg(e.X - e.X % IMG_X_STEP);
-            }
+            //// 拖动图片处理
+            //if (this.dragImg)
+            //{
+            //    this.DragImg(e.X - e.X % IMG_X_STEP);
+            //}
         }
 
         /// <summary>
@@ -319,6 +334,7 @@ namespace GuPiao
             }
 
             this.cmbCon.Enabled = false;
+            this.raiseDateChgEvent = false;
 
             // 重新设置当前显示
             this.ResetDisplay();
@@ -525,12 +541,12 @@ namespace GuPiao
                         break;
 
                     case TimeRange.M30:
-                        timeRange = TimeRange.M15;
-                        break;
-
-                    case TimeRange.M15:
                         timeRange = TimeRange.M5;
                         break;
+
+                    //case TimeRange.M15:
+                    //    timeRange = TimeRange.M5;
+                    //    break;
 
                     case TimeRange.M5:
                         timeRange = TimeRange.Day;
@@ -546,14 +562,16 @@ namespace GuPiao
                     this.imgBody.Image = null;
                 }
                 this.subFolder = timeRange.ToString() + "/";
-                this.posFromRight = 0;
-                this.RedrawQushiImg(Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
 
                 // 设置当前的数据时间
                 this.dataDate = this.GetDataDate(this.subFolder);
 
                 // 设置当前数据
                 this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
+
+                // 重新设置显示的趋势图
+                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                this.RedrawQushiImg();
             }
         }
 
@@ -564,11 +582,11 @@ namespace GuPiao
         /// <param name="e"></param>
         private void imgBody_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
-            {
-                this.dragImg = true;
-                this.oldImgX = e.X - e.X % IMG_X_STEP;
-            }
+            //if (e.Button == MouseButtons.Left)
+            //{
+            //    this.dragImg = true;
+            //    this.oldImgX = e.X - e.X % IMG_X_STEP;
+            //}
         }
 
         /// <summary>
@@ -578,8 +596,57 @@ namespace GuPiao
         /// <param name="e"></param>
         private void imgBody_MouseUp(object sender, MouseEventArgs e)
         {
-            this.dragImg = false;
-            this.Cursor = Cursors.Default;
+            //this.dragImg = false;
+            //this.Cursor = Cursors.Default;
+        }
+
+        /// <summary>
+        /// 当前日期减一天
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnDateBef_Click(object sender, EventArgs e)
+        {
+            // 设置当前的数据位置
+            this.ReSetCurEndDataIdx(this.dataEndIdx - 1);
+
+            // 重新设置显示的趋势图
+            this.RedrawQushiImg();
+        }
+
+        /// <summary>
+        /// 当前日期加一天
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnDateAft_Click(object sender, EventArgs e)
+        {
+            // 设置当前的数据位置
+            this.ReSetCurEndDataIdx(this.dataEndIdx + 1);
+
+            // 重新设置显示的趋势图
+            this.RedrawQushiImg();
+        }
+
+        /// <summary>
+        /// 当前日期变更到指定的天
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void cmbData_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!this.raiseDateChgEvent)
+            {
+                return;
+            }
+
+            this.dataEndIdx = this.dateIdxMap[this.cmbData.Items[this.cmbData.SelectedIndex].ToString()];
+
+            // 设置日期按钮状态
+            this.SetDatetimeBtnStatus();
+
+            // 重新设置显示的趋势图
+            this.RedrawQushiImg();
         }
 
         /// <summary>
@@ -592,8 +659,9 @@ namespace GuPiao
             //this.Do(this.CheckRightCd);
             //this.Do(this.ReplaceDayData);
             //this.Do(this.SetRongziRongYuan);
-            this.Do(this.ImportCsvToMySql);
+            //this.Do(this.ImportCsvToMySql);
             //this.Do(this.CheckM5Data);
+            this.Do(this.CheckHolidayDate);
         }
 
         #endregion
@@ -637,6 +705,7 @@ namespace GuPiao
             }
 
             QushiBase chkQushi = (QushiBase)param[0];
+            FenXing fenXing = new FenXing();
 
             // 取得已经存在的所有数据信息
             List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + Consts.DAY_FOLDER);
@@ -660,7 +729,7 @@ namespace GuPiao
                     continue;
                 }
 
-                if (this.ChkQushi(shortName, chkQushi))
+                if (this.ChkQushi(shortName, chkQushi, fenXing))
                 {
                     this.allStock.Add(shortName.Substring(0, 6));
                 }
@@ -687,7 +756,7 @@ namespace GuPiao
         /// </summary>
         /// <param name="stockCdData"></param>
         /// <returns></returns>
-        private bool ChkQushi(string stockCdData, QushiBase chkQushi)
+        private bool ChkQushi(string stockCdData, QushiBase chkQushi, FenXing fenXing)
         {
             // 获得数据信息
             this.subFolder = Consts.DAY_FOLDER;
@@ -697,7 +766,9 @@ namespace GuPiao
                 return false;
             }
 
-            return chkQushi.StartCheck((List<BaseDataInfo>)dataInfo["stockInfos"]);
+            List<BaseDataInfo> stockInfo = (List<BaseDataInfo>)dataInfo["stockInfos"];
+
+            return chkQushi.StartCheck(fenXing.DoFenXingComn(stockInfo));
         }
 
         #endregion
@@ -768,8 +839,8 @@ namespace GuPiao
         /// <param name="x"></param>
         private void DisplayCurDayInfo(int x)
         {
-            x -= x % IMG_X_STEP;
-            int pos = (int)((this.posFromRight + (this.imgBody.Image.Width - x - IMG_X_STEP)) / IMG_X_STEP);
+            x -= x % Consts.IMG_X_STEP;
+            int pos = (int)((this.posFromRight + (this.imgBody.Image.Width - x - Consts.IMG_X_STEP)) / Consts.IMG_X_STEP);
             if (pos >= 0 && pos <= this.curStockData.Count - 1)
             {
                 this.SetTitle(this.allStock[this.curIdx], pos);
@@ -932,9 +1003,9 @@ namespace GuPiao
             // 显示当前位置的走势图片
             if (this.curIdx >= 0 && this.curIdx <= this.allStock.Count - 1)
             {
-                string stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
                 this.posFromRight = 0;
-                this.RedrawQushiImg(stockImg);
+                this.RedrawQushiImg();
 
                 // 设置按钮可用与否
                 if (this.curIdx == 0)
@@ -958,6 +1029,12 @@ namespace GuPiao
                 // 设置当前数据
                 this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
 
+                // 重新设置日期列表
+                this.ReSetCmbData();
+
+                // 设置当前的数据位置
+                this.ReSetCurEndDataIdx(0);
+
                 // 设置当前数据名称
                 this.SetCurStockName(this.allStock[this.curIdx]);
 
@@ -980,6 +1057,71 @@ namespace GuPiao
             if (findItem != null && findItem.Code.Equals(stockCd))
             {
                 this.curStockName = findItem.Name;
+            }
+        }
+
+        /// <summary>
+        /// 重新设置日期列表
+        /// </summary>
+        private void ReSetCmbData()
+        {
+            this.raiseDateChgEvent = false;
+
+            this.dateIdxMap.Clear();
+            this.cmbData.Items.Clear();
+            List<string> dateLst = new List<string>();
+            for (int i = 0; i < this.curStockData.Count; i++)
+            {
+                string tmpDay = this.GetDateFromString(this.curStockData[i].Day.Substring(0, 8)).ToString("yyyy-MM-dd");
+                if (!dateLst.Contains(tmpDay))
+                {
+                    dateLst.Add(tmpDay);
+                    this.dateIdxMap.Add(tmpDay, i);
+                }
+            }
+
+            this.cmbData.Items.AddRange(dateLst.ToArray());
+            this.cmbData.SelectedIndex = 0;
+
+            this.raiseDateChgEvent = true;
+        }
+
+        /// <summary>
+        /// 设置当前的数据位置
+        /// </summary>
+        private void ReSetCurEndDataIdx(int idx)
+        {
+            this.dataEndIdx = idx;
+
+            this.raiseDateChgEvent = false;
+            this.cmbData.SelectedIndex = idx;
+            this.raiseDateChgEvent = true;
+
+            // 设置日期按钮状态
+            this.SetDatetimeBtnStatus();
+        }
+
+        /// <summary>
+        /// 设置日期按钮状态
+        /// </summary>
+        private void SetDatetimeBtnStatus()
+        {
+            if (this.dataEndIdx > 0)
+            {
+                this.btnDateBef.Enabled = true;
+            }
+            else
+            {
+                this.btnDateBef.Enabled = false;
+            }
+
+            if (this.dataEndIdx < this.curStockData.Count - 1)
+            {
+                this.btnDateAft.Enabled = true;
+            }
+            else
+            {
+                this.btnDateAft.Enabled = false;
             }
         }
 
@@ -1021,27 +1163,60 @@ namespace GuPiao
         /// 重新设置页面高度
         /// </summary>
         private void ResetPageHeight()
-        { 
-            if (this.imgBody.Height != IMG_H)
+        {
+            if (this.imgBody.Height != Consts.IMG_H)
             {
-                int diff = this.imgBody.Height - IMG_H;
+                int diff = this.imgBody.Height - Consts.IMG_H;
                 this.Height -= diff;
             }
+        }
+
+        /// <summary>
+        /// 重新计算图片结束位置
+        /// </summary>
+        private TimeRange ResetImgPosRight()
+        {
+            // 判断时间级别
+            TimeRange timeRange = (TimeRange)Enum.Parse(typeof(TimeRange), this.subFolder.Substring(0, this.subFolder.Length - 1));
+
+            switch (timeRange)
+            {
+                case TimeRange.Day:
+                    this.posFromRight = this.dataEndIdx * Consts.IMG_X_STEP;
+                    break;
+
+                case TimeRange.M30:
+                    this.posFromRight = this.dataEndIdx * Consts.IMG_X_STEP * 8;
+                    break;
+
+                case TimeRange.M5:
+                    this.posFromRight = this.dataEndIdx * Consts.IMG_X_STEP * 48;
+                    break;
+            }
+
+            return timeRange;
         }
 
         /// <summary>
         /// 重新设置显示的趋势图
         /// </summary>
         /// <param name="imgFile"></param>
-        private void RedrawQushiImg(string imgFile)
+        private void RedrawQushiImg()
         {
-            if (!File.Exists(imgFile))
+            // 重新计算图片结束位置
+            TimeRange timeRange = this.ResetImgPosRight();
+
+            // 重新画趋势图
+            DayBatchProcess dbp = new DayBatchProcess();
+            dbp.CreateQushiImg(this.allStock[this.curIdx] + "_" + this.dataDate, timeRange);
+
+            if (!File.Exists(this.stockImg))
             {
                 return;
             }
 
-            Image imgFrom = Image.FromFile(imgFile);
-            Bitmap imgTo = new Bitmap(this.imgBody.Width, IMG_H);
+            Image imgFrom = Image.FromFile(this.stockImg);
+            Bitmap imgTo = new Bitmap(this.imgBody.Width, Consts.IMG_H);
             Graphics grp = Graphics.FromImage(imgTo);
             this.oldImgWidth = imgFrom.Width;
             int srcImgX = imgFrom.Width - this.posFromRight;
@@ -1103,9 +1278,10 @@ namespace GuPiao
             this.posFromRight += newX - this.oldImgX;
             this.oldImgX = newX;
 
-            if (this.posFromRight % IMG_X_STEP == 0)
+            if (this.posFromRight % Consts.IMG_X_STEP == 0)
             {
-                this.RedrawQushiImg(Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png");
+                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                this.RedrawQushiImg();
             }
         }
 
@@ -1391,6 +1567,28 @@ namespace GuPiao
         #endregion
 
         #region " 测试模块 "
+
+        /// <summary>
+        /// 节假日检查
+        /// </summary>
+        private void CheckHolidayDate()
+        {
+            DateTime dt = DateTime.Now;
+            DateTime minDt = Convert.ToDateTime("1990-01-01 09:00:00"); 
+            StringBuilder sb = new StringBuilder();
+
+            while (dt.CompareTo(minDt) > 0)
+            {
+                int isHoliday = Util.IsHolidayByDate(dt);
+                if (isHoliday > 0)
+                {
+                    sb.Append(dt.ToString("yyyy-MM-dd ")).Append(isHoliday).Append("\r\n");
+                }
+
+                dt = dt.AddDays(-1);
+            }
+            File.WriteAllText(@"./Data/Holiday" + DateTime.Now.ToString("yyyyMMdd") + ".txt", sb.ToString(), Encoding.UTF8);
+        }
 
         private void CheckM5Data()
         {
@@ -1763,6 +1961,5 @@ namespace GuPiao
         #endregion
 
         #endregion
-
     }
 }
