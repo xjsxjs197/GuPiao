@@ -28,36 +28,54 @@ namespace GuPiao
 
             for (int i = 0; i < stockInfos.Count; i++)
             {
-                if (stockInfos[i].PointType == PointType.Bottom)
+                if (this.qushiDays == 0)
                 {
-                    if (bottom1 == 0)
+                    if (stockInfos[i].PointType == PointType.Bottom)
                     {
                         bottom1 = stockInfos[i].DayMinVal;
                         this.qushiDays++;
                     }
-                    else if (bottom2 == 0)
+                    else if (stockInfos[i].PointType == PointType.Top)
                     {
-                        bottom2 = stockInfos[i].DayMinVal;
-                        this.qushiDays++;
+                        break;
                     }
                 }
-                else if (stockInfos[i].PointType == PointType.Top)
+                else if (this.qushiDays == 1)
                 {
-                    if (top1 == 0)
+                    if (stockInfos[i].PointType == PointType.Bottom)
+                    {
+                        break;
+                    }
+                    else if (stockInfos[i].PointType == PointType.Top)
                     {
                         top1 = stockInfos[i].DayMaxVal;
                         this.qushiDays++;
                     }
-                    else if (top2 == 0)
+                }
+                else if (this.qushiDays == 2)
+                {
+                    if (stockInfos[i].PointType == PointType.Bottom)
+                    {
+                        bottom2 = stockInfos[i].DayMinVal;
+                        this.qushiDays++;
+                    }
+                    else if (stockInfos[i].PointType == PointType.Top)
+                    {
+                        break;
+                    }
+                }
+                else if (this.qushiDays == 3)
+                {
+                    if (stockInfos[i].PointType == PointType.Bottom)
+                    {
+                        break;
+                    }
+                    else if (stockInfos[i].PointType == PointType.Top)
                     {
                         top2 = stockInfos[i].DayMaxVal;
                         this.qushiDays++;
+                        break;
                     }
-                }
-
-                if (this.qushiDays == 4)
-                {
-                    break;
                 }
             }
 

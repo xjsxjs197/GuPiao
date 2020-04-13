@@ -21,23 +21,73 @@ namespace GuPiao
         protected override bool ChkQushi(List<BaseDataInfo> stockInfos)
         {
             this.qushiDays = 0;
-            int index = 0;
-            int maxCnt = stockInfos.Count - 1;
-            while (index < maxCnt)
+            decimal bottom1 = 0;
+            decimal bottom2 = 0;
+            decimal top1 = 0;
+            decimal top2 = 0;
+
+            for (int i = 0; i < stockInfos.Count; i++)
             {
-                if (stockInfos[index].DayVal > stockInfos[index + 1].DayVal * Consts.LIMIT_VAL)
+                if (this.qushiDays == 0)
                 {
-                    this.qushiDays++;
-                    index++;
-                    continue;
+                    if (stockInfos[i].PointType == PointType.Top)
+                    {
+                        top1 = stockInfos[i].DayMaxVal;
+                        this.qushiDays++;
+                    }
+                    else if (stockInfos[i].PointType == PointType.Bottom)
+                    {
+                        break;
+                    }
                 }
-                else
+                else if (this.qushiDays == 1)
                 {
-                    break;
+                    if (stockInfos[i].PointType == PointType.Top)
+                    {
+                        break;
+                    }
+                    else if (stockInfos[i].PointType == PointType.Bottom)
+                    {
+                        bottom1 = stockInfos[i].DayMinVal;
+                        this.qushiDays++;
+                    }
+                }
+                else if (this.qushiDays == 2)
+                {
+                    if (stockInfos[i].PointType == PointType.Top)
+                    {
+                        top2 = stockInfos[i].DayMaxVal;
+                        this.qushiDays++;
+                    }
+                    else if (stockInfos[i].PointType == PointType.Bottom)
+                    {
+                        break;
+                    }
+                }
+                else if (this.qushiDays == 3)
+                {
+                    if (stockInfos[i].PointType == PointType.Top)
+                    {
+                        break;
+                    }
+                    else if (stockInfos[i].PointType == PointType.Bottom)
+                    {
+                        bottom2 = stockInfos[i].DayMinVal;
+                        this.qushiDays++;
+                        break;
+                    }
                 }
             }
 
-            return base.IsContinueQushi();
+            if (this.qushiDays == 4)
+            {
+                if (bottom1 > bottom2 && top1 > top2)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion

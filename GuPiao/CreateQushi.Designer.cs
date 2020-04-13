@@ -57,7 +57,7 @@
             this.pnlTopBody.Controls.Add(this.pnlBody);
             this.pnlTopBody.Controls.Add(this.pnlButton);
             this.pnlTopBody.Margin = new System.Windows.Forms.Padding(4);
-            this.pnlTopBody.Size = new System.Drawing.Size(752, 577);
+            this.pnlTopBody.Size = new System.Drawing.Size(1274, 577);
             // 
             // pnlButton
             // 
@@ -80,7 +80,7 @@
             this.pnlButton.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlButton.Location = new System.Drawing.Point(0, 502);
             this.pnlButton.Name = "pnlButton";
-            this.pnlButton.Size = new System.Drawing.Size(752, 75);
+            this.pnlButton.Size = new System.Drawing.Size(1274, 75);
             this.pnlButton.TabIndex = 0;
             // 
             // cmbData
@@ -116,7 +116,7 @@
             this.btnDateAft.Name = "btnDateAft";
             this.btnDateAft.Size = new System.Drawing.Size(47, 19);
             this.btnDateAft.TabIndex = 17;
-            this.btnDateAft.Text = "+";
+            this.btnDateAft.Text = "右移动";
             this.btnDateAft.UseVisualStyleBackColor = true;
             this.btnDateAft.Click += new System.EventHandler(this.btnDateAft_Click);
             // 
@@ -127,14 +127,14 @@
             this.btnDateBef.Name = "btnDateBef";
             this.btnDateBef.Size = new System.Drawing.Size(47, 19);
             this.btnDateBef.TabIndex = 16;
-            this.btnDateBef.Text = "-";
+            this.btnDateBef.Text = "左移动";
             this.btnDateBef.UseVisualStyleBackColor = true;
             this.btnDateBef.Click += new System.EventHandler(this.btnDateBef_Click);
             // 
             // btnTestRun
             // 
             this.btnTestRun.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnTestRun.Location = new System.Drawing.Point(621, 41);
+            this.btnTestRun.Location = new System.Drawing.Point(1143, 41);
             this.btnTestRun.Name = "btnTestRun";
             this.btnTestRun.Size = new System.Drawing.Size(56, 28);
             this.btnTestRun.TabIndex = 14;
@@ -164,7 +164,7 @@
             // btnChgDisp
             // 
             this.btnChgDisp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnChgDisp.Location = new System.Drawing.Point(683, 41);
+            this.btnChgDisp.Location = new System.Drawing.Point(1205, 41);
             this.btnChgDisp.Name = "btnChgDisp";
             this.btnChgDisp.Size = new System.Drawing.Size(56, 28);
             this.btnChgDisp.TabIndex = 11;
@@ -277,7 +277,7 @@
             this.pnlBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlBody.Location = new System.Drawing.Point(0, 0);
             this.pnlBody.Name = "pnlBody";
-            this.pnlBody.Size = new System.Drawing.Size(752, 502);
+            this.pnlBody.Size = new System.Drawing.Size(1274, 502);
             this.pnlBody.TabIndex = 1;
             // 
             // imgBody
@@ -285,7 +285,7 @@
             this.imgBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.imgBody.Location = new System.Drawing.Point(0, 0);
             this.imgBody.Name = "imgBody";
-            this.imgBody.Size = new System.Drawing.Size(750, 500);
+            this.imgBody.Size = new System.Drawing.Size(1272, 500);
             this.imgBody.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.imgBody.TabIndex = 0;
             this.imgBody.TabStop = false;
@@ -298,10 +298,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(752, 602);
+            this.ClientSize = new System.Drawing.Size(1274, 602);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(758, 630);
+            this.MaximumSize = new System.Drawing.Size(1280, 630);
             this.Name = "CreateQushi";
             this.Text = "CreateQushi";
             this.pnlTopBody.ResumeLayout(false);

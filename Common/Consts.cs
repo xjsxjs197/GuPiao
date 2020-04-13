@@ -88,7 +88,7 @@ namespace Common
         /// <summary>
         /// 趋势图X轴间隔的像素
         /// </summary>
-        public const int IMG_X_STEP = 3;
+        public const int IMG_X_STEP = 2;
 
         /// <summary>
         /// 趋势图高度
