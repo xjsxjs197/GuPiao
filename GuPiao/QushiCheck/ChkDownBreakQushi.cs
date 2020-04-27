@@ -7,7 +7,7 @@ using Common;
 namespace GuPiao
 {
     /// <summary>
-    /// 下跌转折趋势检查
+    /// 最后是底分型趋势检查
     /// </summary>
     public class ChkDownBreakQushi : QushiBase
     {
@@ -25,33 +25,26 @@ namespace GuPiao
                 return false;
             }
 
-            // 最后一天开始向上走
-            if (stockInfos[0].DayVal > stockInfos[1].DayVal * Consts.LIMIT_VAL)
+            for (int i = 0; i < stockInfos.Count; i++)
             {
-                // 以前都是向下走
-                this.qushiDays = 0;
-                int index = 1;
-                int maxCnt = stockInfos.Count - 1;
-                while (index < maxCnt)
+                if (stockInfos[i].PointType == PointType.Bottom)
                 {
-                    if (stockInfos[index].DayVal * Consts.LIMIT_VAL < stockInfos[index + 1].DayVal)
+                    if (i <= 3)
                     {
-                        this.qushiDays++;
-                        index++;
-                        continue;
+                        return true;
                     }
                     else
                     {
-                        break;
+                        return false;
                     }
                 }
+                else if (stockInfos[i].PointType == PointType.Top)
+                {
+                    return false;
+                }
+            }
 
-                return base.IsContinueQushi();
-            }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         #endregion

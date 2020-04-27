@@ -97,3 +97,5 @@ Bin/DayBatch V1.0.exe
 Common/Common.csproj.user
 Bin/office.xml
 Bin/Data/DataCheck/*.*
+Bin/ChkResult/*.*
+

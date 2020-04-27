@@ -355,7 +355,7 @@ namespace GuPiao
                     this.Do(this.ThreadChkQushi, new ChkDownDecreaseQushi(), this.cmbCon, selectedText);
                     break;
 
-                case "下跌转折":
+                case "最后是底分型":
                     this.Do(this.ThreadChkQushi, new ChkDownBreakQushi(), this.cmbCon, selectedText);
                     break;
 
@@ -371,7 +371,7 @@ namespace GuPiao
                     this.Do(this.ThreadChkQushi, chkQushi, this.cmbCon, selectedText);
                     break;
 
-                case "上涨转折":
+                case "最后是顶分型":
                     this.Do(this.ThreadChkQushi, new ChkUpBreakQushi(), this.cmbCon, selectedText);
                     break;
 
@@ -392,25 +392,25 @@ namespace GuPiao
                     this.Do(this.ThreadChkQushi, new ChkCixin(), this.cmbCon, selectedText);
                     break;
 
-                case "显示日线":
+                case "所有天数据":
                     this.subFolder = Consts.DAY_FOLDER;
                     this.DisplayAllStockPng(null);
                     this.cmbCon.Enabled = true;
                     break;
 
-                case "显示5分钟线":
+                case "所有5分钟数据":
                     this.subFolder = TimeRange.M5.ToString() + "/";
                     this.DisplayAllStockPng(null);
                     this.cmbCon.Enabled = true;
                     break;
 
-                case "显示15分钟线":
+                case "所有15分钟数据":
                     this.subFolder = TimeRange.M15.ToString() + "/";
                     this.DisplayAllStockPng(null);
                     this.cmbCon.Enabled = true;
                     break;
 
-                case "显示30分钟线":
+                case "所有30分钟数据":
                     this.subFolder = TimeRange.M30.ToString() + "/";
                     this.DisplayAllStockPng(null);
                     this.cmbCon.Enabled = true;
@@ -1003,10 +1003,6 @@ namespace GuPiao
             // 显示当前位置的走势图片
             if (this.curIdx >= 0 && this.curIdx <= this.allStock.Count - 1)
             {
-                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
-                this.posFromRight = 0;
-                this.RedrawQushiImg();
-
                 // 设置按钮可用与否
                 if (this.curIdx == 0)
                 {
@@ -1028,6 +1024,10 @@ namespace GuPiao
 
                 // 设置当前数据
                 this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
+
+                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                this.posFromRight = 0;
+                this.RedrawQushiImg();
 
                 // 重新设置日期列表
                 this.ReSetCmbData();

@@ -88,21 +88,7 @@
             this.cmbData.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbData.FormattingEnabled = true;
             this.cmbData.Items.AddRange(new object[] {
-            "显示日线",
-            "显示5分钟线",
-            "显示15分钟线",
-            "显示30分钟线",
-            "查看成功买点",
-            "查看失败买点",
-            "查看买点",
-            "查看次新",
-            "下跌递减",
-            "下跌转折",
-            "下跌转折两天",
-            "下跌转折三天",
-            "上涨转折",
-            "一路下跌",
-            "一路上涨"});
+            "2020-04-18"});
             this.cmbData.Location = new System.Drawing.Point(300, 47);
             this.cmbData.Name = "cmbData";
             this.cmbData.Size = new System.Drawing.Size(105, 20);
@@ -199,21 +185,20 @@
             this.cmbCon.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbCon.FormattingEnabled = true;
             this.cmbCon.Items.AddRange(new object[] {
-            "显示日线",
-            "显示5分钟线",
-            "显示15分钟线",
-            "显示30分钟线",
+            "所有天数据",
+            "所有5分钟数据",
+            "所有30分钟数据",
+            "一路下跌",
+            "最后是底分型",
+            "一路上涨",
+            "最后是顶分型",
             "查看成功买点",
             "查看失败买点",
             "查看买点",
             "查看次新",
             "下跌递减",
-            "下跌转折",
             "下跌转折两天",
-            "下跌转折三天",
-            "上涨转折",
-            "一路下跌",
-            "一路上涨"});
+            "下跌转折三天"});
             this.cmbCon.Location = new System.Drawing.Point(154, 11);
             this.cmbCon.Name = "cmbCon";
             this.cmbCon.Size = new System.Drawing.Size(95, 20);

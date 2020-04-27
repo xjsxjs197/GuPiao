@@ -318,18 +318,18 @@ namespace DayBatch
             }
 
             string[] allLine = File.ReadAllLines(stockFile, Encoding.UTF8);
-            int maxPoints = MAX_POINTS;
+            int maxPoints = MAX_POINTS * 2;
             if (stockFile.IndexOf(TimeRange.M30.ToString()) > 0)
             {
-                maxPoints *= 8;
+                maxPoints = MAX_POINTS * 8;
             }
             else if (stockFile.IndexOf(TimeRange.M15.ToString()) > 0)
             {
-                maxPoints *= 16;
+                maxPoints = MAX_POINTS * 16;
             }
             else if (stockFile.IndexOf(TimeRange.M5.ToString()) > 0)
             {
-                maxPoints *= 48;
+                maxPoints = MAX_POINTS * 48;
             }
 
             for (int i = 1; i < allLine.Length && i <= maxPoints; i++)
