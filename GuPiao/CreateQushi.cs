@@ -1081,7 +1081,14 @@ namespace GuPiao
             }
 
             this.cmbData.Items.AddRange(dateLst.ToArray());
-            this.cmbData.SelectedIndex = 0;
+            if (this.cmbData.Items.Count > 0)
+            {
+                this.cmbData.SelectedIndex = 0;
+            }
+            else
+            {
+                this.cmbData.SelectedIndex = -1;
+            }
 
             this.raiseDateChgEvent = true;
         }
@@ -1091,14 +1098,17 @@ namespace GuPiao
         /// </summary>
         private void ReSetCurEndDataIdx(int idx)
         {
-            this.dataEndIdx = idx;
+            if (idx < this.cmbData.Items.Count)
+            {
+                this.dataEndIdx = idx;
 
-            this.raiseDateChgEvent = false;
-            this.cmbData.SelectedIndex = idx;
-            this.raiseDateChgEvent = true;
+                this.raiseDateChgEvent = false;
+                this.cmbData.SelectedIndex = idx;
+                this.raiseDateChgEvent = true;
 
-            // 设置日期按钮状态
-            this.SetDatetimeBtnStatus();
+                // 设置日期按钮状态
+                this.SetDatetimeBtnStatus();
+            }
         }
 
         /// <summary>

@@ -318,7 +318,7 @@ namespace DayBatch
             }
 
             string[] allLine = File.ReadAllLines(stockFile, Encoding.UTF8);
-            int maxPoints = MAX_POINTS * 2;
+            int maxPoints = MAX_POINTS * 4;
             if (stockFile.IndexOf(TimeRange.M30.ToString()) > 0)
             {
                 maxPoints = MAX_POINTS * 8;
@@ -837,22 +837,23 @@ namespace DayBatch
             //this.DrawStockQushi(stockInfos, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.BlackLinePen, grp, true);
             drawQushiInfo.Add(stockInfos);
 
-            //// 画均线
-            //if (timeRange == TimeRange.Day)
-            //{
-            //    // 取得5日均线信息
-            //    List<BaseDataInfo> stockInfo5Jibie = GetAverageLineInfo(stockInfos, 5);
+            // 画均线
+            decimal[] newMinMaxInfo;
+            if (timeRange == TimeRange.Day)
+            {
+                // 取得5日均线信息
+                List<BaseDataInfo> stockInfo5Jibie = GetAverageLineInfo(stockInfos, 5);
 
-            //    // 开始画5日均线
-            //    if (stockInfo5Jibie.Count > 0)
-            //    {
-            //        //this.DrawStockQushi(stockInfo5Jibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
-            //        decimal[] newMinMaxInfo = Util.GetMaxMinStock(stockInfo5Jibie);
-            //        minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
-            //        minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
-            //        drawQushiInfo.Add(stockInfos);
-            //    }
-            //}
+                // 开始画5日均线
+                if (stockInfo5Jibie.Count > 0)
+                {
+                    //this.DrawStockQushi(stockInfo5Jibie, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.GreenLinePen, grp, false);
+                    newMinMaxInfo = Util.GetMaxMinStock(stockInfo5Jibie);
+                    minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
+                    minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+                    drawQushiInfo.Add(stockInfo5Jibie);
+                }
+            }
             //else if (timeRange == TimeRange.M30)
             //{
             //    // 取得日均线信息
@@ -890,7 +891,7 @@ namespace DayBatch
                     break;
             }
             drawFenXingInfo.Add(fenXingInfo);
-            decimal[] newMinMaxInfo = Util.GetMaxMinStock(fenXingInfo);
+            newMinMaxInfo = Util.GetMaxMinStock(fenXingInfo);
             minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
             minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
 
