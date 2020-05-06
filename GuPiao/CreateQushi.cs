@@ -432,9 +432,21 @@ namespace GuPiao
         /// <param name="e"></param>
         private void txtCdSearch_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar != '\b' && !Char.IsDigit(e.KeyChar))
+            if (e.KeyChar != '\b' && e.KeyChar != '\r' && !Char.IsDigit(e.KeyChar))
             {
                 e.Handled = true;
+            }
+            else if (e.KeyChar == '\r' && this.txtCdSearch.Text.Length == 6)
+            {
+                if (this.allStock.Contains(this.txtCdSearch.Text))
+                {
+                    int idx = this.allStock.IndexOf(this.txtCdSearch.Text);
+                    if (idx >= 0)
+                    {
+                        // 重新显示当前信息
+                        this.ReDisplayStockInfo(idx);
+                    }
+                }
             }
         }
 

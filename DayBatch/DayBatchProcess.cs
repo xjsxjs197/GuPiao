@@ -871,7 +871,7 @@ namespace DayBatch
             //}
 
             // 开始画分型、笔的线段
-            List<BaseDataInfo> fenXingInfo;
+            List<BaseDataInfo> fenXingInfo = null;
             switch (timeRange)
             {
                 case TimeRange.M30:
@@ -887,13 +887,16 @@ namespace DayBatch
                     break;
 
                 default:
-                    fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
+                    //fenXingInfo = this.fenXing.DoFenXingComn(stockInfos);
                     break;
             }
-            drawFenXingInfo.Add(fenXingInfo);
-            newMinMaxInfo = Util.GetMaxMinStock(fenXingInfo);
-            minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
-            minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+            if (fenXingInfo != null)
+            {
+                drawFenXingInfo.Add(fenXingInfo);
+                newMinMaxInfo = Util.GetMaxMinStock(fenXingInfo);
+                minMaxInfo[0] = Math.Min(minMaxInfo[0], newMinMaxInfo[0]);
+                minMaxInfo[1] = Math.Max(minMaxInfo[1], newMinMaxInfo[1]);
+            }
 
             //this.DrawFenxingPen(fenXingInfo, yStep, minMaxInfo[0], imgQushi, this.drawImgInfo.DarkOrangeLinePen, grp, Consts.IMG_X_STEP);
 
