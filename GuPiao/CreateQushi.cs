@@ -359,6 +359,10 @@ namespace GuPiao
                     this.Do(this.ThreadChkQushi, new ChkDownBreakQushi(), this.cmbCon, selectedText);
                     break;
 
+                case "查看龙头股":
+                    this.ViewLongtou();
+                    break;
+
                 case "下跌转折两天":
                     chkQushi = new ChkDownBreakDaysQushi();
                     chkQushi.SetCheckDays(2);
@@ -797,6 +801,36 @@ namespace GuPiao
             string filePath = Consts.BASE_PATH + Consts.BUY_SELL_POINT_HST + file;
             string[] allPoints = File.ReadAllLines(filePath);
             
+            // 设置当前的数据时间
+            this.dataDate = this.GetDataDate(this.subFolder);
+
+            this.allStock.Clear();
+
+            foreach (string line in allPoints)
+            {
+                if (string.IsNullOrEmpty(line))
+                {
+                    break;
+                }
+
+                this.allStock.Add(line.Substring(0, 6));
+            }
+
+            // 重新显示当前信息
+            this.ReDisplayStockInfo(0);
+
+            this.cmbCon.Enabled = true;
+        }
+
+        /// <summary>
+        /// 查看龙头股
+        /// </summary>
+        private void ViewLongtou()
+        {
+            this.subFolder = TimeRange.Day.ToString() + "/";
+            string filePath = Consts.BASE_PATH + Consts.CSV_FOLDER + @"龙头股.txt";
+            string[] allPoints = File.ReadAllLines(filePath);
+
             // 设置当前的数据时间
             this.dataDate = this.GetDataDate(this.subFolder);
 
