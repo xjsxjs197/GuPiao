@@ -152,8 +152,7 @@ namespace DayBatch
             bool needGetData = true;
             bool needDrawImg = true;
             bool emuTest = false;
-            bool getAll = false;
-            bool checkData = false;
+            bool backAndCheck = false;
             if (args == null || args.Length == 0)
             {
                 hasM5 = true;
@@ -193,30 +192,17 @@ namespace DayBatch
                     {
                         emuTest = true;
                     }
-                    else if ("getAll".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    else if ("backAndCheck".Equals(param, StringComparison.OrdinalIgnoreCase))
                     {
-                        getAll = true;
-                    }
-                    else if ("checkData".Equals(param, StringComparison.OrdinalIgnoreCase))
-                    {
-                        checkData = true;
+                        backAndCheck = true;
                     }
                 }
             }
 
-            if (getAll || checkData)
+            if (backAndCheck)
             {
-                if (getAll)
-                {
-                    // 取得所有代码
-                    this.CheckAllCd();
-                }
-
-                if (checkData)
-                {
-                    // 检查并删除失效的数据
-                    this.CheckData();
-                }
+                // 备份并且取所有最新代码
+                this.BackAndCheckData();
             }
             else
             {
@@ -713,7 +699,7 @@ namespace DayBatch
             // 画15分钟趋势图
             if (hasM15)
             {
-                this.DrawQushiImg(TimeRange.M15);
+                //this.DrawQushiImg(TimeRange.M15);
             }
 
             // 画30分钟趋势图
@@ -1767,7 +1753,24 @@ namespace DayBatch
 
         #endregion
 
-        #region 取得所有最新的代码
+        #region 备份并且取所有最新代码
+
+        /// <summary>
+        /// 备份并且取所有最新代码
+        /// </summary>
+        private void BackAndCheckData()
+        {
+            this.WriteLog("开始备份数据......", true);
+
+            // 备份数据
+            string baseDir = System.AppDomain.CurrentDomain.BaseDirectory;
+            Util.CompressRarOrZip(baseDir + Consts.CSV_FOLDER, baseDir + "Data" + DateTime.Now.ToString("yyyyMMdd") + ".rar", true, "");
+
+            this.WriteLog("备份数据结束......", true);
+
+            // 检查所有可用的代码
+            this.CheckAllCd();
+        }
         
         /// <summary>
         /// 检查所有可用的代码
@@ -1920,13 +1923,14 @@ namespace DayBatch
 
                 if (lastRow != null && lastRow.Length > 2)
                 {
-                    // 取得最新的一条数据
-                    string lastDay = lastRow[0].Replace("-", "").Replace("/", "");
+                    //// 取得最新的一条数据
+                    //string lastDay = lastRow[0].Replace("-", "").Replace("/", "");
 
-                    if (endDay.Equals(lastDay) && !(lastRow[2].StartsWith("ST") || lastRow[2].StartsWith("*ST")))
-                    {
-                        allAvailableCd.Add(stockCd.ToString().PadLeft(6, '0') + " " + lastRow[2]);
-                    }
+                    //if (endDay.Equals(lastDay) && !(lastRow[2].StartsWith("ST") || lastRow[2].StartsWith("*ST")))
+                    //{
+                    //    allAvailableCd.Add(stockCd.ToString().PadLeft(6, '0') + " " + lastRow[2]);
+                    //}
+                    allAvailableCd.Add(stockCd.ToString().PadLeft(6, '0') + " " + lastRow[2]);
                 }
             }
 

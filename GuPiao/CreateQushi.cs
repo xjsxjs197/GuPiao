@@ -115,9 +115,9 @@ namespace GuPiao
         private string subFolder;
 
         /// <summary>
-        /// 所有数据信息
+        /// 保存所有的代码、名称映射信息
         /// </summary>
-        private List<BaseDataInfo> allStockCdName = new List<BaseDataInfo>();
+        private Dictionary<string, string> allStockCdName = new Dictionary<string, string>();
 
         /// <summary>
         /// 所有数据时间（天，5分钟，15分钟，30分钟）
@@ -677,7 +677,7 @@ namespace GuPiao
             //this.Do(this.SetRongziRongYuan);
             //this.Do(this.ImportCsvToMySql);
             //this.Do(this.CheckM5Data);
-            this.Do(this.CheckHolidayDate);
+            //this.Do(this.CheckHolidayDate);
         }
 
         #endregion
@@ -745,9 +745,23 @@ namespace GuPiao
                     continue;
                 }
 
+                string code = shortName.Substring(0, 6);
+                if (this.allStockCdName.ContainsKey(code))
+                {
+                    string name = this.allStockCdName[code];
+                    if (name.StartsWith("ST") || name.StartsWith("*ST"))
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+
                 if (this.ChkQushi(shortName, chkQushi, fenXing))
                 {
-                    this.allStock.Add(shortName.Substring(0, 6));
+                    this.allStock.Add(code);
                 }
 
                 // 更新进度条
@@ -1099,10 +1113,9 @@ namespace GuPiao
         private void SetCurStockName(string stockCd)
         {
             this.curStockName = string.Empty;
-            BaseDataInfo findItem = this.allStockCdName.FirstOrDefault(p => p.Code.Equals(stockCd));
-            if (findItem != null && findItem.Code.Equals(stockCd))
+            if (this.allStockCdName.ContainsKey(stockCd))
             {
-                this.curStockName = findItem.Name;
+                this.curStockName = this.allStockCdName[stockCd];
             }
         }
 
@@ -1608,12 +1621,10 @@ namespace GuPiao
                         continue;
                     }
 
-                    BaseDataInfo item = new BaseDataInfo();
-                    item.Code = codeName.Substring(0, 6);
-                    item.Name = codeName.Substring(7);
-                    this.allStockCdName.Add(item);
+                    string code = codeName.Substring(0, 6);
+                    this.allStockCdName.Add(code, codeName.Substring(7));
 
-                    allCd.Add(item.Code);
+                    allCd.Add(code);
                 }
             }
 

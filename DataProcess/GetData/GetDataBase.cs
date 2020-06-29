@@ -107,7 +107,7 @@ namespace DataProcess.GetData
             foreach (string stockCd in allStockCd)
             {
                 string startDay = this.GetExitsStock(allCsv, stockCd);
-                if (!endDay.Equals(startDay))
+                if (endDay.CompareTo(startDay) > 0)
                 {
                     needGetAllCd.Add(stockCd);
                 }

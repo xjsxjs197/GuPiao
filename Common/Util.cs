@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace Common
 {
@@ -28,6 +29,11 @@ namespace Common
         /// 要过滤的文件（不需要查询）的后缀名
         /// </summary>
         public static Dictionary<string, string> notSearchFile = Util.GetNotSearchFile();
+
+        /// <summary>
+        /// 存放节假日信息
+        /// </summary>
+        private static List<string> holidayDate = new List<string>();
 
         /// <summary>
         /// 是否需要检查Tpl文件
@@ -402,6 +408,66 @@ namespace Common
             }
 
             return string.Empty;
+        }
+
+        /// <summary>
+        /// 压缩文件成RAR或ZIP文件(需存在Winrar.exe(只要自己电脑上可以解压或压缩文件就存在Winrar.exe))
+        /// </summary>
+        /// <param name="filesPath">将要压缩的文件夹或文件的绝对路径</param>
+        /// <param name="rarPathName">压缩后的压缩文件保存绝对路径（包括文件名称）</param>
+        /// <param name="IsCover">所压缩文件是否会覆盖已有的压缩文件(如果不覆盖,所压缩文件和已存在的相同名称的压缩文件不会共同存在,只保留原已存在压缩文件)</param>
+        /// <param name="PassWord">压缩密码(如果不需要密码则为空)</param>
+        /// <returns>true(压缩成功);false(压缩失败)</returns>
+        public static bool CompressRarOrZip(string filesPath, string rarPathName, bool IsCover, string PassWord)
+        {
+            string rarPath = Path.GetDirectoryName(rarPathName);
+            if (!Directory.Exists(rarPath))
+            {
+                Directory.CreateDirectory(rarPath);
+            }
+
+            Process Process1 = new Process();
+            Process1.StartInfo.FileName = "Winrar.exe";
+            Process1.StartInfo.CreateNoWindow = true;
+
+            string cmd = "";
+            if (!string.IsNullOrEmpty(PassWord) && IsCover)
+            {
+                // 压缩加密文件且覆盖已存在压缩文件( -p密码 -o+覆盖 )
+                cmd = string.Format(" a -ep1 -p{0} -o+ {1} {2} -r", PassWord, rarPathName, filesPath);
+            }
+            else if (!string.IsNullOrEmpty(PassWord) && !IsCover)
+            {
+                // 压缩加密文件且不覆盖已存在压缩文件( -p密码 -o-不覆盖 )
+                cmd = string.Format(" a -ep1 -p{0} -o- {1} {2} -r", PassWord, rarPathName, filesPath);
+            }
+            else if (string.IsNullOrEmpty(PassWord) && IsCover)
+            {
+                // 压缩且覆盖已存在压缩文件( -o+覆盖 )
+                cmd = string.Format(" a -ep1 -o+ {0} {1} -r", rarPathName, filesPath);
+            }
+            else
+            {
+                // 压缩且不覆盖已存在压缩文件( -o-不覆盖 )
+                cmd = string.Format(" a -ep1 -o- {0} {1} -r", rarPathName, filesPath);
+            }
+            
+            // 命令
+            Process1.StartInfo.Arguments = cmd;
+            Process1.Start();
+            Process1.WaitForExit(); // 无限期等待进程 winrar.exe 退出
+
+            // Process1.ExitCode==0指正常执行，Process1.ExitCode==1则指不正常执行
+            if (Process1.ExitCode == 0)
+            {
+                Process1.Close();
+                return true;
+            }
+            else
+            {
+                Process1.Close();
+                return false;
+            }
         }
 
         #endregion
@@ -1148,25 +1214,39 @@ namespace Common
                     return 1;
                 }
 
-                // 0为工作日，1为周末，2为法定节假日
-                //var result = Util.HttpPost("http://tool.bitefu.net/jiari/", "d=" + date.ToString("yyyyMMdd"));
-                //if (result == "1" || result == "2")
-                //{
-                //    return 2;
-                //}
-                //System.Net.WebClient WebClientObj = new System.Net.WebClient();
-                //System.Collections.Specialized.NameValueCollection PostVars = new System.Collections.Specialized.NameValueCollection();
-                //PostVars.Add("d", date);
-                string strDt = date.ToString("yyyyMMdd");
-                string result = Util.HttpGet(@"http://www.easybots.cn/api/holiday.php?d=" + strDt, "", Encoding.UTF8);
-                if (!string.IsNullOrEmpty(result))
+                if (holidayDate.Count == 0)
                 {
-                    JObject jo = (JObject)JsonConvert.DeserializeObject(result);
-                    return int.Parse(jo[strDt].ToString());
+                    string[] holDate = File.ReadAllLines(System.AppDomain.CurrentDomain.BaseDirectory + Consts.CSV_FOLDER + "HolidayDate.txt", Encoding.UTF8);
+                    foreach (string line in holDate)
+                    {
+                        if (string.IsNullOrEmpty(line))
+                        {
+                            continue;
+                        }
+
+                        if (line.Length > 10)
+                        {
+                            string startDate = line.Substring(0, 10);
+                            string endDate = line.Substring(12);
+                            DateTime dt = Convert.ToDateTime(startDate);
+                            holidayDate.Add(startDate);
+                            dt = dt.AddDays(1);
+                            while (dt.ToString("yyyy/MM/dd").CompareTo(endDate) <= 0)
+                            {
+                                holidayDate.Add(dt.ToString("yyyy/MM/dd"));
+                                dt = dt.AddDays(1);
+                            }
+                        }
+                        else
+                        {
+                            holidayDate.Add(line);
+                        }
+                    }
                 }
-                else
+
+                if (holidayDate.Contains(date.ToString("yyyy/MM/dd")))
                 {
-                    return -2;
+                    return 2;
                 }
             }
             catch
