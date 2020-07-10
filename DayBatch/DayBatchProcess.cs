@@ -105,6 +105,11 @@ namespace DayBatch
         /// </summary>
         private DrawImgInfo drawImgInfo;
 
+        /// <summary>
+        /// 保存所有的代码、名称映射信息
+        /// </summary>
+        private Dictionary<string, string> allStockCdName = new Dictionary<string, string>();
+
         #endregion
 
         #region " 初始化 "
@@ -936,8 +941,13 @@ namespace DayBatch
                 }
             }
 
+            // 写名称
+            string stockCd = stockCdData.Substring(0, 6);
+            grp.DrawString(this.allStockCdName[stockCd], this.drawImgInfo.NameFont,
+                                this.drawImgInfo.BlueVioletBush, 10, 10);
+
             // 保存图片
-            imgQushi.Save(this.basePath + Consts.IMG_FOLDER + this.subFolder + stockCdData.Substring(0, 6) + ".png");
+            imgQushi.Save(this.basePath + Consts.IMG_FOLDER + this.subFolder + stockCd + ".png");
 
             // 释放Graphics和图片资源
             grp.Dispose();
@@ -1024,6 +1034,7 @@ namespace DayBatch
         private void GetAllStockBaseInfo()
         {
             this.allStockCd.Clear();
+            this.allStockCdName.Clear();
 
             string[] allLine = File.ReadAllLines(this.basePath + Consts.CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
             if (allLine != null && allLine.Length > 0)
@@ -1035,7 +1046,9 @@ namespace DayBatch
                         continue;
                     }
 
-                    this.allStockCd.Add(codeName.Substring(0, 6));
+                    string code = codeName.Substring(0, 6);
+                    this.allStockCd.Add(code);
+                    this.allStockCdName.Add(code, codeName.Substring(7));
                 }
             }
         }
@@ -1098,6 +1111,7 @@ namespace DayBatch
             this.drawImgInfo.BlueVioletBush = new SolidBrush(Color.BlueViolet);
             this.drawImgInfo.BuySellFont = new Font(new FontFamily("Microsoft YaHei"), 6, FontStyle.Bold);
             this.drawImgInfo.NormalFont = new Font(new FontFamily("Microsoft YaHei"), 8, FontStyle.Regular);
+            this.drawImgInfo.NameFont = new Font(new FontFamily("Microsoft YaHei"), 16, FontStyle.Regular);
 
             this.drawImgInfo.DashLinePen = new Pen(Color.FromArgb(50, Color.Gray));
             this.drawImgInfo.DashLinePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Custom;

@@ -37,6 +37,11 @@ namespace Common
         public Font NormalFont { get; set; }
 
         /// <summary>
+        /// 名称文字的字体
+        /// </summary>
+        public Font NameFont { get; set; }
+
+        /// <summary>
         /// 画虚线的笔
         /// </summary>
         public Pen DashLinePen { get; set; }

@@ -850,6 +850,15 @@ namespace GuPiao
 
             this.allStock.Clear();
 
+            // 将图片Copy过去
+            string stockCd = string.Empty;
+            string folder = Consts.BASE_PATH + Consts.RESULT_FOLDER + "龙头股";
+            if (Directory.Exists(folder))
+            {
+                Directory.Delete(folder, true);
+            }
+            Directory.CreateDirectory(folder);
+
             foreach (string line in allPoints)
             {
                 if (string.IsNullOrEmpty(line))
@@ -857,7 +866,12 @@ namespace GuPiao
                     break;
                 }
 
-                this.allStock.Add(line.Substring(0, 6));
+                stockCd = line.Substring(0, 6);
+                this.allStock.Add(stockCd);
+
+                // Copy图片
+                string pngFile = @"\" + stockCd + ".png";
+                File.Copy(Consts.BASE_PATH + Consts.IMG_FOLDER + TimeRange.M30.ToString() + pngFile, folder + pngFile, true);
             }
 
             // 重新显示当前信息
@@ -1503,17 +1517,29 @@ namespace GuPiao
                 return;
             }
 
-            StringBuilder sb = new StringBuilder();
-            foreach (string shortName in this.allStock)
+            // 将图片Copy过去
+            string folder = Consts.BASE_PATH + Consts.RESULT_FOLDER + fileName;
+            if (Directory.Exists(folder))
             {
-                string[] allLine = this.GetStockFileContent(shortName);
+                Directory.Delete(folder, true);
+            }
+            Directory.CreateDirectory(folder);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (string stockCd in this.allStock)
+            {
+                string[] allLine = this.GetStockFileContent(stockCd);
                 if (allLine != null && allLine.Length > 2)
                 {
-                    sb.Append(shortName).Append(" ");
+                    sb.Append(stockCd).Append(" ");
 
                     string[] lineData = allLine[1].Split(',');
                     sb.Append(lineData[2]).Append(" ").Append(lineData[3]).Append("\r\n");
                 }
+
+                // Copy图片
+                string pngFile = @"\" + stockCd + ".png";
+                File.Copy(Consts.BASE_PATH + Consts.IMG_FOLDER + TimeRange.M30.ToString() + pngFile, folder + pngFile, true);
             }
 
             File.WriteAllText(Consts.BASE_PATH + Consts.RESULT_FOLDER + fileName + ".txt", sb.ToString(), Encoding.UTF8);
