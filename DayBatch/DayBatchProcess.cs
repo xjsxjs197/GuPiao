@@ -943,7 +943,7 @@ namespace DayBatch
 
             // 写名称
             string stockCd = stockCdData.Substring(0, 6);
-            grp.DrawString(this.allStockCdName[stockCd], this.drawImgInfo.NameFont,
+            grp.DrawString(stockCd + "_" + this.allStockCdName[stockCd] + "  " + stockInfos[0].DayVal.ToString(), this.drawImgInfo.NameFont,
                                 this.drawImgInfo.BlueVioletBush, 10, 10);
 
             // 保存图片
@@ -1124,6 +1124,8 @@ namespace DayBatch
             this.drawImgInfo.DarkOrangeLinePen = new Pen(Color.DarkOrange, 1F);
             this.drawImgInfo.DarkGreenLinePen = new Pen(Color.DarkGreen, 1F);
             this.drawImgInfo.DarkBlueLinePen = new Pen(Color.DarkBlue, 1F);
+
+            this.GetAllStockBaseInfo();
         }
 
         /// <summary>
@@ -1375,7 +1377,18 @@ namespace DayBatch
                 x2 += xStep;
                 if (fenXingInfo[index].PointType == PointType.Bottom || fenXingInfo[index].PointType == PointType.Top || index == 0)
                 {
-                    curVal = fenXingInfo[index].PointType == PointType.Top ? fenXingInfo[index].DayMaxVal : fenXingInfo[index].DayMinVal;
+                    if (fenXingInfo[index].PointType == PointType.Top)
+                    {
+                        curVal = fenXingInfo[index].DayMaxVal;
+                    }
+                    else if (fenXingInfo[index].PointType == PointType.Bottom)
+                    {
+                        curVal = fenXingInfo[index].DayMinVal;
+                    }
+                    else
+                    {
+                        curVal = fenXingInfo[index].DayVal;
+                    }
                     y2 = this.GetYPos(img.Height, curVal, minVal, yStep);
 
                     grp.DrawLine(pen, x1, y1, x2, y2);

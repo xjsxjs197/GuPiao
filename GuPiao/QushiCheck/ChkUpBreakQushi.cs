@@ -29,7 +29,7 @@ namespace GuPiao
             {
                 if (stockInfos[i].PointType == PointType.Top)
                 {
-                    if (i <= 3)
+                    if (i <= QUSHI_MIN_LEN)
                     {
                         return true;
                     }

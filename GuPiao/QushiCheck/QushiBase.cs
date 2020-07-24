@@ -24,6 +24,16 @@ namespace GuPiao
         protected const int CIXIN_MIN_DAY = 25;
 
         /// <summary>
+        /// 判断趋势时，上涨或下跌的力度
+        /// </summary>
+        protected const decimal UP_DOWN_DIFF = 1.15M;
+
+        /// <summary>
+        /// 查找趋势时，转折点离现在的最小的长度
+        /// </summary>
+        protected const int QUSHI_MIN_LEN = 3;
+
+        /// <summary>
         /// 检查的天数
         /// </summary>
         protected int checkDays;

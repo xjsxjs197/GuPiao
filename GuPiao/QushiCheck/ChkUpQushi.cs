@@ -81,7 +81,7 @@ namespace GuPiao
 
             if (this.qushiDays == 4)
             {
-                if (bottom1 > bottom2 && top1 > top2)
+                if (bottom1 > bottom2 * UP_DOWN_DIFF && top1 > top2 * UP_DOWN_DIFF)
                 {
                     return true;
                 }
