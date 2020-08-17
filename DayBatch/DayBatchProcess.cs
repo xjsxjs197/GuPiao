@@ -158,6 +158,7 @@ namespace DayBatch
             bool needDrawImg = true;
             bool emuTest = false;
             bool backAndCheck = false;
+            bool delInvalidData = false;
             if (args == null || args.Length == 0)
             {
                 hasM5 = true;
@@ -201,6 +202,10 @@ namespace DayBatch
                     {
                         backAndCheck = true;
                     }
+                    else if ("delInvalidData".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        delInvalidData = true;
+                    }
                 }
             }
 
@@ -208,6 +213,11 @@ namespace DayBatch
             {
                 // 备份并且取所有最新代码
                 this.BackAndCheckData();
+            }
+            else if (delInvalidData)
+            {
+                // 删除无效数据
+                this.CheckData();
             }
             else
             {
@@ -943,7 +953,18 @@ namespace DayBatch
 
             // 写名称
             string stockCd = stockCdData.Substring(0, 6);
-            grp.DrawString(stockCd + "_" + this.allStockCdName[stockCd] + "  " + stockInfos[0].DayVal.ToString(), this.drawImgInfo.NameFont,
+            string stockNm = string.Empty;
+            if (this.allStockCdName.ContainsKey(stockCd))
+            {
+                stockNm = this.allStockCdName[stockCd];
+            }
+            else
+            {
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + this.currentFile + "\r\n", Encoding.UTF8);
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + stockCd + "对应的名称不存在！\r\n", Encoding.UTF8);
+            }
+
+            grp.DrawString(stockCd + "_" + stockNm + "  " + stockInfos[0].DayVal.ToString(), this.drawImgInfo.NameFont,
                                 this.drawImgInfo.BlueVioletBush, 10, 10);
 
             // 保存图片
@@ -1977,10 +1998,9 @@ namespace DayBatch
             List<string> delCdLst = new List<string>();
             this.GetAllStockBaseInfo();
 
-            this.CheckCsvData(TimeRange.Day, dt.ToString("yyyyMMdd"), delCdLst);
-            this.CheckCsvData(TimeRange.M30, dt.ToString("yyyyMMdd150000"), delCdLst);
-            //this.CheckCsvData(TimeRange.M15, dt.ToString("yyyyMMdd150000"), delCdLst);
-            this.CheckCsvData(TimeRange.M5, dt.ToString("yyyyMMdd150000"), delCdLst);
+            this.CheckCsvData(TimeRange.Day, delCdLst);
+            this.CheckCsvData(TimeRange.M30, delCdLst);
+            this.CheckCsvData(TimeRange.M5, delCdLst);
 
             if (delCdLst.Count > 0)
             {
@@ -1997,7 +2017,7 @@ namespace DayBatch
         /// 检查数据
         /// </summary>
         /// <param name="timeRange"></param>
-        private void CheckCsvData(TimeRange timeRange, string dt, List<string> delCdLst)
+        private void CheckCsvData(TimeRange timeRange, List<string> delCdLst)
         {
             // 取得已经存在的所有数据信息
             this.subFolder = timeRange.ToString() + "/";
