@@ -1917,7 +1917,32 @@ namespace DayBatch
             }
             this.WriteLog("600000--603999数据检查完了......", true);
 
-            File.WriteAllLines(Consts.BASE_PATH + Consts.CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
+            StringBuilder sb = new StringBuilder();
+            string[] oldAllLine = File.ReadAllLines(this.basePath + Consts.CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
+            foreach (string cdName in oldAllLine) 
+            {
+                if (string.IsNullOrEmpty(cdName))
+                {
+                    continue;
+                }
+
+                if (!allAvailableCd.Contains(cdName))
+                {
+                    sb.Append(cdName).Append("\r\n");
+                }
+            }
+
+            if (sb.Length > 0)
+            {
+                this.WriteLog("追加了如下数据：\r\n", false);
+                this.WriteLog(sb.ToString(), false);
+            }
+            else
+            {
+                this.WriteLog("个数没有变化", false);
+            }
+
+            File.WriteAllLines(this.basePath + Consts.CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
         }
 
         /// <summary>
