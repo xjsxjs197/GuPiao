@@ -130,11 +130,6 @@ namespace GuPiao
         private bool needRaiseEvent = true;
 
         /// <summary>
-        /// 是否正在拖拽图片
-        /// </summary>
-        private bool dragImg = false;
-
-        /// <summary>
         /// 当前显示图片的位置信息
         /// （向右移动了多少，IMG_X_STEP的整倍数）
         /// </summary>
@@ -170,6 +165,11 @@ namespace GuPiao
         /// </summary>
         private Dictionary<string, int> dateIdxMap = new Dictionary<string, int>();
 
+        /// <summary>
+        /// 记录虚线框信息
+        /// </summary>
+        private List<int> posInfo = new List<int>();
+
         #endregion
 
         #region " 初始化 "
@@ -181,13 +181,17 @@ namespace GuPiao
         {
             InitializeComponent();
 
-            this.subFolder = Consts.DAY_FOLDER;
+            this.subFolder = TimeRange.M30.ToString() + "/";
+            this.btnChgTime.Text = TimeRange.M30.ToString();
             this.cmbCon.SelectedIndex = 0;
             this.pnlBody.BackColor = Color.FromArgb(199, 237, 204);
             this.raiseDateChgEvent = false;
 
             // 重新设置页面高度
             this.ResetPageHeight();
+
+            // 设置日期控件
+            this.SetDateValue();
 
             this.oldPnlBodyHeight = this.pnlBody.Height;
             this.Height -= this.oldPnlBodyHeight;
@@ -270,6 +274,11 @@ namespace GuPiao
                 return;
             }
 
+            if (this.posInfo.Count > 2)
+            {
+                return;
+            }
+
             // 实例化一个和窗口一样大的位图
             Bitmap imgBk = new Bitmap(this.imgBody.Image.Width, this.imgBody.Image.Height);
             // 创建位图的gdi对象
@@ -278,24 +287,45 @@ namespace GuPiao
             Pen p = new Pen(Color.Blue, 1.0f);
             // 指定线条的样式为划线段
             p.DashStyle = DashStyle.Dash;
-            // 根据当前位置，画横线和竖线
-            g.DrawLine(p, 0, e.Y, imgBk.Width - 1, e.Y);
-            g.DrawLine(p, e.X, 0, e.X, imgBk.Height - 1);
+
+            if (this.posInfo.Count == 0)
+            {
+                // 显示当前位置的数据信息，并且取得当前点的坐标
+                int posX = e.X - (e.X % Consts.IMG_X_STEP);
+                int posY = this.DisplayCurDayInfo(posX);
+
+                // 根据当前位置，画横线和竖线
+                if (posY >= 0)
+                {
+                    g.DrawLine(p, 0, posY, imgBk.Width - 1, posY);
+                    g.DrawLine(p, posX, 0, posX, imgBk.Height - 1);
+                }
+            }
+            else if (this.posInfo.Count == 2)
+            {
+                int posX1 = this.posInfo[0];
+                int posY1 = this.posInfo[1];
+
+                int posX2 = e.X - (e.X % Consts.IMG_X_STEP);
+                int xVal = (int)((this.posFromRight + (this.imgBody.Image.Width - posX2 - Consts.IMG_X_STEP)) / Consts.IMG_X_STEP);
+                int posY2 = Util.GetPosYByX(this.curStockData, xVal, this.imgBody.Image.Height);
+                this.DisplayDiffInfo(posX1, posX2);
+
+                // 根据当前位置，画横线和竖线
+                if (posY1 >= 0 && posY2 >= 0)
+                {
+                    g.DrawLine(p, posX1, posY1, posX2, posY1);
+                    g.DrawLine(p, posX1, posY2, posX2, posY2);
+                    g.DrawLine(p, posX1, posY1, posX1, posY2);
+                    g.DrawLine(p, posX2, posY1, posX2, posY2);
+                }
+            }
 
             // 将位图贴到窗口上
             this.imgBody.BackgroundImage = imgBk;
             // 释放gid和pen资源
             g.Dispose();
             p.Dispose();
-
-            // 显示当前位置的数据信息
-            this.DisplayCurDayInfo(e.X);
-
-            //// 拖动图片处理
-            //if (this.dragImg)
-            //{
-            //    this.DragImg(e.X - e.X % IMG_X_STEP);
-            //}
         }
 
         /// <summary>
@@ -319,6 +349,35 @@ namespace GuPiao
 
             // 显示当前位置的数据信息
             this.SetTitle(this.allStock[this.curIdx], 0);
+        }
+
+        /// <summary>
+        /// 单击鼠标，选中范围
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void imgBody_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (this.imgBody.Image == null)
+            {
+                return;
+            }
+
+            if (e.Button == MouseButtons.Left)
+            {
+                if (this.posInfo.Count < 4)
+                {
+                    int posX = e.X - (e.X % Consts.IMG_X_STEP);
+                    int xVal = (int)((this.posFromRight + (this.imgBody.Image.Width - posX - Consts.IMG_X_STEP)) / Consts.IMG_X_STEP);
+                    int posY = Util.GetPosYByX(this.curStockData, xVal, this.imgBody.Image.Height);
+                    this.posInfo.Add(posX);
+                    this.posInfo.Add(posY);
+                }
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                this.posInfo.Clear();
+            }
         }
 
         /// <summary>
@@ -557,16 +616,16 @@ namespace GuPiao
                         break;
 
                     case TimeRange.M30:
-                        timeRange = TimeRange.M5;
+                        timeRange = TimeRange.Day;
                         break;
 
                     //case TimeRange.M15:
                     //    timeRange = TimeRange.M5;
                     //    break;
 
-                    case TimeRange.M5:
-                        timeRange = TimeRange.Day;
-                        break;
+                    //case TimeRange.M5:
+                    //    timeRange = TimeRange.Day;
+                    //    break;
                 }
 
                 this.btnChgTime.Text = timeRange.ToString();
@@ -586,34 +645,9 @@ namespace GuPiao
                 this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
 
                 // 重新设置显示的趋势图
-                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + Consts.IMG_TYPE;
                 this.RedrawQushiImg();
             }
-        }
-
-        /// <summary>
-        /// 处理图片拖拽开始
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void imgBody_MouseDown(object sender, MouseEventArgs e)
-        {
-            //if (e.Button == MouseButtons.Left)
-            //{
-            //    this.dragImg = true;
-            //    this.oldImgX = e.X - e.X % IMG_X_STEP;
-            //}
-        }
-
-        /// <summary>
-        /// 处理图片拖拽结束
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void imgBody_MouseUp(object sender, MouseEventArgs e)
-        {
-            //this.dragImg = false;
-            //this.Cursor = Cursors.Default;
         }
 
         /// <summary>
@@ -663,6 +697,16 @@ namespace GuPiao
 
             // 重新设置显示的趋势图
             this.RedrawQushiImg();
+        }
+
+        /// <summary>
+        /// 跟踪当前数据
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnSaveData_Click(object sender, EventArgs e)
+        {
+            this.SaveStockImg();
         }
 
         /// <summary>
@@ -721,7 +765,7 @@ namespace GuPiao
             }
 
             QushiBase chkQushi = (QushiBase)param[0];
-            FenXing fenXing = new FenXing();
+            FenXing fenXing = new FenXing(true);
 
             // 取得已经存在的所有数据信息
             List<FilePosInfo> allCsv = Util.GetAllFiles(Consts.BASE_PATH + Consts.CSV_FOLDER + Consts.DAY_FOLDER);
@@ -798,12 +842,54 @@ namespace GuPiao
 
             List<BaseDataInfo> stockInfo = (List<BaseDataInfo>)dataInfo["stockInfos"];
 
-            return chkQushi.StartCheck(fenXing.DoFenXingComn(stockInfo));
+            if (chkQushi is ChkDownBreakDaysQushi)
+            {
+                decimal[]  minMaxInfo = (decimal[])dataInfo["minMaxInfo"];
+                return DayBatchProcess.ChkAllFirstBuyPoints(fenXing.DoFenXingComn(stockInfo), minMaxInfo);
+            }
+            else
+            {
+                return chkQushi.StartCheck(fenXing.DoFenXingComn(stockInfo));
+            }
+        }
+
+        /// <summary>
+        /// 跟踪当前数据
+        /// </summary>
+        private void SaveStockImg()
+        { 
+            if (this.dtStart.Value == null)
+            {
+                MessageBox.Show("开始日期不能为空");
+                return;
+            }
+
+            if (this.dtStart.Value > this.dtEnd.Value)
+            {
+                MessageBox.Show("开始日期不能超过结束日期");
+                return;
+            }
+
+            // 重新画趋势图
+            DayBatchProcess dbp = new DayBatchProcess();
+            dbp.SaveM30QushiImg(this.allStock[this.curIdx] + "_" + this.dataDate, this.dtStart.Value.ToString("yyyy/MM/dd"), this.dtEnd.Value.ToString("yyyy/MM/dd"));
+
+            MessageBox.Show("设定范围内的数据已经保存");
         }
 
         #endregion
 
         #region " 画面显示相关 "
+
+        /// <summary>
+        /// 设置日期控件
+        /// </summary>
+        private void SetDateValue()
+        {
+            DateTime now = DateTime.Now;
+            this.dtEnd.Value = now;
+            this.dtStart.Value = now.AddDays(-7);
+        }
 
         /// <summary>
         /// 查看模拟的买卖点
@@ -870,7 +956,7 @@ namespace GuPiao
                 this.allStock.Add(stockCd);
 
                 // Copy图片
-                string pngFile = @"\" + stockCd + ".png";
+                string pngFile = @"\" + stockCd + Consts.IMG_TYPE;
                 File.Copy(Consts.BASE_PATH + Consts.IMG_FOLDER + TimeRange.M30.ToString() + pngFile, folder + pngFile, true);
             }
 
@@ -911,13 +997,63 @@ namespace GuPiao
         /// 显示当前位置的数据信息
         /// </summary>
         /// <param name="x"></param>
-        private void DisplayCurDayInfo(int x)
+        private int DisplayCurDayInfo(int x)
         {
-            x -= x % Consts.IMG_X_STEP;
             int pos = (int)((this.posFromRight + (this.imgBody.Image.Width - x - Consts.IMG_X_STEP)) / Consts.IMG_X_STEP);
             if (pos >= 0 && pos <= this.curStockData.Count - 1)
             {
                 this.SetTitle(this.allStock[this.curIdx], pos);
+            }
+
+            return Util.GetPosYByX(this.curStockData, pos, this.imgBody.Image.Height);
+        }
+
+        /// <summary>
+        /// 显示连个位置间的数据增量信息
+        /// </summary>
+        /// <param name="x"></param>
+        private void DisplayDiffInfo(int x1, int x2)
+        {
+            int pos1 = (int)((this.posFromRight + (this.imgBody.Image.Width - x1 - Consts.IMG_X_STEP)) / Consts.IMG_X_STEP);
+            int pos2 = (int)((this.posFromRight + (this.imgBody.Image.Width - x2 - Consts.IMG_X_STEP)) / Consts.IMG_X_STEP);
+            if (pos1 >= 0 && pos1 <= this.curStockData.Count - 1
+                && pos2 >= 0 && pos2 <= this.curStockData.Count - 1)
+            {
+
+                decimal value1 = this.curStockData[pos1].DayVal;
+                decimal value2 = this.curStockData[pos2].DayVal;
+                decimal tmp, lastVal;
+                int idx;
+                if (pos1 < pos2)
+                {
+                    tmp = (value2 - value1) * 100 / value1;
+                    idx = pos2;
+                    lastVal = value2;
+                }
+                else
+                {
+                    tmp = (value1 - value2) * 100 / value2;
+                    idx = pos1;
+                    lastVal = value1;
+                }
+
+                StringBuilder sb = new StringBuilder();
+                sb.Append(this.allStock[this.curIdx]).Append(" ");
+                sb.Append(this.curStockName).Append(" ");
+
+                DateTime dt = this.GetDateFromString(this.curStockData[idx].Day);
+                if (this.curStockData[idx].Day.Length == 8)
+                {
+                    sb.Append(dt.ToString("yy年MM月dd日  "));
+                }
+                else
+                {
+                    sb.Append(dt.ToString("yy年MM月dd日 HH:mm  "));
+                }
+                sb.Append(lastVal).Append("(");
+                sb.Append(tmp.ToString("0.00")).Append(")");
+
+                this.Text = TITLE + sb.ToString();
             }
         }
 
@@ -1099,7 +1235,7 @@ namespace GuPiao
                 // 设置当前数据
                 this.SetCurStockData(this.allStock[this.curIdx] + "_" + this.dataDate);
 
-                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + Consts.IMG_TYPE;
                 this.posFromRight = 0;
                 this.RedrawQushiImg();
 
@@ -1363,7 +1499,7 @@ namespace GuPiao
 
             if (this.posFromRight % Consts.IMG_X_STEP == 0)
             {
-                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + ".png";
+                this.stockImg = Consts.BASE_PATH + Consts.IMG_FOLDER + this.subFolder + this.allStock[this.curIdx] + Consts.IMG_TYPE;
                 this.RedrawQushiImg();
             }
         }
@@ -1538,7 +1674,7 @@ namespace GuPiao
                 }
 
                 // Copy图片
-                string pngFile = @"\" + stockCd + ".png";
+                string pngFile = @"\" + stockCd + Consts.IMG_TYPE;
                 File.Copy(Consts.BASE_PATH + Consts.IMG_FOLDER + TimeRange.M30.ToString() + pngFile, folder + pngFile, true);
             }
 

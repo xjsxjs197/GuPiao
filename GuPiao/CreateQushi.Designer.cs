@@ -29,6 +29,12 @@
         private void InitializeComponent()
         {
             this.pnlButton = new System.Windows.Forms.Panel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.label2 = new System.Windows.Forms.Label();
+            this.dtEnd = new System.Windows.Forms.DateTimePicker();
+            this.label3 = new System.Windows.Forms.Label();
+            this.dtStart = new System.Windows.Forms.DateTimePicker();
+            this.btnSaveData = new System.Windows.Forms.Button();
             this.cmbData = new System.Windows.Forms.ComboBox();
             this.btnDateAft = new System.Windows.Forms.Button();
             this.btnDateBef = new System.Windows.Forms.Button();
@@ -48,6 +54,7 @@
             this.imgBody = new System.Windows.Forms.PictureBox();
             this.pnlTopBody.SuspendLayout();
             this.pnlButton.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.pnlBody.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.imgBody)).BeginInit();
             this.SuspendLayout();
@@ -57,11 +64,12 @@
             this.pnlTopBody.Controls.Add(this.pnlBody);
             this.pnlTopBody.Controls.Add(this.pnlButton);
             this.pnlTopBody.Margin = new System.Windows.Forms.Padding(4);
-            this.pnlTopBody.Size = new System.Drawing.Size(1274, 577);
+            this.pnlTopBody.Size = new System.Drawing.Size(1274, 576);
             // 
             // pnlButton
             // 
             this.pnlButton.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlButton.Controls.Add(this.panel1);
             this.pnlButton.Controls.Add(this.cmbData);
             this.pnlButton.Controls.Add(this.btnDateAft);
             this.pnlButton.Controls.Add(this.btnDateBef);
@@ -78,10 +86,67 @@
             this.pnlButton.Controls.Add(this.btnGetAllStock);
             this.pnlButton.Controls.Add(this.btnCreate);
             this.pnlButton.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlButton.Location = new System.Drawing.Point(0, 502);
+            this.pnlButton.Location = new System.Drawing.Point(0, 501);
             this.pnlButton.Name = "pnlButton";
             this.pnlButton.Size = new System.Drawing.Size(1274, 75);
             this.pnlButton.TabIndex = 0;
+            // 
+            // panel1
+            // 
+            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Controls.Add(this.label2);
+            this.panel1.Controls.Add(this.dtEnd);
+            this.panel1.Controls.Add(this.label3);
+            this.panel1.Controls.Add(this.dtStart);
+            this.panel1.Controls.Add(this.btnSaveData);
+            this.panel1.Location = new System.Drawing.Point(519, -1);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(299, 75);
+            this.panel1.TabIndex = 20;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(14, 44);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(53, 12);
+            this.label2.TabIndex = 23;
+            this.label2.Text = "结束日期";
+            // 
+            // dtEnd
+            // 
+            this.dtEnd.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtEnd.Location = new System.Drawing.Point(73, 39);
+            this.dtEnd.Name = "dtEnd";
+            this.dtEnd.Size = new System.Drawing.Size(99, 19);
+            this.dtEnd.TabIndex = 22;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(14, 19);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(53, 12);
+            this.label3.TabIndex = 21;
+            this.label3.Text = "开始日期";
+            // 
+            // dtStart
+            // 
+            this.dtStart.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtStart.Location = new System.Drawing.Point(73, 14);
+            this.dtStart.Name = "dtStart";
+            this.dtStart.Size = new System.Drawing.Size(99, 19);
+            this.dtStart.TabIndex = 20;
+            // 
+            // btnSaveData
+            // 
+            this.btnSaveData.Location = new System.Drawing.Point(188, 22);
+            this.btnSaveData.Name = "btnSaveData";
+            this.btnSaveData.Size = new System.Drawing.Size(90, 28);
+            this.btnSaveData.TabIndex = 19;
+            this.btnSaveData.Text = "跟踪当前数据";
+            this.btnSaveData.UseVisualStyleBackColor = true;
+            this.btnSaveData.Click += new System.EventHandler(this.btnSaveData_Click);
             // 
             // cmbData
             // 
@@ -161,7 +226,7 @@
             // txtCdSearch
             // 
             this.txtCdSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtCdSearch.Font = new System.Drawing.Font("SimSun", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.txtCdSearch.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.txtCdSearch.ImeMode = System.Windows.Forms.ImeMode.Disable;
             this.txtCdSearch.Location = new System.Drawing.Point(154, 42);
             this.txtCdSearch.Margin = new System.Windows.Forms.Padding(2);
@@ -263,12 +328,11 @@
             this.pnlBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlBody.Location = new System.Drawing.Point(0, 0);
             this.pnlBody.Name = "pnlBody";
-            this.pnlBody.Size = new System.Drawing.Size(1274, 502);
+            this.pnlBody.Size = new System.Drawing.Size(1274, 501);
             this.pnlBody.TabIndex = 1;
             // 
             // imgBody
             // 
-            this.imgBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.imgBody.Location = new System.Drawing.Point(0, 0);
             this.imgBody.Name = "imgBody";
             this.imgBody.Size = new System.Drawing.Size(1272, 500);
@@ -277,14 +341,13 @@
             this.imgBody.TabStop = false;
             this.imgBody.MouseLeave += new System.EventHandler(this.imgBody_MouseLeave);
             this.imgBody.MouseMove += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseMove);
-            this.imgBody.MouseDown += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseDown);
-            this.imgBody.MouseUp += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseUp);
+            this.imgBody.MouseClick += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseClick);
             // 
             // CreateQushi
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1274, 602);
+            this.ClientSize = new System.Drawing.Size(1274, 601);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
             this.MaximumSize = new System.Drawing.Size(1280, 630);
@@ -293,6 +356,8 @@
             this.pnlTopBody.ResumeLayout(false);
             this.pnlButton.ResumeLayout(false);
             this.pnlButton.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.pnlBody.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.imgBody)).EndInit();
             this.ResumeLayout(false);
@@ -319,5 +384,11 @@
         private System.Windows.Forms.Button btnDateBef;
         private System.Windows.Forms.Button btnDateAft;
         private System.Windows.Forms.ComboBox cmbData;
+        private System.Windows.Forms.Button btnSaveData;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.DateTimePicker dtEnd;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.DateTimePicker dtStart;
     }
 }

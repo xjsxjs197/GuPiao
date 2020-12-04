@@ -1389,6 +1389,26 @@ namespace Common
         }
 
         /// <summary>
+        /// 根据x的位置，取得当天的值所在的Y的位置
+        /// </summary>
+        /// <param name="stockInfos"></param>
+        /// <param name="xPos"></param>
+        /// <returns></returns>
+        public static int GetPosYByX(List<BaseDataInfo> stockInfos, int xPos, int imgH)
+        {
+            if (stockInfos.Count == 0 || xPos >= stockInfos.Count)
+            {
+                return -1;
+            }
+
+            decimal[] minMaxInfo = GetMaxMinStock(stockInfos);
+            decimal yStep = GetYstep(minMaxInfo);
+            decimal pointVal = stockInfos[xPos].DayVal;
+
+            return (imgH - ((int)((pointVal - minMaxInfo[0]) * yStep) + 10));
+        }
+
+        /// <summary>
         /// 可以买多少数量的取得
         /// </summary>
         /// <param name="money"></param>

@@ -28,9 +28,30 @@ namespace DataProcess.FenXing
         /// </summary>
         private List<decimal> bottomPoints = new List<decimal>();
 
+        /// <summary>
+        /// 是否设置检查点标识
+        /// </summary>
+        private bool needSetCheckPoint = false;
+
         #endregion
 
         #region " 公有方法 "
+
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        public FenXing()
+        {
+            this.needSetCheckPoint = false;
+        }
+
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        public FenXing(bool needSetCheckPoint)
+        {
+            this.needSetCheckPoint = needSetCheckPoint;
+        }
 
         /// <summary>
         /// 分型处理(共通)
@@ -283,6 +304,15 @@ namespace DataProcess.FenXing
             }
         }
 
+        /// <summary>
+        /// 是否设置检查点标识
+        /// </summary>
+        /// <param name="needSetCheckPoint"></param>
+        public void SetCheckPoint(bool needSetCheckPoint)
+        {
+            this.needSetCheckPoint = needSetCheckPoint;
+        }
+
         #endregion
 
         #region " 私有方法 "
@@ -316,6 +346,10 @@ namespace DataProcess.FenXing
                     if (this.IsRangeOk(lastIdx, maxCnt, this.hstData))
                     {
                         lastChkPoint.PointType = PointType.Bottom;
+                        if (this.needSetCheckPoint)
+                        {
+                            curPoint.CheckPoint = -1;
+                        }
                     }
                 }
                 else if (curPoint.PointType == PointType.Down && lastChkPoint.PointType == PointType.Up)
@@ -324,6 +358,10 @@ namespace DataProcess.FenXing
                     if (this.IsRangeOk(lastIdx, maxCnt, this.hstData))
                     {
                         lastChkPoint.PointType = PointType.Top;
+                        if (this.needSetCheckPoint)
+                        {
+                            curPoint.CheckPoint = 1;
+                        }
                     }
                 }
 

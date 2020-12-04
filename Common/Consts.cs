@@ -86,6 +86,11 @@ namespace Common
         public const string BASE_PATH = @"./";
 
         /// <summary>
+        /// 趋势图后缀
+        /// </summary>
+        public const string IMG_TYPE = ".png";
+
+        /// <summary>
         /// 趋势图X轴间隔的像素
         /// </summary>
         public const int IMG_X_STEP = 2;
@@ -104,5 +109,10 @@ namespace Common
         /// 初始化价格时的最大值
         /// </summary>
         public const decimal MAX_VAL = (decimal)8000;
+
+        /// <summary>
+        /// 最小检查天数
+        /// </summary>
+        public const int CHK_MIN_DATE = 3;
     }
 }

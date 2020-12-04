@@ -56,6 +56,12 @@ namespace Common
         public PointType PointType { get; set; }
 
         /// <summary>
+        /// 到当前的点时，判断出了前一个点的类型
+        /// -1：前一个是低点，1：前一个是高点
+        /// </summary>
+        public int CheckPoint { get; set; }
+
+        /// <summary>
         /// 当前笔的分型
         /// </summary>
         public PointType PenType { get; set; }
