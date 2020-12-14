@@ -135,6 +135,8 @@
     <Compile Include="QushiCheck\QushiBase.cs" />
     <Compile Include="AutoTrade\TradeEventSink.cs" />
     <Compile Include="AutoTrade\TradeUtil.cs" />
+    <Compile Include="QushiCheck\ChkContinueTopQushi.cs" />
+    <Compile Include="QushiCheck\ChkContinueBottomQushi.cs" />
     <Compile Include="SaveDataCon.cs">
       <SubType>Form</SubType>
     </Compile>

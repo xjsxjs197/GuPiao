@@ -428,7 +428,7 @@ namespace GuPiao
                     this.Do(this.ThreadChkQushi, chkQushi, this.cmbCon, selectedText);
                     break;
 
-                case "下跌转折三天":
+                case "第一类买点":
                     chkQushi = new ChkDownBreakDaysQushi();
                     chkQushi.SetCheckDays(3);
                     this.Do(this.ThreadChkQushi, chkQushi, this.cmbCon, selectedText);
@@ -479,6 +479,14 @@ namespace GuPiao
                     this.cmbCon.Enabled = true;
                     break;
 
+                case "连续涨停":
+                    this.Do(this.ThreadChkQushi, new ChkContinueTopQushi(), this.cmbCon, selectedText);
+                    break;
+
+                case "连续跌停":
+                    this.Do(this.ThreadChkQushi, new ChkContinueBottomQushi(), this.cmbCon, selectedText);
+                    break;
+
                 default:
                     // 显示所有信息
                     this.subFolder = Consts.DAY_FOLDER;
@@ -495,20 +503,45 @@ namespace GuPiao
         /// <param name="e"></param>
         private void txtCdSearch_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar != '\b' && e.KeyChar != '\r' && !Char.IsDigit(e.KeyChar))
+            if (e.KeyChar == '\r')
             {
-                e.Handled = true;
-            }
-            else if (e.KeyChar == '\r' && this.txtCdSearch.Text.Length == 6)
-            {
-                if (this.allStock.Contains(this.txtCdSearch.Text))
+                if (string.IsNullOrEmpty(this.txtCdSearch.Text))
                 {
-                    int idx = this.allStock.IndexOf(this.txtCdSearch.Text);
-                    if (idx >= 0)
+                    e.Handled = true;
+                    return;
+                }
+
+                string searchTxt = this.txtCdSearch.Text.Trim();
+                int tmpCd;
+                if (int.TryParse(searchTxt, out tmpCd))
+                {
+                    searchTxt.PadLeft(6, '0');
+                    if (this.allStock.Contains(searchTxt))
                     {
-                        // 重新显示当前信息
-                        this.ReDisplayStockInfo(idx);
+                        int idx = this.allStock.IndexOf(searchTxt);
+                        if (idx >= 0)
+                        {
+                            // 重新显示当前信息
+                            this.ReDisplayStockInfo(idx);
+                        }
                     }
+                }
+                else
+                {
+                    this.allStock.Clear();
+
+                    foreach (KeyValuePair<string, string> cdName in this.allStockCdName)
+                    {
+                        if (cdName.Value.IndexOf(searchTxt) >= 0)
+                        {
+                            this.allStock.Add(cdName.Key);
+                        }
+                    }
+
+                    // 重新显示当前信息
+                    this.ReDisplayStockInfo(0);
+
+                    this.cmbCon.Enabled = true;
                 }
             }
         }
@@ -927,12 +960,13 @@ namespace GuPiao
         /// </summary>
         private void ViewLongtou()
         {
-            this.subFolder = TimeRange.Day.ToString() + "/";
+            this.subFolder = TimeRange.M30.ToString() + "/";
+            string tmpFolder = TimeRange.Day.ToString() + "/";
             string filePath = Consts.BASE_PATH + Consts.CSV_FOLDER + @"龙头股.txt";
             string[] allPoints = File.ReadAllLines(filePath);
 
             // 设置当前的数据时间
-            this.dataDate = this.GetDataDate(this.subFolder);
+            this.dataDate = this.GetDataDate(tmpFolder);
 
             this.allStock.Clear();
 
@@ -1026,15 +1060,15 @@ namespace GuPiao
                 int idx;
                 if (pos1 < pos2)
                 {
-                    tmp = (value2 - value1) * 100 / value1;
-                    idx = pos2;
-                    lastVal = value2;
-                }
-                else
-                {
                     tmp = (value1 - value2) * 100 / value2;
                     idx = pos1;
                     lastVal = value1;
+                }
+                else
+                {
+                    tmp = (value2 - value1) * 100 / value1;
+                    idx = pos2;
+                    lastVal = value2;
                 }
 
                 StringBuilder sb = new StringBuilder();
@@ -1134,19 +1168,15 @@ namespace GuPiao
             this.needRaiseEvent = false;
             if (this.subFolder.Equals(Consts.DAY_FOLDER))
             {
-                this.cmbCon.SelectedIndex = 0;
+                this.cmbCon.SelectedItem = "所有天数据";
             }
             else if (this.subFolder.Equals(TimeRange.M5.ToString() + "/"))
             {
-                this.cmbCon.SelectedIndex = 1;
-            }
-            else if (this.subFolder.Equals(TimeRange.M15.ToString() + "/"))
-            {
-                this.cmbCon.SelectedIndex = 2;
+                this.cmbCon.SelectedItem = "所有5分钟数据";
             }
             else if (this.subFolder.Equals(TimeRange.M30.ToString() + "/"))
             {
-                this.cmbCon.SelectedIndex = 3;
+                this.cmbCon.SelectedItem = "所有30分钟数据";
             }
             this.needRaiseEvent = true;
         }

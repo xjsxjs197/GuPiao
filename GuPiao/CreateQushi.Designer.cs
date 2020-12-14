@@ -227,7 +227,7 @@
             // 
             this.txtCdSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtCdSearch.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.txtCdSearch.ImeMode = System.Windows.Forms.ImeMode.Disable;
+            this.txtCdSearch.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.txtCdSearch.Location = new System.Drawing.Point(154, 42);
             this.txtCdSearch.Margin = new System.Windows.Forms.Padding(2);
             this.txtCdSearch.MaxLength = 6;
@@ -250,21 +250,23 @@
             this.cmbCon.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbCon.FormattingEnabled = true;
             this.cmbCon.Items.AddRange(new object[] {
+            "第一类买点",
+            "一路上涨",
+            "最后是顶分型",
+            "连续涨停",
+            "一路下跌",
+            "最后是底分型",
+            "连续跌停",
+            "查看龙头股",
             "所有天数据",
             "所有5分钟数据",
             "所有30分钟数据",
-            "一路下跌",
-            "最后是底分型",
-            "一路上涨",
-            "最后是顶分型",
-            "查看龙头股",
             "查看成功买点",
             "查看失败买点",
             "查看买点",
             "查看次新",
             "下跌递减",
-            "下跌转折两天",
-            "下跌转折三天"});
+            "下跌转折两天"});
             this.cmbCon.Location = new System.Drawing.Point(154, 11);
             this.cmbCon.Name = "cmbCon";
             this.cmbCon.Size = new System.Drawing.Size(95, 20);
