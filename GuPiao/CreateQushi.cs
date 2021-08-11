@@ -757,6 +757,16 @@ namespace GuPiao
             //this.Do(this.CheckHolidayDate);
         }
 
+        /// <summary>
+        /// 对比两点趋势
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnViewDiff_Click(object sender, EventArgs e)
+        {
+            // 查看两点的趋势差异
+            this.ViewTwoPointDiff();
+        }
         #endregion
 
         #region " 私有方法 "
@@ -887,19 +897,38 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// 跟踪当前数据
+        /// 查看两点的趋势差异
         /// </summary>
-        private void SaveStockImg()
-        { 
-            if (this.dtStart.Value == null)
+        private void ViewTwoPointDiff()
+        {
+            if (this.IsRangDateRight() == false)
             {
-                MessageBox.Show("开始日期不能为空");
                 return;
             }
 
-            if (this.dtStart.Value > this.dtEnd.Value)
+            // 重新画趋势图
+            DayBatchProcess dbp = new DayBatchProcess();
+            string img = dbp.ViewTwoPointQushiImg(this.allStock[this.curIdx] + "_" + this.dataDate, this.dtStart.Value.ToString("yyyy/MM/dd"), this.dtEnd.Value.ToString("yyyy/MM/dd"));
+
+            if (string.IsNullOrEmpty(img))
             {
-                MessageBox.Show("开始日期不能超过结束日期");
+                MessageBox.Show("重新画趋势图发生错误");
+            }
+            else
+            {
+                // 重新显示图片
+                this.stockImg = img;
+                this.ResetImg(0);
+            }
+        }
+
+        /// <summary>
+        /// 跟踪当前数据
+        /// </summary>
+        private void SaveStockImg()
+        {
+            if (this.IsRangDateRight() == false)
+            {
                 return;
             }
 
@@ -908,6 +937,27 @@ namespace GuPiao
             dbp.SaveM30QushiImg(this.allStock[this.curIdx] + "_" + this.dataDate, this.dtStart.Value.ToString("yyyy/MM/dd"), this.dtEnd.Value.ToString("yyyy/MM/dd"));
 
             MessageBox.Show("设定范围内的数据已经保存");
+        }
+
+        /// <summary>
+        /// 检查日期范围是否正确
+        /// </summary>
+        /// <returns></returns>
+        private bool IsRangDateRight()
+        {
+            if (this.dtStart.Value == null)
+            {
+                MessageBox.Show("开始日期不能为空");
+                return false;
+            }
+
+            if (this.dtStart.Value > this.dtEnd.Value)
+            {
+                MessageBox.Show("开始日期不能超过结束日期");
+                return false;
+            }
+
+            return true;
         }
 
         #endregion
@@ -1464,11 +1514,21 @@ namespace GuPiao
                 return;
             }
 
+            // 重新显示图片
+            this.ResetImg(this.posFromRight);
+        }
+
+        /// <summary>
+        /// 重新显示图片
+        /// </summary>
+        /// <param name="posFromRight"></param>
+        private void ResetImg(int posFromRight)
+        {
             Image imgFrom = Image.FromFile(this.stockImg);
             Bitmap imgTo = new Bitmap(this.imgBody.Width, Consts.IMG_H);
             Graphics grp = Graphics.FromImage(imgTo);
             this.oldImgWidth = imgFrom.Width;
-            int srcImgX = imgFrom.Width - this.posFromRight;
+            int srcImgX = imgFrom.Width - posFromRight;
             int toImgX = 0;
             Rectangle srcRect;
             if (srcImgX <= imgTo.Width)

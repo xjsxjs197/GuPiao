@@ -18,7 +18,7 @@ namespace GuPiaoTool
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new CreateQushi());            
+            Application.Run(new CreateQushi());
         }
     }
 }

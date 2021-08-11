@@ -85,6 +85,12 @@
     </Compile>
     <Compile Include="AutoTrade\AutoTradeReal.cs">
     </Compile>
+    <Compile Include="RealTimeInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RealTimeInfo.Designer.cs">
+      <DependentUpon>RealTimeInfo.cs</DependentUpon>
+    </Compile>
     <Compile Include="QushiCheck\ChkUpQushi.cs" />
     <Compile Include="QushiCheck\ChkDownQushi.cs" />
     <Compile Include="QushiCheck\ChkDownBreakQushi.cs" />
@@ -105,6 +111,10 @@
     </EmbeddedResource>
     <EmbeddedResource Include="CreateQushi.resx">
       <DependentUpon>CreateQushi.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RealTimeInfo.resx">
+      <DependentUpon>RealTimeInfo.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">

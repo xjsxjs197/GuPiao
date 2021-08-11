@@ -151,6 +151,17 @@ namespace GuPiao
             }
         }
 
+        /// <summary>
+        /// 启动实时信息画面
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnViewToday_Click(object sender, EventArgs e)
+        {
+            ReadTimeInfo info = new ReadTimeInfo();
+            info.Show();
+        }
+
         #endregion
 
         #region 私有方法

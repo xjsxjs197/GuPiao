@@ -85,13 +85,13 @@
             // 
             // btnViewToday
             // 
-            this.btnViewToday.Enabled = false;
             this.btnViewToday.Location = new System.Drawing.Point(130, 12);
             this.btnViewToday.Name = "btnViewToday";
             this.btnViewToday.Size = new System.Drawing.Size(83, 33);
             this.btnViewToday.TabIndex = 3;
-            this.btnViewToday.Text = "当日情况";
+            this.btnViewToday.Text = "实时信息";
             this.btnViewToday.UseVisualStyleBackColor = true;
+            this.btnViewToday.Click += new System.EventHandler(this.btnViewToday_Click);
             // 
             // btnQushi
             // 

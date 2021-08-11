@@ -60,6 +60,7 @@ namespace GuPiao
         string loginId = "";         ///你的登录账号
         string loginPw = "";
         string deptId = "";
+        string clentVer = ""; /// 客户端版本
 
         #endregion
 
@@ -780,6 +781,7 @@ namespace GuPiao
             loginId = baseInfos[2]; // ///你的登录账号
             loginPw = baseInfos[3];
             deptId = baseInfos[4];
+            clentVer = baseInfos[5];
 
             cmbAccountType.Items.Clear();
             cmbAccountType.Items.Add("模拟");
@@ -848,7 +850,7 @@ namespace GuPiao
 
                 /// 设置通讯版本(请查看自己券商的TDX版本)，初始化结果异步通过事件通知
                 /// 设置最大连接数，默认传1(最好跟调用登录前设置的服务器主机数量一致)
-                m_StockTrade.Init("8.04", 1);
+                m_StockTrade.Init(this.clentVer, 1);
             }
             else
             {

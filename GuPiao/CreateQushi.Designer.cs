@@ -52,6 +52,7 @@
             this.btnCreate = new System.Windows.Forms.Button();
             this.pnlBody = new System.Windows.Forms.Panel();
             this.imgBody = new System.Windows.Forms.PictureBox();
+            this.btnViewDiff = new System.Windows.Forms.Button();
             this.pnlTopBody.SuspendLayout();
             this.pnlButton.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -94,6 +95,7 @@
             // panel1
             // 
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Controls.Add(this.btnViewDiff);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.dtEnd);
             this.panel1.Controls.Add(this.label3);
@@ -140,11 +142,11 @@
             // 
             // btnSaveData
             // 
-            this.btnSaveData.Location = new System.Drawing.Point(188, 22);
+            this.btnSaveData.Location = new System.Drawing.Point(190, 11);
             this.btnSaveData.Name = "btnSaveData";
-            this.btnSaveData.Size = new System.Drawing.Size(90, 28);
+            this.btnSaveData.Size = new System.Drawing.Size(90, 24);
             this.btnSaveData.TabIndex = 19;
-            this.btnSaveData.Text = "跟踪当前数据";
+            this.btnSaveData.Text = "保存历史趋势";
             this.btnSaveData.UseVisualStyleBackColor = true;
             this.btnSaveData.Click += new System.EventHandler(this.btnSaveData_Click);
             // 
@@ -345,6 +347,16 @@
             this.imgBody.MouseMove += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseMove);
             this.imgBody.MouseClick += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseClick);
             // 
+            // btnViewDiff
+            // 
+            this.btnViewDiff.Location = new System.Drawing.Point(190, 38);
+            this.btnViewDiff.Name = "btnViewDiff";
+            this.btnViewDiff.Size = new System.Drawing.Size(90, 24);
+            this.btnViewDiff.TabIndex = 24;
+            this.btnViewDiff.Text = "对比两点趋势";
+            this.btnViewDiff.UseVisualStyleBackColor = true;
+            this.btnViewDiff.Click += new System.EventHandler(this.btnViewDiff_Click);
+            // 
             // CreateQushi
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -392,5 +404,6 @@
         private System.Windows.Forms.DateTimePicker dtEnd;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.DateTimePicker dtStart;
+        private System.Windows.Forms.Button btnViewDiff;
     }
 }
