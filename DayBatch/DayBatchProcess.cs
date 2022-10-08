@@ -157,6 +157,15 @@ namespace DayBatch
             bool delInvalidData = false;
             if (args == null || args.Length == 0)
             {
+                if (Util.IsHolidayByDate(DateTime.Now) > 0)
+                {
+                    string errLog = "节假日不用取数据，如果强制取得数据，需要命令后面追加各种参数";
+                    Console.WriteLine();
+                    Console.WriteLine(errLog);
+                    File.AppendAllText(logFile, errLog + "\r\n", Encoding.UTF8);
+                    return;
+                }
+
                 hasM5 = true;
                 hasM15 = true;
                 hasM30 = true;
