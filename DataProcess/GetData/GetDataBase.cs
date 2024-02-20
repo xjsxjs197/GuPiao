@@ -124,9 +124,29 @@ namespace DataProcess.GetData
             this.AfterSub();
         }
 
+        /// <summary>
+        /// 检查股票代码是否存在，如果存在返回代码、名称
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <returns></returns>
+        public string CheckStockCd(string stockCd)
+        {
+            return this.StartCheckStockCd(stockCd);
+        }
+
         #endregion
 
         #region " 子类可以重写的虚方法 "
+
+        /// <summary>
+        /// 检查股票代码是否存在，如果存在返回代码、名称
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <param name="allCsv"></param>
+        protected virtual string StartCheckStockCd(string stockCd)
+        {
+            return null;
+        }
 
         /// <summary>
         /// 开始获取数据

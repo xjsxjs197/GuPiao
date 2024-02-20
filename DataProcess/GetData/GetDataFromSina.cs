@@ -82,6 +82,55 @@ namespace DataProcess.GetData
         #region " 子类重写父类的虚方法 "
 
         /// <summary>
+        /// 检查股票代码是否存在，如果存在返回代码、名称的数组
+        /// </summary>
+        /// <param name="stockCd"></param>
+        /// <param name="allCsv"></param>
+        protected override string StartCheckStockCd(string stockCd)
+        {
+            stockCd = stockCd.PadLeft(6, '0');
+
+            Encoding encoding = Encoding.GetEncoding("GBK");
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("http://suggest3.sinajs.cn/suggest/type=11&key=").Append(stockCd);
+
+            // 取截止今天为止的所有数据
+            string result = Util.HttpGet(sb.ToString(), "", encoding);
+            if (!string.IsNullOrEmpty(result) && !"null".Equals(result, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string codeInfo;
+                // 判断类型
+                if (stockCd.StartsWith("6"))
+                {
+                    codeInfo = "sh" + stockCd;
+                }
+                else
+                {
+                    codeInfo = "sz" + stockCd;
+                }
+
+                try
+                {
+                    int idx = result.LastIndexOf(codeInfo);
+                    if (idx > 0)
+                    {
+                        // sh000002,A股指数,
+                        int nameStartIdx = idx + 9;
+                        int nameEndIdx = result.IndexOf(",", nameStartIdx);
+                        return stockCd + " " + result.Substring(nameStartIdx, nameEndIdx - nameStartIdx);
+                    }
+                }
+                catch (Exception e)
+                {
+                    return "处理Json " + stockCd + " 数据时发生异常：\r\n" + result + "\r\n" + e.Message + "\r\n" + e.StackTrace;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// 开始获取数据
         /// </summary>
         /// <param name="stockCd"></param>

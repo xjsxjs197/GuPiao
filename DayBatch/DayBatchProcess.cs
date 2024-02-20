@@ -2300,6 +2300,7 @@ namespace DayBatch
             DateTime dt = Util.GetAvailableDt();
             string endDay = dt.AddDays(-1).ToString("yyyyMMdd");
             string startDay = dt.AddDays(-9).ToString("yyyyMMdd");
+            this.getData = new GetDataFromSina(this.basePath + Consts.CSV_FOLDER, endDay, TimeRange.Day);
 
             // 设置进度条
             DosProgressBar dosProgressBar = new DosProgressBar();
@@ -2313,7 +2314,8 @@ namespace DayBatch
 
             for (int i = 1; i <= 3000; i++)
             {
-                this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+                //this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+                this.CheckAvailableCdSina(i, allAvailableCd);
 
                 // 更新进度条
                 if (this.callRowEnd != null)
@@ -2342,7 +2344,8 @@ namespace DayBatch
 
             for (int i = 300001; i <= 300999; i++)
             {
-                this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+                //this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+                this.CheckAvailableCdSina(i, allAvailableCd);
 
                 // 更新进度条
                 if (this.callRowEnd != null)
@@ -2371,7 +2374,8 @@ namespace DayBatch
 
             for (int i = 600000; i <= 603999; i++)
             {
-                this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+                //this.CheckAvailableCd163(i, allAvailableCd, endDay, startDay);
+                this.CheckAvailableCdSina(i, allAvailableCd);
 
                 // 更新进度条
                 if (this.callRowEnd != null)
@@ -2389,6 +2393,7 @@ namespace DayBatch
             this.WriteLog("600000--603999数据检查完了......", true);
 
             StringBuilder sb = new StringBuilder();
+            // 判断删除的数据
             string[] oldAllLine = File.ReadAllLines(this.basePath + Consts.CSV_FOLDER + "AllStockInfo.txt", Encoding.UTF8);
             foreach (string cdName in oldAllLine) 
             {
@@ -2402,18 +2407,50 @@ namespace DayBatch
                     sb.Append(cdName).Append("\r\n");
                 }
             }
-
             if (sb.Length > 0)
             {
-                this.WriteLog("追加了如下数据：\r\n", false);
+                this.WriteLog("删除了如下数据：\r\n", false);
                 this.WriteLog(sb.ToString(), false);
             }
-            else
+
+            // 判断新增的数据
+            sb.Length = 0;
+            List<string> oldAllStock = new List<string>();
+            oldAllStock.AddRange(oldAllLine);
+            foreach (string cdName in allAvailableCd)
             {
-                this.WriteLog("个数没有变化", false);
+                if (string.IsNullOrEmpty(cdName))
+                {
+                    continue;
+                }
+
+                if (!oldAllStock.Contains(cdName))
+                {
+                    sb.Append(cdName).Append("\r\n");
+                }
+            }
+            if (sb.Length > 0)
+            {
+                this.WriteLog("新增了如下数据：\r\n", false);
+                this.WriteLog(sb.ToString(), false);
             }
 
             File.WriteAllLines(this.basePath + Consts.CSV_FOLDER + "AllStockInfo.txt", allAvailableCd.ToArray(), Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// 检查可用的代码
+        /// </summary>
+        /// <param name="stockCd"></param>
+        private string CheckAvailableCdSina(int stockCd, List<string> allAvailableCd)
+        {
+            string cdName = this.getData.CheckStockCd(stockCd.ToString());
+            if (!string.IsNullOrEmpty(cdName))
+            {
+                allAvailableCd.Add(cdName);
+            }
+
+            return string.Empty;
         }
 
         /// <summary>
