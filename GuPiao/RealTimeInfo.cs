@@ -242,8 +242,8 @@ namespace GuPiao
         {
             try
             {
-                // 从Sina取得基础数据
-                string url = "http://hq.sinajs.cn/list=" + string.Join(",", noList.ToArray());
+                // 从腾讯接口取得基础数据
+                string url = "http://qt.gtimg.cn/q=" + string.Join(",", noList.ToArray());
                 string data = "";
                 string result = Util.HttpGet(url, data, Encoding.UTF8);
                 if (!string.IsNullOrEmpty(result) && result.Length > 20)
@@ -362,7 +362,7 @@ namespace GuPiao
                 }
 
                 string[] lines = guPiao[i].Split('=');
-                string[] details = lines[1].Split(',');
+                string[] details = lines[1].Split('~');
 
                 GuPiaoInfo item = this.guPiaoInfo.FirstOrDefault(p => p.fundcode.Equals(noList[i]));
                 if (item == null)
@@ -370,8 +370,8 @@ namespace GuPiao
                     item = new GuPiaoInfo();
                     item.fundcode = noList[i];
                     item.name = nameList[i];
-                    item.jinriKaipanVal = details[1];
-                    item.zuoriShoupanVal = details[2];
+                    item.jinriKaipanVal = details[5];
+                    item.zuoriShoupanVal = details[4];
 
                     item.secCounter = 1;
                     item.valsList = new List<float>();
@@ -382,34 +382,34 @@ namespace GuPiao
                 }
                 
                 item.currentVal      = details[3];
-                item.zuigaoVal       = details[4];
-                item.zuidiVal        = details[5];
-                item.jingmaiInVal    = details[6];
-                item.jingmaiOutVal   = details[7];
-                item.chengjiaoShu    = details[8];
-                item.chengjiaoJine   = details[9];
-                item.gushuIn1        = details[10];
-                item.valIn1          = details[11];
-                item.gushuIn2        = details[12];
-                item.valIn2          = details[13];
-                item.gushuIn3        = details[14];
-                item.valIn3          = details[15];
-                item.gushuIn4        = details[16];
-                item.valIn4          = details[17];
-                item.gushuIn5        = details[18];
-                item.valIn5          = details[19];
-                item.gushuOut1       = details[20];
-                item.valOut1         = details[21];
-                item.gushuOut2       = details[22];
-                item.valOut2         = details[23];
-                item.gushuOut3       = details[24];
-                item.valOut3         = details[25];
-                item.gushuOut4       = details[26];
-                item.valOut4         = details[27];
-                item.gushuOut5       = details[28];
-                item.valOut5         = details[29];
-                item.date            = details[30];
-                item.time            = details[31];
+                item.zuigaoVal       = details[32];
+                item.zuidiVal        = details[33];
+                item.jingmaiInVal    = details[9];
+                item.jingmaiOutVal   = details[19];
+                item.chengjiaoShu    = details[6];
+                item.chengjiaoJine   = details[56];
+                item.gushuIn1        = details[9];
+                item.valIn1          = details[10];
+                item.gushuIn2        = details[11];
+                item.valIn2          = details[12];
+                item.gushuIn3        = details[13];
+                item.valIn3          = details[14];
+                item.gushuIn4        = details[15];
+                item.valIn4          = details[16];
+                item.gushuIn5        = details[17];
+                item.valIn5          = details[18];
+                item.gushuOut1       = details[19];
+                item.valOut1         = details[20];
+                item.gushuOut2       = details[21];
+                item.valOut2         = details[22];
+                item.gushuOut3       = details[23];
+                item.valOut3         = details[24];
+                item.gushuOut4       = details[25];
+                item.valOut4         = details[26];
+                item.gushuOut5       = details[27];
+                item.valOut5         = details[28];
+                item.date            = ""; // details[29];
+                item.time            = ""; //details[30];
 
                 // 每个时间段检查一次数据
                 if (item.secCounter < VAL_CHK_RANGE)
