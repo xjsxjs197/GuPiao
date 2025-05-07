@@ -434,6 +434,7 @@ namespace DayBatch
                     string tmpDay = allItems[0].Replace("-", "").Replace(" ", "").Replace(":", "");
                     if (string.Compare(tmpDay.Substring(0, 8), endDate) > 0)
                     {
+                        maxPoints++;
                         continue;
                     }
 

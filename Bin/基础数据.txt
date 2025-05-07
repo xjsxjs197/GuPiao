@@ -1,5 +1,9 @@
 ﻿#编号     名称    简写
 sh000001 上证指数 szzs
-sz000848 承德露露 cdll
-sz000683 远兴能源 yxny
-sz002341 新纶科技 xlkj
+sz000651 格力电器 gldq
+sh600938 中国海油 zhsy
+sh600941 中国移动 zgyd
+sz000670 盈方微   yfw
+sz001206 依依股份 yygf
+sz001210 金房能源 jfny
+sz001215 千味央厨 qwyc
