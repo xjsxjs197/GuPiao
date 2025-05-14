@@ -12,6 +12,7 @@ using DayBatch;
 using MySql.Data.MySqlClient;
 using DataProcess.FenXing;
 using System.Globalization;
+using System.Data.OracleClient;
 
 namespace GuPiao
 {
@@ -169,6 +170,11 @@ namespace GuPiao
         /// 记录虚线框信息
         /// </summary>
         private List<int> posInfo = new List<int>();
+
+        /// <summary>
+        /// 数据库连接
+        /// </summary>
+        private OracleConnection conn = null;
 
         #endregion
 
@@ -752,7 +758,8 @@ namespace GuPiao
             //this.Do(this.CheckRightCd);
             //this.Do(this.ReplaceDayData);
             //this.Do(this.SetRongziRongYuan);
-            //this.Do(this.ImportCsvToMySql);
+            this.Do(this.ImportCsvToDb);
+            //this.ImportCsvToDb();
             //this.Do(this.CheckM5Data);
             //this.Do(this.CheckHolidayDate);
         }
@@ -1962,90 +1969,132 @@ namespace GuPiao
         }
 
         /// <summary>
-        /// Csv数据导入到Mysql
+        /// Csv数据导入到MOracle
         /// </summary>
-        private void ImportCsvToMySql()
+        private void ImportCsvToDb()
         {
             // 取得配置的DB信息
             string[] dbAddrInfo = File.ReadAllLines(@".\DbAddrInfo.txt");
-            string[] mysqlDb = dbAddrInfo[2].Split(' ');
 
-            // 连接DB
-            string conn = "server=" + mysqlDb[0] + ";Database=" + mysqlDb[1] + ";user=" + mysqlDb[2] + ";password=" + mysqlDb[3] + ";port=" + mysqlDb[4] + ";CharSet=utf8;";
-            using (MySqlConnection mySQLConn = new MySqlConnection(conn))
+            // 关闭数据库连接
+            this.CloseDbConn();
+
+            // 创建数据连接
+            if (!this.CreateDbConn(dbAddrInfo[2]))
             {
-                mySQLConn.Open();
+                return;
+            }
 
-                // 开始导入代码名称数据
-                StringBuilder sb = new StringBuilder();
-                string dt = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+            //// 开始导入代码名称数据
+            //StringBuilder sb = new StringBuilder();
+            //string dt = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
 
-                string[] allLine = File.ReadAllLines(@".\data\AllStockInfo.txt", Encoding.UTF8);
+            //string[] allLine = File.ReadAllLines(@".\data\AllStockInfo.txt", Encoding.UTF8);
 
-                // 设置进度条
-                //this.ResetProcessBar(allLine.Length);
+            //// 设置进度条
+            //this.ResetProcessBar(allLine.Length);
 
-                //try
-                //{
-                //    for (int i = 0; i < allLine.Length; i++)
-                //    {
-                //        sb = new StringBuilder();
-                //        sb.Append("insert into code_name (code, name, rzrj_flg, add_user, add_date, upd_user, upd_date) VALUES ");
-                //        sb.Append("('").Append(allLine[i].Substring(0, 6)).Append("'");
-                //        sb.Append(",'").Append(allLine[i].Substring(7)).Append("'");
-                //        sb.Append(",0");
-                //        sb.Append(",'system'");
-                //        sb.Append(",'").Append(dt).Append("'");
-                //        sb.Append(",'system'");
-                //        sb.Append(",'").Append(dt).Append("');");
+            //OracleTransaction transaction = this.conn.BeginTransaction();
+            //try
+            //{
+            //    OracleCommand cmd = this.conn.CreateCommand();
+            //    cmd.Transaction = transaction;
 
-                //        MySqlCommand cmd = new MySqlCommand(sb.ToString(), mySQLConn, tx);
-                //        cmd.ExecuteNonQuery();
+            //    for (int i = 0; i < allLine.Length; i++)
+            //    {
+            //        sb.Length = 0;
+            //        sb.Append("insert into all_stock (stock_code, stock_name, memo) VALUES ");
+            //        sb.Append("('").Append(allLine[i].Substring(0, 6)).Append("'");
+            //        sb.Append(",'").Append(allLine[i].Substring(7)).Append("'");
+            //        sb.Append(",''").Append(")");
 
-                //        if (i > 0 && i % 1000 == 0)
-                //        {
-                //            tx.Commit();
-                //            tx = mySQLConn.BeginTransaction();
-                //        }
-                //        else if (i == allLine.Length - 1)
-                //        {
-                //            tx.Commit();
-                //        }
 
-                //        // 更新进度条
-                //        this.ProcessBarStep();
-                //    }
-                //}
-                //catch (Exception e)
-                //{
-                //    tx.Rollback();
-                //    MessageBox.Show(e.Message + "\n" + e.StackTrace);
-                //}
+            //        cmd.CommandText = sb.ToString();
+            //        cmd.ExecuteNonQuery();
 
-                //// 关闭进度条
-                //this.CloseProcessBar();
+            //        if (i > 0 && i % 1000 == 0)
+            //        {
+            //            transaction.Commit();
+            //            transaction = this.conn.BeginTransaction();
+            //            cmd.Transaction = transaction;
+            //        }
+            //        else if (i == allLine.Length - 1)
+            //        {
+            //            transaction.Commit();
+            //        }
 
-                // 导入天的数据
-                //this.ImportCsvToMySql(mySQLConn, TimeRange.Day, "data_day", dt);
+            //        // 更新进度条
+            //        this.ProcessBarStep();
+            //    }
+            //}
+            //catch (Exception e)
+            //{
+            //    transaction.Rollback();
+            //    MessageBox.Show(e.Message + "\n" + e.StackTrace);
+            //}
 
-                // 导入M5的数据
-                this.ImportCsvToMySql(mySQLConn, TimeRange.M5, "data_m5", dt);
+            //// 关闭进度条
+            //this.CloseProcessBar();
 
-                // 导入M15的数据
-                //this.ImportCsvToMySql(mySQLConn, TimeRange.M15, "data_m15", dt);
+            // 导入天的数据
+            //this.ImportCsvToMySql(mySQLConn, TimeRange.Day, "data_day", dt);
 
-                // 导入M30的数据
-                //this.ImportCsvToMySql(mySQLConn, TimeRange.M30, "data_m30", dt);
+            // 导入M5的数据
+            this.ImportCsvToDb(TimeRange.M5, "m5");
+
+            // 导入M15的数据
+            //this.ImportCsvToMySql(mySQLConn, TimeRange.M15, "data_m15", dt);
+
+            // 导入M30的数据
+            //this.ImportCsvToMySql(mySQLConn, TimeRange.M30, "data_m30", dt);
+
+            // 关闭数据库连接
+            this.CloseDbConn();
+        }
+
+        /// <summary>
+        /// 创建数据连接
+        /// </summary>
+        private bool CreateDbConn(string connString)
+        {
+            try
+            {
+                conn = new OracleConnection(connString);
+                conn.Open();
+                return true;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\r\n" + e.StackTrace);
+                return false;
             }
         }
 
         /// <summary>
-        /// 导入特定类型数据到Mysql
+        /// 关闭数据库连接
         /// </summary>
-        /// <param name="mySQLConn"></param>
+        private void CloseDbConn()
+        {
+            try
+            {
+                if (this.conn != null)
+                {
+                    this.conn.Close();
+                }
+
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\r\n" + e.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// 导入特定类型数据到Oracle
+        /// </summary>
         /// <param name="timeRange"></param>
-        private void ImportCsvToMySql(MySqlConnection mySQLConn, TimeRange timeRange, string dbName,
-            string dt)
+        /// <param name="dbName"></param>
+        private void ImportCsvToDb(TimeRange timeRange, string dbName)
         {
             // 取得已经存在的所有数据信息
             this.subFolder = timeRange.ToString() + "/";
@@ -2054,14 +2103,11 @@ namespace GuPiao
             // 设置进度条
             this.ResetProcessBar(allCsv.Count);
 
-            MySqlTransaction tx = null;
-            bool needBeginTransaction = true;
+            OracleTransaction transaction = null;
 
             try
             {
-                MySqlCommand cmd = new MySqlCommand();
-                cmd.Connection = mySQLConn;
-
+                OracleCommand insCmd = this.conn.CreateCommand();
                 StringBuilder sb = new StringBuilder();
                 string maxDt = string.Empty;
                 int lineCnt = 0;
@@ -2073,21 +2119,22 @@ namespace GuPiao
                         continue;
                     }
 
-                    if (needBeginTransaction)
-                    {
-                        tx = mySQLConn.BeginTransaction();
-                        cmd.Transaction = tx;
-                    }
-                    
-                    sb.Length = 0;
-                    sb.Append("select date_format(max(datetime), '%Y-%m-%d %H:%i:%s') from ").Append(dbName);
-                    sb.Append(" Where code = '").Append(Util.GetShortNameWithoutType(fileItem.File).Substring(0, 6)).Append("'");
-                    cmd.CommandText = sb.ToString();
+                    transaction = this.conn.BeginTransaction();
+                    insCmd.Transaction = transaction;
 
-                    object dbResult = cmd.ExecuteScalar();
-                    if (dbResult != null)
+                    sb.Length = 0;
+                    sb.Append("select to_char(max(trade_time), 'yyyy-MM-dd HH24:mi:ss') from ").Append(dbName);
+                    sb.Append(" Where stock_code = '").Append(Util.GetShortNameWithoutType(fileItem.File).Substring(0, 6)).Append("'");
+                    insCmd.CommandText = sb.ToString();
+
+                    maxDt = string.Empty;
+                    OracleDataReader dbResult = insCmd.ExecuteReader();
+                    if (dbResult != null && dbResult.Read())
                     {
-                        maxDt = dbResult.ToString();
+                        if (!dbResult.GetOracleString(0).IsNull)
+                        {
+                            maxDt = dbResult.GetString(0).ToString();
+                        }
                     }
                     sb.Length = 0;
                     lineCnt = 0;
@@ -2105,26 +2152,24 @@ namespace GuPiao
                             lineCnt++;
 
                             sb.Append("insert into ").Append(dbName).Append(" (");
-                            sb.Append(" code, datetime, open_val, close_val, min_val, max_val) VALUES (");
-                            sb.Append(" '").Append(curLine[1].Replace("'", "")).Append("'");
-                            sb.Append(",'").Append(curLine[0]).Append("'");
-                            sb.Append(",").Append(curLine[6]);
+                            sb.Append(" trade_time, stock_code, close_price, high_price, low_price, open_price) VALUES (");
+                            sb.Append(" to_date('").Append(curLine[0]).Append("', 'yyyy-MM-dd HH24:mi:ss') ");
+                            sb.Append(",'").Append(curLine[1].Replace("'", "")).Append("'");
                             sb.Append(",").Append(curLine[3]);
-                            sb.Append(",").Append(curLine[5]);
                             sb.Append(",").Append(curLine[4]);
-                            sb.Append(");");
+                            sb.Append(",").Append(curLine[5]);
+                            sb.Append(",").Append(curLine[6]);
+                            sb.Append(") ");
 
-                            cmd.CommandText = sb.ToString();
+                            insCmd.CommandText = sb.ToString();
                             sb.Length = 0;
-                            //MySqlCommand cmd = new MySqlCommand(sb.ToString(), mySQLConn, tx);
-                            cmd.ExecuteNonQuery();
+                            insCmd.ExecuteNonQuery();
 
-                            if (lineCnt % 1000 == 0 && i < maxLen)
+                            if (lineCnt % 2000 == 0 && i < maxLen)
                             {
-                                tx.Commit();
-                                tx = mySQLConn.BeginTransaction();
-                                needBeginTransaction = false;
-                                cmd.Transaction = tx;
+                                transaction.Commit();
+                                transaction = this.conn.BeginTransaction();
+                                insCmd.Transaction = transaction;
                                 lineCnt = 0;
                             }
                         }
@@ -2132,13 +2177,10 @@ namespace GuPiao
 
                     if (lineCnt > 0)
                     {
-                        tx.Commit();
-                        needBeginTransaction = true;
+                        transaction.Commit();
                     }
-                    else
-                    {
-                        needBeginTransaction = false;
-                    }
+                    transaction.Dispose();
+                    transaction = null;
 
                     // 更新进度条
                     this.ProcessBarStep();
@@ -2146,9 +2188,9 @@ namespace GuPiao
             }
             catch (Exception e)
             {
-                if (tx != null)
+                if (transaction != null)
                 {
-                    tx.Rollback();
+                    transaction.Rollback();
                 }
                 throw e;
             }

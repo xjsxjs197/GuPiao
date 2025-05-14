@@ -292,7 +292,13 @@ namespace DataProcess.GetData
             }
 
             // 从5分钟数据，取得当前数据
-            List<string> mCurData = this.GetCurData(this.GetM5Data(stockCd));
+            List<string> m5Data = this.GetM5Data(stockCd);
+            if (m5Data.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            List<string> mCurData = this.GetCurData(m5Data);
 
             if (string.IsNullOrEmpty(startDay))
             {
@@ -404,8 +410,13 @@ namespace DataProcess.GetData
         {
             List<string> m5Data = new List<string>();
 
-            string[] allLine = File.ReadAllLines(base.csvFolder + TimeRange.M5.ToString() + "/" + stockCd
-                + "_" + this.endDayForFileCopy + ".csv");
+            string m5CsvFile = base.csvFolder + TimeRange.M5.ToString() + "/" + stockCd + "_" + this.endDayForFileCopy + ".csv";
+            if (!File.Exists(m5CsvFile))
+            {
+                return m5Data;
+            }
+
+            string[] allLine = File.ReadAllLines(m5CsvFile);
 
             if (allLine.Length > 1)
             {
