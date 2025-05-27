@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Common;
-using DataProcess.GetData;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
-using System.Threading;
-using DataProcess.FenXing;
 using System.Text.RegularExpressions;
-using System.Drawing.Imaging;
+using System.Threading;
+using Common;
+using DataProcess.FenXing;
+using DataProcess.GetData;
+using Devart.Data.Oracle;
+using System.Diagnostics;
 
 namespace DayBatch
 {
@@ -106,6 +108,20 @@ namespace DayBatch
         /// </summary>
         private Dictionary<string, string> allStockCdName = new Dictionary<string, string>();
 
+        /// <summary>
+        /// 数据库连接
+        /// </summary>
+        private OracleConnection conn = null;
+
+        private string connStr = string.Empty;
+
+        private const int MaxThreads = 3; // 最大并发线程数
+        private static readonly object LockObj = new object();
+        private static int _completedTasks = 0;
+        private static int _totalTasks = 0;
+        private static int _activeThreads = 0;
+        private bool hasError = false;
+
         #endregion
 
         #region " 初始化 "
@@ -155,6 +171,7 @@ namespace DayBatch
             bool emuTest = false;
             bool backAndCheck = false;
             bool delInvalidData = false;
+            bool copyM5ToDb = false;
             if (args == null || args.Length == 0)
             {
                 if (Util.IsHolidayByDate(DateTime.Now) > 0)
@@ -211,6 +228,12 @@ namespace DayBatch
                     {
                         delInvalidData = true;
                     }
+                    else if ("copyM5ToDb".Equals(param, StringComparison.OrdinalIgnoreCase))
+                    {
+                        needGetData = false;
+                        needDrawImg = false;
+                        copyM5ToDb = true;
+                    }
                 }
             }
 
@@ -245,6 +268,23 @@ namespace DayBatch
                 {
                     // 模拟运行
                     this.StartEmuTest();
+                }
+
+                if (copyM5ToDb)
+                {
+                    string exePath = Process.GetCurrentProcess().MainModule.FileName;
+                    string exeDirectory = Path.GetDirectoryName(exePath);
+
+                    // 取得配置的DB信息
+                    string[] dbAddrInfo = File.ReadAllLines(exeDirectory + @"\DbAddrInfo.txt");
+                    this.connStr = dbAddrInfo[2];
+
+                    // 创建数据连接
+                    if (this.CreateDbConn(this.connStr))
+                    {
+                        // 复制M5的数据到数据库
+                        this.ImportCsvToDb(exeDirectory, TimeRange.M5, "m5");
+                    }
                 }
             }
 
@@ -379,7 +419,7 @@ namespace DayBatch
                 if (allItems.Length > 3)
                 {
                     BaseDataInfo dayInfo = new BaseDataInfo();
-                    dayInfo.Day = allItems[0].Replace("-", "").Replace(" ", "").Replace(":", "");
+                    dayInfo.Day = Util.TrimDate(allItems[0]);
 
                     dayInfo.DayVal = decimal.Parse(allItems[3]);
                     dayInfo.DayMaxVal = decimal.Parse(allItems[4]);
@@ -431,7 +471,7 @@ namespace DayBatch
                 string[] allItems = allLine[i].Split(',');
                 if (allItems.Length > 3)
                 {
-                    string tmpDay = allItems[0].Replace("-", "").Replace(" ", "").Replace(":", "");
+                    string tmpDay = Util.TrimDate(allItems[0]);
                     if (string.Compare(tmpDay.Substring(0, 8), endDate) > 0)
                     {
                         maxPoints++;
@@ -1088,7 +1128,7 @@ namespace DayBatch
             this.allCsv = Util.GetAllFiles(this.basePath + Consts.CSV_FOLDER + timeRange.ToString() + "/");
 
             // 获取所有的代码信息
-            endDay = endDay.Replace("-", "").Replace(" ", "").Replace(":", "");
+            endDay = Util.TrimDate(endDay);
             this.getData = new GetDataFromSina(this.basePath + Consts.CSV_FOLDER, endDay, timeRange);
 
             // 设置进度条
@@ -1176,7 +1216,7 @@ namespace DayBatch
                 this.allCsv = Util.GetAllFiles(this.basePath + Consts.CSV_FOLDER + timeRange.ToString() + "/");
 
                 // 获取所有的代码信息
-                endDay = endDay.Replace("-", "").Replace(" ", "").Replace(":", "");
+                endDay = Util.TrimDate(endDay);
                 this.getData = new GetDataFromSina(this.basePath + Consts.CSV_FOLDER, endDay, timeRange);
 
                 // 设置进度条
@@ -1378,6 +1418,322 @@ namespace DayBatch
         #region " 私有处理 "
 
         /// <summary>
+        /// 写Log到数据库
+        /// </summary>
+        /// <param name="message"></param>
+        private void WriteSqlLog(string message)
+        {
+            try
+            {
+                OracleCommand cmd = this.conn.CreateCommand();
+                StringBuilder sb = new StringBuilder();
+
+                sb.Length = 0;
+                sb.Append("insert into LOG (log_date, log_info) VALUES (SYSDATE, '");
+                sb.Append(message).Append("')");
+
+                cmd.CommandText = sb.ToString();
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                //MessageBox.Show(message + "\r\n" + e.Message + "\n" + e.StackTrace);
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + message + "\r\n" + e.Message + "\n" + e.StackTrace + "\r\n", Encoding.UTF8);
+            }
+        }
+
+        /// <summary>
+        /// 创建数据连接
+        /// </summary>
+        private bool CreateDbConn(string connString)
+        {
+            try
+            {
+                conn = new OracleConnection(connString);
+                conn.Open();
+                return true;
+            }
+            catch (Exception e)
+            {
+                //MessageBox.Show(e.Message + "\r\n" + e.StackTrace);
+                File.AppendAllText(logFile, e.Message + "\r\n" + e.StackTrace + "\r\n", Encoding.UTF8);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 关闭数据库连接
+        /// </summary>
+        private void CloseDbConn()
+        {
+            try
+            {
+                if (this.conn != null)
+                {
+                    this.conn.Close();
+                }
+
+            }
+            catch (Exception e)
+            {
+                //MessageBox.Show(e.Message + "\r\n" + e.StackTrace);
+                File.AppendAllText(logFile, e.Message + "\r\n" + e.StackTrace + "\r\n", Encoding.UTF8);
+            }
+        }
+
+        /// <summary>
+        /// 取得所有数据的最大日期
+        /// </summary>
+        /// <param name="dbName"></param>
+        /// <returns></returns>
+        private Dictionary<string, string> GetAllStockMaxDate()
+        {
+            Dictionary<string, string> allllStockMaxDate = new Dictionary<string, string>();
+            try
+            {
+                OracleCommand insCmd = this.conn.CreateCommand();
+                StringBuilder sb = new StringBuilder();
+
+                sb.Length = 0;
+                sb.Append("select to_char(max_trade_date, 'yyyy-MM-dd HH24:mi:ss'), stock_code from STOCK_INFO ");
+                insCmd.CommandText = sb.ToString();
+                insCmd.FetchSize = 5000;
+
+                OracleDataReader dbResult = insCmd.ExecuteReader();
+                if (dbResult != null)
+                {
+                    while (dbResult.Read())
+                    {
+                        allllStockMaxDate.Add(dbResult.GetString(1).ToString(), dbResult.GetString(0).ToString());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.WriteSqlLog("取得所有数据的最大日期时错误" + "\r\n" + ex.Message + "\n" + ex.StackTrace);
+            }
+
+            return allllStockMaxDate;
+        }
+
+        /// <summary>
+        /// 等待空闲线程
+        /// </summary>
+        private void WaitForThreadSlot()
+        {
+            while (true)
+            {
+                lock (LockObj)
+                {
+                    if (_activeThreads < MaxThreads)
+                    {
+                        _activeThreads++;
+                        return;
+                    }
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+        /// <summary>
+        /// 导入特定类型数据到Oracle
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <param name="dbName"></param>
+        private void ImportCsvToDb(string exeDirectory, TimeRange timeRange, string dbName)
+        {
+            // 取得已经存在的所有数据信息
+            this.subFolder = timeRange.ToString() + "/";
+            List<FilePosInfo> allCsv = Util.GetAllFiles(exeDirectory + "/" + Consts.CSV_FOLDER + this.subFolder).Where(p => !p.IsFolder).ToList();
+
+            _totalTasks = allCsv.Count;
+
+            // 创建线程池控制器
+            using (var countdown = new ManualResetEvent(false))
+            {
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + "CSV导入DB处理开始 " + allCsv.Count + "\r\n", Encoding.UTF8);
+
+                Dictionary<string, string> allStockMaxDate = this.GetAllStockMaxDate();
+
+                foreach (FilePosInfo fileItem in allCsv)
+                {
+                    string curStockCd = Util.GetShortNameWithoutType(fileItem.File).Substring(0, 6);
+                    string curMaxDt = Util.GetShortNameWithoutType(fileItem.File).Substring(7);
+                    // 比较当前CSV的数据，和数据库的最大时间数据
+                    if (allStockMaxDate.ContainsKey(curStockCd))
+                    {
+                        if (curMaxDt.Equals(Util.TrimDate(allStockMaxDate[curStockCd])))
+                        {
+                            lock (LockObj)
+                            {
+                                if (++_completedTasks >= _totalTasks)
+                                    countdown.Set();
+                            }
+                            continue;
+                        }
+                    }
+
+                    // 等待可用线程
+                    WaitForThreadSlot();
+
+                    // 启动线程
+                    ThreadPool.QueueUserWorkItem(state =>
+                    {
+                        var csvFile = (string)state;
+                        InsertStockData(csvFile, dbName, countdown);
+                    }, fileItem.File);
+                }
+
+                // 等待所有线程完成
+                countdown.WaitOne();
+
+                if (hasError)
+                {
+                    //MessageBox.Show("出现错误 \n具体信息参考LOG表");
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + "CSV导入DB处理发生错误，具体信息参考Log表" + "\r\n", Encoding.UTF8);
+                }
+                else
+                {
+                    File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + "CSV导入DB处理成功完成" + "\r\n", Encoding.UTF8);
+                }
+            }
+        }
+
+        /// <summary>
+        /// CSV的数据插入到数据库
+        /// </summary>
+        /// <param name="csvFile"></param>
+        /// <param name="dbName"></param>
+        /// <param name="countdown"></param>
+        private void InsertStockData(string csvFile, string dbName, ManualResetEvent countdown)
+        {
+            OracleConnection conn = null;
+            StringBuilder sb = new StringBuilder();
+            string stockCode = Util.GetShortNameWithoutType(csvFile).Substring(0, 6);
+            string curMaxDt = Util.GetShortNameWithoutType(csvFile).Substring(7);
+
+            try
+            {
+                if (!File.Exists(csvFile))
+                {
+                    return;
+                }
+
+                // 连接配置
+                conn = new OracleConnection(this.connStr);
+                conn.Open();
+
+                OracleCommand insCmd = conn.CreateCommand();
+                string maxDt = string.Empty;
+                string maxDtChk = string.Empty;
+
+                sb.Length = 0;
+                sb.Append("select to_char(max(trade_date), 'yyyy-MM-dd HH24:mi:ss'), to_char(max(trade_date), 'yyyyMMddHH24miss') from ").Append(dbName);
+                sb.Append(" Where stock_code = '").Append(stockCode).Append("'");
+                insCmd.CommandText = sb.ToString();
+
+                maxDt = string.Empty;
+                OracleDataReader dbResult = insCmd.ExecuteReader();
+                if (dbResult != null && dbResult.Read())
+                {
+                    if (!dbResult.GetOracleString(0).IsNull)
+                    {
+                        maxDt = dbResult.GetString(0).ToString();
+                        maxDtChk = dbResult.GetString(1).ToString();
+                    }
+                }
+
+                // 判断是否当前CSV已经导入了
+                if (!maxDtChk.Equals(string.Empty) && Util.GetShortNameWithoutType(csvFile).EndsWith(maxDtChk))
+                {
+                    return;
+                }
+
+                //this.WriteSqlLog("Start Import " + stockCode);
+                sb.Length = 0;
+                int lineCnt = 0;
+
+                // 读取CSV数据
+                string[] allLine = File.ReadAllLines(csvFile);
+                int maxLen = allLine.Length - 1;
+                sb.Append(" BEGIN ");
+                for (int i = 1; i <= maxLen; i++)
+                {
+                    // 2020-03-18 15:00:00,000001,,12.710,12.740,12.650,12.720
+                    // datetime,code,name,close_val,max_val,min_val,open_val
+                    string[] curLine = allLine[i].Split(',');
+                    if (string.Compare(curLine[0], maxDt) > 0)
+                    {
+                        lineCnt++;
+
+                        //sb.Append(" into ").Append(dbName).Append(" (");
+                        sb.Append(" INSERT into ").Append(dbName).Append(" (");
+                        sb.Append(" trade_date, stock_code, close_price, high_price, low_price, open_price) VALUES (");
+                        sb.Append(" to_date('").Append(curLine[0]).Append("', 'yyyy-MM-dd HH24:mi:ss') ");
+                        sb.Append(",'").Append(curLine[1].Replace("'", "")).Append("'");
+                        sb.Append(",").Append(curLine[3]);
+                        sb.Append(",").Append(curLine[4]);
+                        sb.Append(",").Append(curLine[5]);
+                        sb.Append(",").Append(curLine[6]);
+                        sb.Append(") ;\r\n ");
+
+                        if (lineCnt % 1000 == 0 && i < maxLen)
+                        {
+                            sb.Append(" COMMIT; END; ");
+                            insCmd.CommandText = sb.ToString();
+                            insCmd.ExecuteNonQuery();
+                            sb.Length = 0;
+                            sb.Append(" BEGIN ");
+
+                            lineCnt = 0;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (lineCnt > 0)
+                {
+                    sb.Append(" COMMIT; END; ");
+                    insCmd.CommandText = sb.ToString();
+                    insCmd.ExecuteNonQuery();
+                }
+
+                sb.Length = 0;
+                sb.Append("update STOCK_INFO ");
+                sb.Append(" set max_trade_date = to_date('").Append(curMaxDt).Append("', 'YYYYMMDDHH24MISS') ");
+                sb.Append(" Where stock_code = '").Append(stockCode).Append("'");
+                insCmd.CommandText = sb.ToString();
+                insCmd.ExecuteNonQuery();
+
+                //this.WriteSqlLog("End Import " + stockCode);
+            }
+            catch (Exception ex)
+            {
+                hasError = true;
+                File.AppendAllText(logFile, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss ") + ex.Message + "\r\n" + ex.StackTrace + "\r\n", Encoding.UTF8);
+                this.WriteSqlLog(stockCode + "\r\n" + ex.Message + "\n" + ex.StackTrace);
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+                // 任务完成标记
+                lock (LockObj)
+                {
+                    _activeThreads--;
+                    if (++_completedTasks >= _totalTasks)
+                        countdown.Set();
+                }
+            }
+        }
+
+        /// <summary>
         /// 开始画趋势图
         /// </summary>
         /// <param name="stockInfo"></param>
@@ -1566,6 +1922,9 @@ namespace DayBatch
                 this.drawImgInfo.DarkGreenLinePen.Dispose();
                 this.drawImgInfo.DarkBlueLinePen.Dispose();
             }
+
+            // 关闭数据库连接
+            this.CloseDbConn();
         }
 
         /// <summary>

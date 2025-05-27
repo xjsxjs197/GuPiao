@@ -30,6 +30,7 @@
         {
             this.pnlButton = new System.Windows.Forms.Panel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.btnViewDiff = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.dtEnd = new System.Windows.Forms.DateTimePicker();
             this.label3 = new System.Windows.Forms.Label();
@@ -52,7 +53,6 @@
             this.btnCreate = new System.Windows.Forms.Button();
             this.pnlBody = new System.Windows.Forms.Panel();
             this.imgBody = new System.Windows.Forms.PictureBox();
-            this.btnViewDiff = new System.Windows.Forms.Button();
             this.pnlTopBody.SuspendLayout();
             this.pnlButton.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -105,6 +105,16 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(299, 75);
             this.panel1.TabIndex = 20;
+            // 
+            // btnViewDiff
+            // 
+            this.btnViewDiff.Location = new System.Drawing.Point(190, 38);
+            this.btnViewDiff.Name = "btnViewDiff";
+            this.btnViewDiff.Size = new System.Drawing.Size(90, 24);
+            this.btnViewDiff.TabIndex = 24;
+            this.btnViewDiff.Text = "对比两点趋势";
+            this.btnViewDiff.UseVisualStyleBackColor = true;
+            this.btnViewDiff.Click += new System.EventHandler(this.btnViewDiff_Click);
             // 
             // label2
             // 
@@ -347,16 +357,6 @@
             this.imgBody.MouseMove += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseMove);
             this.imgBody.MouseClick += new System.Windows.Forms.MouseEventHandler(this.imgBody_MouseClick);
             // 
-            // btnViewDiff
-            // 
-            this.btnViewDiff.Location = new System.Drawing.Point(190, 38);
-            this.btnViewDiff.Name = "btnViewDiff";
-            this.btnViewDiff.Size = new System.Drawing.Size(90, 24);
-            this.btnViewDiff.TabIndex = 24;
-            this.btnViewDiff.Text = "对比两点趋势";
-            this.btnViewDiff.UseVisualStyleBackColor = true;
-            this.btnViewDiff.Click += new System.EventHandler(this.btnViewDiff_Click);
-            // 
             // CreateQushi
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -367,6 +367,7 @@
             this.MaximumSize = new System.Drawing.Size(1280, 630);
             this.Name = "CreateQushi";
             this.Text = "CreateQushi";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CreateQushi_FormClosing);
             this.pnlTopBody.ResumeLayout(false);
             this.pnlButton.ResumeLayout(false);
             this.pnlButton.PerformLayout();

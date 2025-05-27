@@ -207,25 +207,34 @@ namespace DataProcess.GetData
                     if (string.IsNullOrEmpty(startDay))
                     {
                         // 取得分钟级别数据
-                        this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
+                        startDay = this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
+                        if (startDay.Equals(string.Empty))
+                        {
+                            startDay = this.endDayForFile;
+                        }
 
                         // 保存数据文件
                         sb.Length = 0;
                         sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
-                        sb.Append(stockCd).Append("_").Append(this.endDayForFile).Append(".csv");
+                        sb.Append(stockCd).Append("_").Append(startDay).Append(".csv");
                         File.WriteAllLines(sb.ToString(), allMinuteData.ToArray(), Encoding.UTF8);
                     }
                     else if (string.Compare(startDay, this.endDayForFile) < 0)
                     {
+                        // 取得分钟级别数据
+                        string newStartDay = this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
+                        if (newStartDay.CompareTo(startDay) <= 0)
+                        {
+                            // 获取的数据的最新日期比文件的日期还小，说明数据不更新了（停牌了）
+                            return string.Empty;
+                        }
+
                         // 读取既存文件的内容
                         sb.Length = 0;
                         sb.Append(base.csvFolder).Append(this.timeRange.ToString()).Append("/");
                         sb.Append(stockCd).Append("_").Append(startDay).Append(".csv");
                         string oldFilePath = sb.ToString();
                         string[] oldFile = File.ReadAllLines(oldFilePath, Encoding.UTF8);
-
-                        // 取得分钟级别数据
-                        this.GetMinuteData(jArray, sb, stockCd, allMinuteData);
 
                         // 最新数据和旧数据结合
                         List<string> newMinuteData = new List<string>();
@@ -370,10 +379,10 @@ namespace DataProcess.GetData
         /// 取得分钟级别数据
         /// </summary>
         /// <param name="jArray"></param>
-        /// <returns></returns>
+        /// <returns>最新的时间</returns>
         private string GetMinuteData(JArray jArray, StringBuilder sb, string stockCd, List<string> allMinuteData)
         {
-            string lastDay = string.Empty;
+            string startDay = string.Empty;
 
             allMinuteData.Clear();
             allMinuteData.Add("日期,代码,名称,收盘价,最高价,最低价,开盘价");
@@ -392,13 +401,13 @@ namespace DataProcess.GetData
 
                 allMinuteData.Add(sb.ToString());
 
-                if (i == 0)
+                if (i == (jArray.Count - 1))
                 {
-                    lastDay = jArray[i]["day"].ToString();
+                    startDay = jArray[i]["day"].ToString();
                 }
             }
 
-            return lastDay;
+            return Util.TrimDate(startDay);
         }
 
         /// <summary>
@@ -428,7 +437,7 @@ namespace DataProcess.GetData
                 while (index >= 0)
                 {
                     string[] lastLine = m5Data[index].Split(',');
-                    string lastDay = lastLine[0].Replace("-", "").Replace(" ", "").Replace(":", "");
+                    string lastDay = Util.TrimDate(lastLine[0]);
                     if (lastDay.EndsWith("093500"))
                     {
                         break;

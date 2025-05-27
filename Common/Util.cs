@@ -1081,6 +1081,16 @@ namespace Common
             }
         }
 
+        /// <summary>
+        /// 去掉日期字符串中的冒号，横杠，空格
+        /// </summary>
+        /// <param name="dateStr"></param>
+        /// <returns></returns>
+        public static string TrimDate(string dateStr)
+        {
+            return dateStr.Replace("-", "").Replace(" ", "").Replace(":", "");
+        }
+
         #endregion
 
         #region " 网页相关共通 "
